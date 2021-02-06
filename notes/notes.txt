@@ -1,9 +1,0 @@
-made key with permissions:
-DynamoDBFullAccessWithDataPipeline
-LambdaDynamoDBExecutionRole
-
-aws cli for local dev
-https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-windows.html
-
-converting from local to actual aws
-https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.NodeJs.Summary.html
