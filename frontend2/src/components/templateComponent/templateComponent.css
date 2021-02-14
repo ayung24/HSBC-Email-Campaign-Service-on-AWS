@@ -1,10 +1,7 @@
-.templateView-container {
+.template-component {
     width: 100%;
     height: inherit;
     background-color: white;
-}
-
-.template-signout {
 }
 
 .upload-container {

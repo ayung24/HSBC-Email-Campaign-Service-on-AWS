@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@aws-amplify/cli": "^4.43.0",
+    "@aws-amplify/ui-components": "^0.10.4",
     "@aws-amplify/ui-react": "^0.2.38",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",

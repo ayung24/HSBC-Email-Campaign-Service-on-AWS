@@ -6,27 +6,26 @@
     position: relative;
     width: 100vw;
     background: white;
-  }
-  
-  .header-logo {
+}
+
+.header-logo {
     padding: 2vh 10vw;
-  }
-  
-  .header-desc {
+}
+
+.header-desc {
     padding: 0px 3vw;
     display: flex;
     align-items: center;
-  }
-  
-  .header-desc div {
+}
+
+.header-desc div {
     padding: 0px 3px;
-  }
-  
-  .header-desc h3 {
-      font-size: 15px;
-      font-family: 'Arial Narrow';
-      letter-spacing: 5px;
-      color: black;
-      font-weight: 150;
-  }
-  
+}
+
+.header-desc h3 {
+    font-size: 15px;
+    font-family: 'Arial Narrow';
+    letter-spacing: 5px;
+    color: black;
+    font-weight: 150;
+}
