@@ -1,6 +1,6 @@
 {
   "auth": {
-    "emailcampaignaws758db079": {
+    "emailcampaignserviceHSBC": {
       "service": "Cognito",
       "providerPlugin": "awscloudformation",
       "dependsOn": [],

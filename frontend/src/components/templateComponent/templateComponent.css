@@ -1,0 +1,9 @@
+.template-component {
+    width: 100%;
+    height: inherit;
+    background-color: white;
+}
+
+.upload-container {
+    padding: 0px 100px;
+}
