@@ -1,0 +1,20 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-emailcampaignaws-dev-231246-authRole",
+      "UnauthRoleArn": "arn:aws:iam::847902131721:role/amplify-emailcampaignaws-dev-231246-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::847902131721:role/amplify-emailcampaignaws-dev-231246-authRole",
+      "Region": "ca-central-1",
+      "DeploymentBucketName": "amplify-emailcampaignaws-dev-231246-deployment",
+      "UnauthRoleName": "amplify-emailcampaignaws-dev-231246-unauthRole",
+      "StackName": "amplify-emailcampaignaws-dev-231246",
+      "StackId": "arn:aws:cloudformation:ca-central-1:847902131721:stack/amplify-emailcampaignaws-dev-231246/02dbdec0-5e5f-11eb-830c-024e341472d0",
+      "AmplifyAppId": "d2pz2ucd5kct03"
+    },
+    "categories": {
+      "auth": {
+        "emailcampaignaws758db079": {}
+      }
+    }
+  }
+}

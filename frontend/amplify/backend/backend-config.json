@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "emailcampaignaws758db079": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": [],
+      "customAuth": false
+    }
+  }
+}
