@@ -1,4 +1,4 @@
-exports.handler = function(event, context, callback) {
+exports.handler = function (event, context, callback) {
     console.log('Received event:', JSON.stringify(event, null, 2));
 
     // A simple request-based authorizer example to demonstrate how to use request
@@ -33,15 +33,15 @@ exports.handler = function(event, context, callback) {
     var condition = {};
     condition.IpAddress = {};
 
-    if (headers.Authorization === "test123") {
+    if (headers.Authorization === 'test123') {
         callback(null, generateAllow('me', event.methodArn));
-    }  else {
-        callback("Unauthorized");
+    } else {
+        callback('Unauthorized');
     }
-}
+};
 
 // Help function to generate an IAM policy
-var generatePolicy = function(principalId, effect, resource) {
+var generatePolicy = function (principalId, effect, resource) {
     // Required output:
     var authResponse = {};
     authResponse.principalId = principalId;
@@ -58,17 +58,17 @@ var generatePolicy = function(principalId, effect, resource) {
     }
     // Optional output with custom properties of the String, Number or Boolean type.
     authResponse.context = {
-        "stringKey": "stringval",
-        "numberKey": 123,
-        "booleanKey": true
+        stringKey: 'stringval',
+        numberKey: 123,
+        booleanKey: true,
     };
     return authResponse;
-}
+};
 
-var generateAllow = function(principalId, resource) {
+var generateAllow = function (principalId, resource) {
     return generatePolicy(principalId, 'Allow', resource);
-}
+};
 
-var generateDeny = function(principalId, resource) {
+var generateDeny = function (principalId, resource) {
     return generatePolicy(principalId, 'Deny', resource);
-}
+};

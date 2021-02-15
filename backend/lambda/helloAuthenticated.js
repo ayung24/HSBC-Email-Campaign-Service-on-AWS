@@ -1,8 +1,8 @@
-exports.handler = async function(event) {
-    console.log("request:", JSON.stringify(event, undefined, 2));
+exports.handler = async function (event) {
+    console.log('request:', JSON.stringify(event, undefined, 2));
     return {
         statusCode: 200,
-        headers: { "Content-Type": "text/plain" },
-        body: `Hello, Hacker! You've hit ${event.path}\n`
+        headers: { 'Content-Type': 'text/plain' },
+        body: `Hello, Hacker! You've hit ${event.path}\n`,
     };
 };
