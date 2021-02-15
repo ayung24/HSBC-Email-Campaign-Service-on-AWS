@@ -2,7 +2,7 @@ import { expect as expectCDK, haveResource } from '@aws-cdk/assert';
 import cdk = require('@aws-cdk/core');
 import * as lambda from '@aws-cdk/aws-lambda';
 
-import { HitCounter } from '../src/hitcounter';
+import { HitCounter } from '../lib/hitcounter';
 
 test('DynamoDB Table Created', () => {
     const stack = new cdk.Stack();
