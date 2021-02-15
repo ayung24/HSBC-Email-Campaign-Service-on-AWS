@@ -1,17 +1,27 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: MakeBank CI
+name: MakeBank Frontend CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - dev
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/**'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - dev
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 jobs:
-  frontend-test-build:
+  frontend-test:
 
     runs-on: self-hosted
     defaults:
@@ -19,19 +29,22 @@ jobs:
         working-directory: ./frontend
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 15.x]
+        node-version: [10.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
+    - uses: mickem/clean-after-action@v1 # cleanup workspace
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: Install dependencies
+    - name: Install frontend dependencies
       run: npm install
+    - name: Format with ESlint + Prettier
+      run: npm run lint
     - name: Run frontend tests
       run: npm test
-    - name: Build
-      run: npm run build --if-present
+    - name: Build frontend
+      run: npm build
