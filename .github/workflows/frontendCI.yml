@@ -33,7 +33,6 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: mickem/clean-after-action@v1 # cleanup workspace
     - name: Checkout repository
       uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
