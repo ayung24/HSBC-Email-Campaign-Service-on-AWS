@@ -2,30 +2,30 @@ import React from 'react';
 import './App.css';
 import Amplify from 'aws-amplify';
 import awsconfig from './aws-exports';
-import {AuthState, onAuthUIStateChange} from "@aws-amplify/ui-components";
-import {TemplateComponent} from "./components/templateComponent/templateComponent";
-import {AuthenticationComponent} from "./components/loginComponent/authenticationComponent";
-import {HeaderComponent} from "./components/headerComponent/headerComponent";
+import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
+import { TemplateComponent } from './components/templateComponent/templateComponent';
+import { AuthenticationComponent } from './components/loginComponent/authenticationComponent';
+import { HeaderComponent } from './components/headerComponent/headerComponent';
 
 Amplify.configure(awsconfig);
 
-function App() {
-    const [authState, setAuthState] = React.useState<AuthState>();
+function App(): JSX.Element {
+  const [authState, setAuthState] = React.useState<AuthState>();
 
-    React.useEffect(() => {
-        return onAuthUIStateChange((nextAuthState, authData) => {
-            setAuthState(nextAuthState);
-        });
-    }, []);
+  React.useEffect(() => {
+    return onAuthUIStateChange((nextAuthState, authData) => {
+      setAuthState(nextAuthState);
+    });
+  }, []);
 
-    let component = authState === AuthState.SignedIn ? (<TemplateComponent />) : (<AuthenticationComponent />);
+  const component = authState === AuthState.SignedIn ? <TemplateComponent /> : <AuthenticationComponent />;
 
-    return (
-        <div className="app-container">
-            <HeaderComponent/>
-            {component}
-        </div>
-    )
+  return (
+    <div className='app-container'>
+      <HeaderComponent />
+      {component}
+    </div>
+  );
 }
 
 export default App;
