@@ -8,3 +8,4 @@
 **/.cdk.staging
 **/cdk.out
 build
+src/**/.build

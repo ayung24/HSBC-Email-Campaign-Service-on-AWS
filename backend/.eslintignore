@@ -1,3 +1,4 @@
 *.d.ts
 cdk.out
 build
+src/**/.build

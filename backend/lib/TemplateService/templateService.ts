@@ -1,5 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import { NodejsFunction } from 'aws-lambda-nodejs-esbuild';
 
 export class TemplateService {
     private _hello: lambda.Function;
@@ -11,10 +12,14 @@ export class TemplateService {
     }
 
     private _initFunctions(scope: cdk.Construct) {
-        this._hello = new lambda.Function(scope, 'HelloHandler', {
+        // Example using Typescript lambda handler
+        this._hello = new NodejsFunction(scope, 'HelloHandler', {
             runtime: lambda.Runtime.NODEJS_10_X, // execution environment
-            code: lambda.Code.fromAsset('lambda'), // code loaded from "lambda" directory
+            rootDir: 'src/lambda', // code loaded from "src/lambda" directory
             handler: 'hello.handler', // file is "hello", function is "handler"
+            esbuildOptions: {
+                target: 'es2018',
+            },
         });
         this._helloWorld = new lambda.Function(scope, 'HelloWorldHandler', {
             runtime: lambda.Runtime.NODEJS_10_X, // execution environment

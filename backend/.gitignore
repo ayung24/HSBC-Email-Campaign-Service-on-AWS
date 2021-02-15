@@ -1,4 +1,6 @@
 build
+# lambda builds
+src/**/.build
 node_modules
 
 # CDK asset staging directory

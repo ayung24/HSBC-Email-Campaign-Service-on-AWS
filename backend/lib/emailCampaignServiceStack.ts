@@ -2,9 +2,12 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import { IdentitySource } from '@aws-cdk/aws-apigateway';
-import { TemplateService } from './templateService';
+import { TemplateService } from './TemplateService/templateService';
 import { HitCounter } from './hitCounter';
 
+/**
+ * Main backend stack
+ */
 export class EmailCampaignServiceStack extends cdk.Stack {
     private _templateService: TemplateService;
     private _api: apiGateway.LambdaRestApi;
