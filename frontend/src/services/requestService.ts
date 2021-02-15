@@ -6,7 +6,7 @@ export class RequestService {
     private _apiName = this._endpoint?.name;
 
     public async GET(path: string): Promise<any> {
-        const token = await this._getToken();
+        const token = await RequestService._getToken();
         const request = {
             headers: {
                 Authorization: token,
@@ -22,7 +22,7 @@ export class RequestService {
             });
     }
 
-    private async _getToken(): Promise<string> {
+    private static async _getToken(): Promise<string> {
         const user = await Auth.currentAuthenticatedUser();
         return user.signInUserSession.idToken.jwtToken;
     }

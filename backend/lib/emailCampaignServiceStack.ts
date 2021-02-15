@@ -3,8 +3,9 @@ import * as cognito from '@aws-cdk/aws-cognito';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import {Authorizer, IdentitySource} from '@aws-cdk/aws-apigateway';
-import {TemplateService} from "./templateService";
-import {HitCounter} from "./hitCounter";
+import {TemplateService} from './services/templateService';
+import {HitCounter} from './hitCounter';
+import {config} from './config';
 
 export class EmailCampaignServiceStack extends cdk.Stack {
 
@@ -39,7 +40,7 @@ export class EmailCampaignServiceStack extends cdk.Stack {
     }
 
     private _initAuth(): void {
-        const userPool = cognito.UserPool.fromUserPoolId(this, "UserPool", "ca-central-1_LtJbCIl1y");
+        const userPool = cognito.UserPool.fromUserPoolId(this, 'UserPool', config.cognito.USER_POOL_ID);
         this._templateAuth = new apiGateway.CognitoUserPoolsAuthorizer(this, 'templateAuthorizer', {
             cognitoUserPools: [userPool]
         })
@@ -50,23 +51,23 @@ export class EmailCampaignServiceStack extends cdk.Stack {
         })
         this._emailAuth = new apiGateway.RequestAuthorizer(this, 'requestAuthorizer', {
             handler: apiAuth,
-            identitySources: [IdentitySource.header("Authorization")]
+            identitySources: [IdentitySource.header('Authorization')]
         });
     }
 
     private _initPaths(): void {
-        const helloResource = this._api.root.addResource("hello");
+        const helloResource = this._api.root.addResource('hello');
         const helloIntegration = new apiGateway.LambdaIntegration(this._templateService.hello());
-        const helloWorldResource = this._api.root.addResource("helloWorld");
+        const helloWorldResource = this._api.root.addResource('helloWorld');
         const helloWorldIntegration = new apiGateway.LambdaIntegration(this._templateService.helloWorld());
-        const helloAuthenticatedResource = this._api.root.addResource("helloAuthenticated");
+        const helloAuthenticatedResource = this._api.root.addResource('helloAuthenticated');
         const helloAuthenticatedIntegration = new apiGateway.LambdaIntegration(this._templateService.helloAuthenticated());
 
         // Unauthorized endpoint
-        helloResource.addMethod("GET", helloIntegration);
+        helloResource.addMethod('GET', helloIntegration);
         // All template related (internal API) endpoints MUST include the templateAuth authorizer
-        helloWorldResource.addMethod("GET", helloWorldIntegration, {authorizer: this._templateAuth});
+        helloWorldResource.addMethod('GET', helloWorldIntegration, {authorizer: this._templateAuth});
         // All email related (external API) endpoints MUST include the emailAuth authorizer
-        helloAuthenticatedResource.addMethod("GET", helloAuthenticatedIntegration, {authorizer: this._emailAuth});
+        helloAuthenticatedResource.addMethod('GET', helloAuthenticatedIntegration, {authorizer: this._emailAuth});
     }
 }
