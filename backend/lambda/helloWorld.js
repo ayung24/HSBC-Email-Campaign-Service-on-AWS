@@ -1,8 +1,17 @@
-exports.handler = async function (event) {
-    console.log('request:', JSON.stringify(event, undefined, 2));
+exports.handler = async function(event) {
+    console.log("request:", JSON.stringify(event, undefined, 2));
+    const user = event.headers['Authorization'];
     return {
         statusCode: 200,
-        headers: { 'Content-Type': 'text/plain' },
-        body: `Hello, World! You've hit ${event.path}\n`,
+        headers: {
+            "Access-Control-Allow-Origin": "*",       // Required for CORS support to work
+            "Access-Control-Allow-Credentials": true, // Required for cookies, authorization headers with HTTPS
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            eventPath: event.path,
+            test: "helloWorld",
+            user: user
+        })
     };
 };
