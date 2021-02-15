@@ -10,22 +10,22 @@ import { HeaderComponent } from './components/headerComponent/headerComponent';
 Amplify.configure(awsconfig);
 
 function App(): JSX.Element {
-  const [authState, setAuthState] = React.useState<AuthState>();
+    const [authState, setAuthState] = React.useState<AuthState>();
 
-  React.useEffect(() => {
-    return onAuthUIStateChange((nextAuthState, authData) => {
-      setAuthState(nextAuthState);
-    });
-  }, []);
+    React.useEffect(() => {
+        return onAuthUIStateChange((nextAuthState, authData) => {
+            setAuthState(nextAuthState);
+        });
+    }, []);
 
-  const component = authState === AuthState.SignedIn ? <TemplateComponent /> : <AuthenticationComponent />;
+    const component = authState === AuthState.SignedIn ? <TemplateComponent /> : <AuthenticationComponent />;
 
-  return (
-    <div className='app-container'>
-      <HeaderComponent />
-      {component}
-    </div>
-  );
+    return (
+        <div className='app-container'>
+            <HeaderComponent />
+            {component}
+        </div>
+    );
 }
 
 export default App;

@@ -24,7 +24,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "lint": "eslint {src,tests}/**/*.{ts,tsx} --fix",
+    "lint": "eslint src/**/*.{ts,tsx} --fix",
     "eject": "react-scripts eject"
   },
   "browserslist": {
