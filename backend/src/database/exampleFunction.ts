@@ -1,5 +1,5 @@
 import * as db from './dbOperations';
-import { IDBResponse, RecordStatus } from './interfaces';
+import { IDBResponse } from './interfaces';
 
 export const handler = async (event: any = {}): Promise<any> => {
     // body of some lambda handler
