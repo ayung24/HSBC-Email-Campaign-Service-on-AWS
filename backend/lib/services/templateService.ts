@@ -16,15 +16,13 @@ export class TemplateService {
 
     private _initFunctions(scope: cdk.Construct) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X, // execution environment
-            rootDir: this._lambdaRootDir, // code loaded from "src/lambda" directory
-            handler: 'uploadTemplates.handler',
+            runtime: lambda.Runtime.NODEJS_10_X,
+            rootDir: `${this._lambdaRootDir}/uploadTemplate`,
             esbuildOptions: this._esbuildOptions,
         });
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X, // execution environment
-            rootDir: this._lambdaRootDir, // code loaded from "src/lambda" directory
-            handler: 'listTemplates.handler',
+            runtime: lambda.Runtime.NODEJS_10_X,
+            rootDir: `${this._lambdaRootDir}/listTemplates`,
             esbuildOptions: this._esbuildOptions,
         });
     }

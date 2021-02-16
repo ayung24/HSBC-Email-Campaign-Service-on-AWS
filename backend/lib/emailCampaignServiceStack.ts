@@ -44,16 +44,17 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
         const apiAuth = new NodejsFunction(this, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_10_X,
-            rootDir: 'src/lambda',
-            handler: 'emailApiAuth.handler',
+            rootDir: 'src/lambda/emailApiAuth',
             esbuildOptions: {
                 target: 'es2018',
             },
         });
-        this._emailAuth = new apiGateway.RequestAuthorizer(this, 'requestAuthorizer', {
-            handler: apiAuth,
-            identitySources: [IdentitySource.header('Authorization')],
-        });
+
+        // TODO: Uncomment when implementing send
+        // this._emailAuth = new apiGateway.RequestAuthorizer(this, 'requestAuthorizer', {
+        //     handler: apiAuth,
+        //     identitySources: [IdentitySource.header('Authorization')],
+        // });
     }
 
     private _initPaths(): void {
