@@ -31,7 +31,7 @@ export interface IDetailedRecord extends IMetadataRecord, IHTMLRecord {
 }
 
 // a full record containing metadata, html, and images zip
-export interface ITemplateRecord extends IMetadataRecord, IHTMLRecord {
+export interface ITemplateRecord extends IDetailedRecord {
     readonly Images?: any; // a zip
 }
 
