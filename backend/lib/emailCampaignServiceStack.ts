@@ -44,7 +44,7 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
         const apiAuth = new NodejsFunction(this, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_10_X,
-            rootDir: 'src/lambda/emailApiAuth',
+            rootDir: `${config.lambdaRoot}/emailApiAuth`,
             esbuildOptions: {
                 target: 'es2018',
             },
