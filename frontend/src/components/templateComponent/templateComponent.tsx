@@ -1,12 +1,14 @@
 import React from 'react';
-import './templateComponent.css';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
-import { ToastComponent } from '../toastComponent/toastComponent';
-import { ToastComponentProperties, ToastInterfaces } from '../../models/toastInterfaces';
 import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
+import { TemplateService } from '../../services/templateService';
 import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
+import { ToastComponentProperties, ToastInterfaces } from '../../models/toastInterfaces';
+import { ToastComponent } from '../toastComponent/toastComponent';
+import './templateComponent.css';
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
+    private _service: TemplateService;
     private _toastMessages: Array<ToastInterfaces> = [];
     private readonly _toastComponent: React.RefObject<ToastComponent>;
 
@@ -14,7 +16,13 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
         super(props);
         this._toastComponent = React.createRef();
         this.state = { properties: this._toastMessages };
+        this._service = new TemplateService();
     }
+
+    // TODO: Uncomment when ready (i.e. we have a prod environment set up for the backend APIs)
+    // componentDidMount(): void {
+    //     this._service.getTemplates();
+    // }
 
     private _addToast(toast: ToastInterfaces): void {
         if (!this._toastMessages.some(messages => messages.id === toast.id)) {
