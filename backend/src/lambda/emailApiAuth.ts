@@ -1,8 +1,8 @@
-import { APIGatewayRequestAuthorizerHandler } from "aws-lambda";
+import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
     // TODO
-}
+};
 
 /**
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {

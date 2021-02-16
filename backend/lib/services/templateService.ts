@@ -3,13 +3,12 @@ import * as lambda from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from 'aws-lambda-nodejs-esbuild';
 
 export class TemplateService {
-
     private _upload: lambda.Function;
     private _list: lambda.Function;
-    private _lambdaRootDir: string = 'src/lambda'
+    private _lambdaRootDir = 'src/lambda';
     private _esbuildOptions = {
         target: 'es2018',
-    }
+    };
 
     constructor(scope: cdk.Construct) {
         this._initFunctions(scope);
