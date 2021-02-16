@@ -1,3 +1,5 @@
-export class TemplateDisplay {
-    constructor(public id: string, public name: string, public uploadTime: Date) {}
+export interface TemplateDisplay {
+    id: string;
+    name: string;
+    uploadTime: Date;
 }
