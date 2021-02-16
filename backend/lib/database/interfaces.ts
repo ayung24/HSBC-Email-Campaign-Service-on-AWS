@@ -1,13 +1,13 @@
 // a record is either deleted or not
 export enum RecordStatus {
-    IN_SERVICE = "In Service",
-    DELETED = "Deleted",
+    IN_SERVICE = 'In Service',
+    DELETED = 'Deleted',
 }
 
 // metadata records and html records have/share ID and status
 export interface ITemplateComponent {
     readonly TemplateID: string;
-    readonly Status?: RecordStatus; // if not given, = IN_SERVICE 
+    readonly Status?: RecordStatus; // if not given, = IN_SERVICE
 }
 
 // a metadata record, likely used for list
@@ -25,8 +25,7 @@ export interface IHTMLRecord extends ITemplateComponent {
 
 // a detailed record for view template
 // has to lookup info from both tables
-export interface IDetailedRecord extends IMetadataRecord, IHTMLRecord {
-}
+export interface IDetailedRecord extends IMetadataRecord, IHTMLRecord {}
 
 // a full record containing metadata, html, and images zip
 export interface ITemplateRecord extends IDetailedRecord {

@@ -2,7 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import * as cognito from '@aws-cdk/aws-cognito';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
-import { Authorizer, IdentitySource } from '@aws-cdk/aws-apigateway';
+import { Authorizer } from '@aws-cdk/aws-apigateway';
 import { TemplateService } from './services/templateService';
 import { config } from './config';
 import { EmailService } from './services/emailService';
