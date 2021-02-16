@@ -1,0 +1,11 @@
+**/node_modules
+**/package.json
+**/yarn.lock
+**/package-lock.json
+**/.eslintrc.js
+**/jest.config.js
+**/tsconfig.json
+**/.cdk.staging
+**/cdk.out
+build
+src/**/.build
