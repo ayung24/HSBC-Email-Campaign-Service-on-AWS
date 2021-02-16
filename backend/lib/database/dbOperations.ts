@@ -1,4 +1,3 @@
-import * as cdk from '@aws-cdk/core';
 import * as db from "./interfaces";
 
 export function AddMetadataEntry(data: db.IMetadataRecord): db.IDBResponse {
