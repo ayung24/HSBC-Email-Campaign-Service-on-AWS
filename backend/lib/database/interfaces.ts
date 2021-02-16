@@ -1,5 +1,3 @@
-import * as cdk from '@aws-cdk/core';
-
 // a record is either deleted or not
 export enum RecordStatus {
     IN_SERVICE = "In Service",
