@@ -1,4 +1,8 @@
-exports.handler = async function(event) {
+import { Handler } from 'aws-lambda';
+
+export const handler: Handler = async function (event) {
+    // TODO: #10
+    // stub
     console.log("request:", JSON.stringify(event, undefined, 2));
     const user = event.headers['Authorization'];
     return {
@@ -10,8 +14,8 @@ exports.handler = async function(event) {
         },
         body: JSON.stringify({
             eventPath: event.path,
-            test: "hello",
+            test: "listTemplates",
             user: user
         })
     };
-};
+}

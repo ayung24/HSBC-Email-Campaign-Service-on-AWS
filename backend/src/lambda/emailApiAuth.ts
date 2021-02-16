@@ -1,4 +1,11 @@
-exports.handler = function (event, context, callback) {
+import { APIGatewayRequestAuthorizerHandler } from "aws-lambda";
+
+export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
+    // TODO
+}
+
+/**
+export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
     console.log('Received event:', JSON.stringify(event, null, 2));
 
     // A simple request-based authorizer example to demonstrate how to use request
@@ -72,3 +79,4 @@ var generateAllow = function (principalId, resource) {
 var generateDeny = function (principalId, resource) {
     return generatePolicy(principalId, 'Deny', resource);
 };
+ */

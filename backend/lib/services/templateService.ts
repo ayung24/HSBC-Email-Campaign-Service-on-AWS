@@ -1,43 +1,40 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
+import { NodejsFunction } from 'aws-lambda-nodejs-esbuild';
 
 export class TemplateService {
 
-    private _hello: lambda.Function;
-    private _helloWorld: lambda.Function;
-    private _helloAuthenticated: lambda.Function;
+    private _upload: lambda.Function;
+    private _list: lambda.Function;
+    private _lambdaRootDir: string = 'src/lambda'
+    private _esbuildOptions = {
+        target: 'es2018',
+    }
 
     constructor(scope: cdk.Construct) {
         this._initFunctions(scope);
     }
 
     private _initFunctions(scope: cdk.Construct) {
-        this._hello = new lambda.Function(scope, 'HelloHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X,    // execution environment
-            code: lambda.Code.fromAsset('lambda'),  // code loaded from "lambda" directory
-            handler: 'hello.handler'                // file is "hello", function is "handler"
+        this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
+            runtime: lambda.Runtime.NODEJS_10_X, // execution environment
+            rootDir: this._lambdaRootDir, // code loaded from "src/lambda" directory
+            handler: 'uploadTemplates.handler',
+            esbuildOptions: this._esbuildOptions,
         });
-        this._helloWorld = new lambda.Function(scope, 'HelloWorldHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X,    // execution environment
-            code: lambda.Code.fromAsset('lambda'),  // code loaded from "lambda" directory
-            handler: 'helloWorld.handler'           // file is "helloWorld", function is "handler"
-        });
-        this._helloAuthenticated = new lambda.Function(scope, 'HelloAuthenticatedHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X,    // execution environment
-            code: lambda.Code.fromAsset('lambda'),  // code loaded from "lambda" directory
-            handler: 'helloAuthenticated.handler'   // file is "helloAuthenticated", function is "handler"
+        this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
+            runtime: lambda.Runtime.NODEJS_10_X, // execution environment
+            rootDir: this._lambdaRootDir, // code loaded from "src/lambda" directory
+            handler: 'listTemplates.handler',
+            esbuildOptions: this._esbuildOptions,
         });
     }
 
-    public hello(): lambda.Function {
-        return this._hello;
+    public uploadTemplate(): lambda.Function {
+        return this._upload;
     }
 
-    public helloWorld(): lambda.Function {
-        return this._helloWorld;
-    }
-
-    public helloAuthenticated(): lambda.Function {
-        return this._helloAuthenticated;
+    public listTemplates(): lambda.Function {
+        return this._list;
     }
 }
