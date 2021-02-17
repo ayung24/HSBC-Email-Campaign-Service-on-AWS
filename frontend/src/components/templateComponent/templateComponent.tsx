@@ -31,13 +31,14 @@ export class TemplateComponent extends React.Component {
                 for (const image of filtered) {
                     if (image.includes('data:image')) {
                         const imgData = image.slice(image.indexOf(',') + 1, image.length);
-                        images.push(imgData);
+                        const imgType = image.slice(image.indexOf('/') + 1, image.indexOf(';'));
+                        images.push([imgType, imgData]);
                     }
                 }
                 const zip = new JSZip();
                 let count = 0;
                 for (const img of images) {
-                    zip.file('images/image' + count + '.png', img, { base64: true });
+                    zip.file('images/image' + count + '.' + img[0], img[1], { base64: true });
                     count++;
                 }
                 zip.generateAsync({ type: 'blob' }).then(function (blob) {
