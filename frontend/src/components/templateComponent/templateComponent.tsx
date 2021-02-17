@@ -1,11 +1,24 @@
 import React from 'react';
 import './templateComponent.css';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
+import { TemplateService } from '../../services/templateService';
 import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 const mammoth = require('mammoth');
 
 export class TemplateComponent extends React.Component {
+    private _service: TemplateService;
+
+    constructor(props = {}) {
+        super(props);
+        this._service = new TemplateService();
+    }
+
+    // TODO: Uncomment when ready (i.e. we have a prod environment set up for the backend APIs)
+    // componentDidMount(): void {
+    //     this._service.getTemplates();
+    // }
+
     convertDocxFile(input: React.ChangeEvent<HTMLInputElement>): void {
         const files = input.target.files || [];
         if (!files.length) return;
