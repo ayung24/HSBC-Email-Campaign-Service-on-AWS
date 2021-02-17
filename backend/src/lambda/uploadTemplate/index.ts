@@ -1,7 +1,19 @@
-import { JsonSchemaType } from '@aws-cdk/aws-apigateway';
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Handler } from 'aws-lambda';
 import { v4 as uuid } from 'uuid';
-import { IUploadTemplateRequestBody } from '../types';
+import { IUploadTemplateReqBody } from '../types';
+import * as db from '../../database/dbOperations';
+import { S3Client } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { Conditions } from '@aws-sdk/s3-presigned-post/types/types';
+
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || '';
+const S3_BUCKET_KEY = process.env.S3_BUCKET_KEY || '';
+const s3 = new S3Client({});
+const postPolicy: Conditions[] = [
+    { acl: "public-read"}, 
+    {bucket: S3_BUCKET_NAME}, 
+    ['starts-with', '$key', S3_BUCKET_KEY]
+];
 
 export const handler: APIGatewayProxyHandler = async function (event: APIGatewayProxyEvent) {
     console.log('request:', JSON.stringify(event, undefined, 2));
@@ -11,13 +23,12 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
         response = {
             statusCode: 400,
             body: JSON.stringify({
-                "Message": "Invalid request format",
-                "Code": ""
+                "message": "Invalid request format",
+                "code": ""
             })
         }
     } else {
-        const body: IUploadTemplateRequestBody = JSON.parse(event.body)
-        
+        const req: IUploadTemplateReqBody = JSON.parse(event.body);
         // validate name
 
         // generate template ID
@@ -26,16 +37,26 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
         // generate & encrypt API key
 
         // store metadata to DynamoDB
+        db.AddMetadataEntry({TemplateID: templateId, Name: req.name, TimeCreated: new Date()})
 
         // create S3 pre-signed URL
+        const { url, fields } = await createPresignedPost(s3, {
+            Bucket: S3_BUCKET_NAME,
+            Key: `${S3_BUCKET_KEY}\${filename}`,
+            Conditions: postPolicy,
+            Fields: {
+                acl: "public-read",
+            },
+            Expires: 2 * 60
+        })
 
         response = {
             statusCode: 200,
             body: JSON.stringify({
-            "TemplateID": templateId,
-            "Name": body.Name,
-            "TimeCreated": "",
-            "ImageUploadURL": "", 
+            "templateId": templateId,
+            "name": req.name,
+            "timeCreated": "",
+            "imageUploadURL": url, 
         }),
     }
     }

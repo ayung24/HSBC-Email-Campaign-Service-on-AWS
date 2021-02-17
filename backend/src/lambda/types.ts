@@ -1,9 +1,11 @@
-export interface IUploadTemplateRequestBody {
-    Name: string;
-    Html: string;
+export interface IUploadTemplateReqBody {
+    name: string;
+    html: string;
 }
 
-export interface IUploadTemplateResponseBody {
-    TemplateID: string;
-    Name: string;
+export interface IUploadTemplateResBody {
+    templateId: string;
+    name: string;
+    timeCreated: string;
+    imageUploadUrl: string;
 }

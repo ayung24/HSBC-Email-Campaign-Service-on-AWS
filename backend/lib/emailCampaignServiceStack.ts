@@ -1,11 +1,10 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
-import { Authorizer } from '@aws-cdk/aws-apigateway';
 import { TemplateService } from './services/templateService';
 import { config } from './config';
 import { EmailService } from './services/emailService';
-import { NodejsFunction } from 'aws-lambda-nodejs-esbuild';
+import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs'
 
 /**
  * Main backend stack
@@ -15,8 +14,8 @@ export class EmailCampaignServiceStack extends cdk.Stack {
     private _emailService: EmailService;
 
     private _api: apiGateway.LambdaRestApi;
-    private _templateAuth: Authorizer;
-    private _emailAuth: Authorizer;
+    private _templateAuth: apiGateway.Authorizer;
+    private _emailAuth: apiGateway.Authorizer;
 
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
@@ -40,8 +39,8 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
         const apiAuth = new NodejsFunction(this, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_10_X,
-            rootDir: `${config.lambdaRoot}/emailApiAuth`,
-            esbuildOptions: {
+            entry: `${config.lambdaRoot}/emailApiAuth/index.ts`,
+            bundling: {
                 target: 'es2018',
             },
         });

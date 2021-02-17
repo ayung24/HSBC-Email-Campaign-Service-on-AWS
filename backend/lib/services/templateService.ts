@@ -1,20 +1,19 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
-import * as agw from '@aws-cdk/aws-apigateway'
+import * as agw from '@aws-cdk/aws-apigateway';
 import * as cognito from '@aws-cdk/aws-cognito';
-import { NodejsFunction } from 'aws-lambda-nodejs-esbuild';
+import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
-import { CognitoUserPoolsAuthorizer, JsonSchemaType, RestApi } from '@aws-cdk/aws-apigateway';
 
 export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
-    private _templateAuth: CognitoUserPoolsAuthorizer;
+    private _templateAuth: agw.CognitoUserPoolsAuthorizer;
     private _esbuildOptions = {
         target: 'es2018',
     };
 
-    constructor(scope: cdk.Construct, api: RestApi) {
+    constructor(scope: cdk.Construct, api: agw.RestApi) {
         this._initAuth(scope);
         this._initFunctions(scope);
         this._initPaths(scope, api)
@@ -29,21 +28,21 @@ export class TemplateService {
 
     private _initFunctions(scope: cdk.Construct) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X,
-            rootDir: `${config.lambdaRoot}/uploadTemplate`,
-            esbuildOptions: {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
+            bundling: {
                 ...this._esbuildOptions,
-                external: ['uuid']
+                nodeModules: ['uuid']
             }
         });
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
-            runtime: lambda.Runtime.NODEJS_10_X,
-            rootDir: `${config.lambdaRoot}/listTemplates`,
-            esbuildOptions: this._esbuildOptions,
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambdaRoot}/listTemplates/index.ts`,
+            bundling: this._esbuildOptions,
         });
     }
 
-    private _initPaths(scope: cdk.Construct, api: RestApi) {
+    private _initPaths(scope: cdk.Construct, api: agw.RestApi) {
         
         const uploadReqValidator = new agw.RequestValidator(scope, "UploadTemplateValidator", {
             restApi: api,
@@ -55,13 +54,13 @@ export class TemplateService {
             contentType: "application/json",
             description: "Upload template request payload",
             schema: {
-                type: JsonSchemaType.OBJECT,
+                type: agw.JsonSchemaType.OBJECT,
                 properties: {
                     name: {
-                        type: JsonSchemaType.STRING
+                        type: agw.JsonSchemaType.STRING
                     },
                     html: {
-                        type: JsonSchemaType.STRING
+                        type: agw.JsonSchemaType.STRING
                     }
                 },
                 required: ["name", "html"]
