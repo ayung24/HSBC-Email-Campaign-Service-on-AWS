@@ -7,3 +7,9 @@
 .upload-container {
     padding: 0px 100px;
 }
+
+.convert {
+    margin:10px 0px; 
+    padding:20px; 
+    border:1px solid #ddd;
+}
