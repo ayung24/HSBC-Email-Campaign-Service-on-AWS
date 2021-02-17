@@ -1,3 +1,7 @@
-export class Template {
-    constructor(public id: string, public apiKey: string, public name: string, public params: Array<string>, public uploadTime: Date) {}
+export interface Template {
+    id: string;
+    apiKey: string;
+    name: string;
+    params: Array<string>;
+    uploadTime: Date;
 }
