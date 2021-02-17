@@ -6,8 +6,8 @@ import FileSaver from 'file-saver';
 const mammoth = require('mammoth');
 
 export class TemplateComponent extends React.Component {
-    parseWordDocxFile(inputElement: any): any {
-        const files = inputElement.target.files || [];
+    convertDocxFile(input: React.ChangeEvent<HTMLInputElement>): void {
+        const files = input.target.files || [];
         if (!files.length) return;
         const file = files[0];
 
@@ -19,20 +19,22 @@ export class TemplateComponent extends React.Component {
                 if (result1) {
                     result1.innerHTML = resultObj.value;
                 }
+                const html = resultObj.value;
             });
             mammoth.convertToMarkdown({ arrayBuffer: arrayBuffer }).then(function (resultObj: any) {
                 const result2 = document.querySelector('#result2');
                 if (result2) {
                     result2.innerHTML = resultObj.value;
                 }
+                const markdown = resultObj.value;
                 const regExp = /\(([^)]+)\)/g;
-                const filtered = resultObj.value.match(regExp);
+                const allImages = markdown.match(regExp);
                 const images = [];
-                for (const image of filtered) {
+                for (const image of allImages) {
                     if (image.includes('data:image')) {
-                        const imgData = image.slice(image.indexOf(',') + 1, image.length);
-                        const imgType = image.slice(image.indexOf('/') + 1, image.indexOf(';'));
-                        images.push([imgType, imgData]);
+                        const imageData = image.slice(image.indexOf(',') + 1, image.length);
+                        const imageType = image.slice(image.indexOf('/') + 1, image.indexOf(';'));
+                        images.push([imageType, imageData]);
                     }
                 }
                 const zip = new JSZip();
@@ -42,7 +44,7 @@ export class TemplateComponent extends React.Component {
                     count++;
                 }
                 zip.generateAsync({ type: 'blob' }).then(function (blob) {
-                    FileSaver.saveAs(blob, 'image.zip');
+                    FileSaver.saveAs(blob, 'images.zip');
                 });
             });
         };
@@ -57,7 +59,7 @@ export class TemplateComponent extends React.Component {
                 </div>
                 <div className='upload-container'>
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
-                    <input type='file' onChange={this.parseWordDocxFile.bind(this)} />
+                    <input type='file' onChange={this.convertDocxFile.bind(this)} />
                 </div>
                 <div className='convert'>
                     <h3>convertToHtml</h3>
