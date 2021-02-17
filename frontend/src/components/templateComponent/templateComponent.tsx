@@ -20,15 +20,8 @@ export class TemplateComponent extends React.Component {
                     result1.innerHTML = resultObj.value;
                 }
                 const html = resultObj.value;
-            });
-            mammoth.convertToMarkdown({ arrayBuffer: arrayBuffer }).then(function (resultObj: any) {
-                const result2 = document.querySelector('#result2');
-                if (result2) {
-                    result2.innerHTML = resultObj.value;
-                }
-                const markdown = resultObj.value;
-                const regExp = /\(([^)]+)\)/g;
-                const allImages = markdown.match(regExp);
+                const regExp = /"[^"]+"/g;
+                const allImages = html.match(regExp);
                 const images = [];
                 for (const image of allImages) {
                     if (image.includes('data:image')) {
@@ -64,10 +57,6 @@ export class TemplateComponent extends React.Component {
                 <div className='convert'>
                     <h3>convertToHtml</h3>
                     <div id='result1'></div>
-                </div>
-                <div className='convert'>
-                    <h3>convertToMarkdown</h3>
-                    <div id='result2'></div>
                 </div>
             </div>
         );
