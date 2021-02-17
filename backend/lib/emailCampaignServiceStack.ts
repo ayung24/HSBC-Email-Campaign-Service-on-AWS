@@ -1,5 +1,4 @@
 import * as cdk from '@aws-cdk/core';
-import * as cognito from '@aws-cdk/aws-cognito';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import { Authorizer } from '@aws-cdk/aws-apigateway';
@@ -21,11 +20,12 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
-        this._templateService = new TemplateService(this);
 
         this._initApi();
         this._initAuth();
-        this._initPaths();
+
+        this._templateService = new TemplateService(this, this._api);
+        //this._initPaths();
     }
 
     private _initApi(): void {
@@ -37,10 +37,6 @@ export class EmailCampaignServiceStack extends cdk.Stack {
     }
 
     private _initAuth(): void {
-        const userPool = cognito.UserPool.fromUserPoolId(this, 'UserPool', config.cognito.USER_POOL_ID);
-        this._templateAuth = new apiGateway.CognitoUserPoolsAuthorizer(this, 'templateAuthorizer', {
-            cognitoUserPools: [userPool],
-        });
 
         const apiAuth = new NodejsFunction(this, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_10_X,
