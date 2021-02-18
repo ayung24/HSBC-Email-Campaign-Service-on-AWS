@@ -1,15 +1,14 @@
 import { JsonSchemaType } from '@aws-cdk/aws-apigateway';
 import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Handler } from 'aws-lambda';
 import { v4 as uuid } from 'uuid';
+import { config } from '../../../lib/config';
 import { IUploadTemplateRequestBody } from '../types';
 
 async function mySecrets(): Promise<string> {
     // Load the AWS SDK
     var AWS = require('aws-sdk'),
-        region = "ca-central-1",
-        secretName = "API_Key_Secret",
-        secret,
-        decodedBinarySecret;
+        region = config.secretsManager.REGION,
+        secretName = config.secretsManager.SECRET_NAME;
 
     // Create a Secrets Manager client
     var client = new AWS.SecretsManager({
