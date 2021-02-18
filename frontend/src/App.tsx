@@ -6,6 +6,7 @@ import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import { TemplateComponent } from './components/templateComponent/templateComponent';
 import { AuthenticationComponent } from './components/loginComponent/authenticationComponent';
 import { HeaderComponent } from './components/headerComponent/headerComponent';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 Amplify.configure(awsAuthConfiguration);
 

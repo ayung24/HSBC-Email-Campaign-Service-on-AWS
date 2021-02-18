@@ -1,4 +1,5 @@
 import { Handler } from 'aws-lambda';
+import { v4 as uuid } from 'uuid';
 
 export const handler: Handler = async function (event) {
     // TODO: #9
