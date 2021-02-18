@@ -2,6 +2,7 @@ import React from 'react';
 import './templateComponent.css';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { TemplateService } from '../../services/templateService';
+import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
 
 export class TemplateComponent extends React.Component {
     private _service: TemplateService;
@@ -25,6 +26,9 @@ export class TemplateComponent extends React.Component {
                 <div className='upload-container'>
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
                     <input type='file' />
+                </div>
+                <div className='template-container'>
+                    <TemplateGridComponent />
                 </div>
             </div>
         );
