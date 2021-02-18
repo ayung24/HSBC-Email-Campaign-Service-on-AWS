@@ -1,10 +1,35 @@
 import { Handler } from 'aws-lambda';
+const AWS = require('aws-sdk');
+AWS.config.update({region: `eu-west-2`});
+const db = new AWS.DynamoDB.DocumentClient({region: 'TEMPORARY'});
 
 export const handler: Handler = async function (event) {
     // TODO: #10
     // stub
     console.log('request:', JSON.stringify(event, undefined, 2));
     const user = event.headers['Authorization'];
+
+    // get items from start to start + limit
+    const params = {
+        TableName: 'TABLE NAME HERE',
+        Start: event['start'],
+        Limit: event['limit']
+    };
+
+    return db.query({
+        TableName: 'talk_stem.words',
+        KeyConditionExpression: '#index BETWEEN :indexLow AND :indexHigh',
+        ExpressionAttributeNames: {
+            '#id': 'id',
+            '#index': 'index',
+        },
+        ExpressionAttributeValues: {
+            ':indexLow': params.Start,
+            ':indexHigh': params.Limit,
+        },
+    }).promise();
+
+
     return {
         statusCode: 200,
         headers: {
