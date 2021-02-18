@@ -17,7 +17,7 @@ export const handler: Handler = async function (event) {
     };
 
     return db.query({
-        TableName: 'talk_stem.words',
+        TableName: 'TABLE NAME HERE',
         KeyConditionExpression: '#index BETWEEN :indexLow AND :indexHigh',
         ExpressionAttributeNames: {
             '#id': 'id',
