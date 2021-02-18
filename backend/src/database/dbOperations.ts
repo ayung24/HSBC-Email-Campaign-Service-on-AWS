@@ -14,7 +14,7 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<{status: db.
     return Promise.resolve({status: { succeeded: false, info: `Not implemented`}});
 }
 
-export function GetMetadataByName(name: string): Promise<{status: db.IDBResponse, metadata?: db.IMetadataEntry}> {
+export function GetMetadataByName(name: string): Promise<{status: db.IDBResponse, metadataList?: db.IMetadataEntry[]}> {
     return Promise.resolve({status: { succeeded: false, info: `Not implemented`}});
 }
 
