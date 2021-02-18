@@ -28,6 +28,9 @@ export class TemplateService {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
+            bundling: {
+                externalModules: ['uuid']
+            }
         });
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
