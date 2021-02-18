@@ -1,7 +1,8 @@
 import { Handler } from 'aws-lambda';
 const AWS = require('aws-sdk');
-AWS.config.update({region: `eu-west-2`});
-const db = new AWS.DynamoDB.DocumentClient({region: 'TEMPORARY'});
+// CHECK THE SERVER 
+AWS.config.update({region: `us-east-2`});
+const db = new AWS.DynamoDB.DocumentClient({region: 'us-east-2'});
 
 export const handler: Handler = async function (event) {
     // TODO: #10
@@ -11,13 +12,13 @@ export const handler: Handler = async function (event) {
 
     // get items from start to start + limit
     const params = {
-        TableName: 'TABLE NAME HERE',
+        TableName: 'metadataTable',
         Start: event['start'],
         Limit: event['limit']
     };
 
     return db.query({
-        TableName: 'TABLE NAME HERE',
+        TableName: 'metadataTable',
         KeyConditionExpression: '#index BETWEEN :indexLow AND :indexHigh',
         ExpressionAttributeNames: {
             '#id': 'id',
