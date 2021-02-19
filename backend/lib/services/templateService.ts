@@ -5,6 +5,7 @@ import { UserPool } from '@aws-cdk/aws-cognito'
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
 
 export class TemplateService {
     private _metadata: dynamodb.Table;
@@ -36,7 +37,7 @@ export class TemplateService {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // todo, persist tables
         });
         // query by name
         this._metadata.addGlobalSecondaryIndex({
@@ -54,7 +55,7 @@ export class TemplateService {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // todo, persist tables
         });
 
         // const csv = new dynamodb.Table(scope, 'metadataPartition', {
