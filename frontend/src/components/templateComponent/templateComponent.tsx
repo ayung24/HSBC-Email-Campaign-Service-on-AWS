@@ -1,5 +1,4 @@
 import React from 'react';
-import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
 import { TemplateService } from '../../services/templateService';
 import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
@@ -8,7 +7,7 @@ import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
-    private _service: TemplateService;
+    private _templateService: TemplateService;
     private _toastMessages: Array<ToastInterfaces> = [];
     private readonly _toastComponent: React.RefObject<ToastComponent>;
 
@@ -16,18 +15,14 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
         super(props);
         this._toastComponent = React.createRef();
         this.state = { properties: this._toastMessages };
-        this._service = new TemplateService();
+        this._templateService = new TemplateService();
     }
 
-    // TODO: Uncomment when ready (i.e. we have a prod environment set up for the backend APIs)
-    // componentDidMount(): void {
-    //     this._service.getTemplates();
-    // }
-
+    // TODO: Move to upload component
     private _handleUpload(input: React.ChangeEvent<HTMLInputElement>): void {
         const files = input.target.files || [];
         const file = files[0];
-        this._service._parseDocx(file);
+        this._templateService.parseDocx(file);
     }
 
     private _addToast(toast: ToastInterfaces): void {
@@ -47,9 +42,6 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
     render(): JSX.Element {
         return (
             <div className='template-component'>
-                <div className='signout'>
-                    <AmplifySignOut />
-                </div>
                 <div className='upload-container'>
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
                     <input type='file' onChange={this._handleUpload.bind(this)} />

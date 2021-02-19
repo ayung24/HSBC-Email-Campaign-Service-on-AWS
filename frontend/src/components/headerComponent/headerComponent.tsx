@@ -8,7 +8,7 @@ export class HeaderComponent extends React.Component {
         return (
             <div className='header'>
                 <div className='header-logo'>
-                    <img src={hsbcLogo} alt='HSBC' height='25px' />
+                    <img src={hsbcLogo} alt='HSBC' height='35px' />
                 </div>
                 <div className='header-desc'>
                     <div className='header-desc-title'>

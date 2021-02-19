@@ -11,9 +11,9 @@ export class TemplateService {
         this._requestService = new RequestService();
     }
 
-    public getTemplates(): Promise<any> {
-        // Temp
-        return new Promise<any>(resolve => {
+    public getTemplates(): Promise<Array<TemplateDisplay>> {
+        // TODO: Call backend
+        return new Promise<Array<TemplateDisplay>>(resolve => {
             // Returns an error
             // throw new Error('error');
             // Returns list
@@ -55,7 +55,7 @@ export class TemplateService {
         });
     }
 
-    public _parseDocx(docx: File): [images: string[], html: string] {
+    public parseDocx(docx: File): [images: string[], html: string] {
         let html = '';
         const images: any[] = [];
         const file = docx;

@@ -9,7 +9,7 @@
 }
 
 .header-logo {
-    padding: 2vh 10vw;
+    padding: 2vh 2vw;
 }
 
 .header-desc {
@@ -28,4 +28,14 @@
     letter-spacing: 5px;
     color: black;
     font-weight: 150;
+}
+
+.signout {
+    background-color: #626469;
+    text-align: end;
+}
+
+.logout-button.btn.btn-primary.btn-sm {
+    background-color: #db0011;
+    border-color: #db0011;
 }

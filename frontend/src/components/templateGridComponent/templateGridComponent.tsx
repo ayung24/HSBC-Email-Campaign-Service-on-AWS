@@ -5,7 +5,7 @@ import { TemplateService } from '../../services/templateService';
 import { ToastFunctionProperties, ToastInterfaces, ToastType } from '../../models/toastInterfaces';
 import { TemplateDisplay } from '../../models/templateDisplay';
 
-export class TemplateGridComponent extends React.Component<ToastFunctionProperties, { templates: [] }> {
+export class TemplateGridComponent extends React.Component<ToastFunctionProperties, { templates: JSX.Element[] }> {
     private _templateService: TemplateService;
     private _addToast: (t: ToastInterfaces) => void;
 
