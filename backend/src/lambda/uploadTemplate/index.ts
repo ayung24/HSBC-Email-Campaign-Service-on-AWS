@@ -1,4 +1,4 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, APIGatewayProxyResult, Handler } from 'aws-lambda';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 import { IUploadTemplateReqBody } from '../types';
 import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
@@ -22,7 +22,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     const s3 = new S3Client({});
     return createPresignedPost(s3, {
         Bucket: S3_BUCKET_NAME,
-        Key: `${S3_BUCKET_KEY}/${key}`,
+        Key: `${S3_BUCKET_NAME}/${key}`,
         Conditions: postPolicy,
         Fields: {
             acl: "bucket-owner-full-control",
@@ -31,8 +31,20 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     })
 }
 
-export const handler: APIGatewayProxyHandler = async function (event: APIGatewayProxyEvent) {
+const parseDynamicFields = function (html: string): string[] {
+    let regex = new RegExp(/\${(.*?)}/gm);
+    let matches = regex.exec(html);
+    let fields = [];
+    while (matches) {
+        fields.push(matches[1])
+        matches = regex.exec(html);
+    }
+    return fields;
+}
+
+export const handler = async function (event: APIGatewayProxyEvent) {
     const user = event.headers['Authorization'];
+    console.log(user);
     if (!event.body) {
         return {
             headers,
@@ -47,7 +59,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     const req: IUploadTemplateReqBody = JSON.parse(event.body);
     
     // 1. validate name
-    const nameExists = (await db.GetMetadataByID(req.name)).status.succeeded;
+    const nameExists = (await db.GetMetadataByName(req.name)).status.succeeded;
     if (nameExists) {
         return {
             headers,
@@ -77,7 +89,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     // 4. store HTML to DynamoDB
     const addHtml = (await db.AddHTMLEntry({
         html: req.html,
-        fieldNames: [] as string[],
+        fieldNames: parseDynamicFields(req.html),
         apiKey: '',
         templateID: metadata.templateID
     })).status

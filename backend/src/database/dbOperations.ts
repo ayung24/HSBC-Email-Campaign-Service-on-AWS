@@ -1,4 +1,3 @@
-import { promises } from 'dns';
 import * as db from './interfaces';
 
 export function AddMetadataEntry(name: string): Promise<{status: db.IDBResponse, metadata?: db.IMetadataEntry}> {
