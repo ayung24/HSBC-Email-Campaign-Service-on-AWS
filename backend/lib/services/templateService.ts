@@ -15,6 +15,8 @@ export class TemplateService {
         target: 'es2018',
     };
 
+    private readonly DEBUG: boolean = true;
+
     constructor(scope: cdk.Construct) {
         this._initDynamo(scope);
         this._initFunctions(scope);
@@ -28,8 +30,9 @@ export class TemplateService {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: this.DEBUG ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
         });
+        
         // query by name
         this._metadata.addGlobalSecondaryIndex({
             indexName: 'name-index',
@@ -41,12 +44,12 @@ export class TemplateService {
             projectionType: dynamodb.ProjectionType.ALL,
         })
 
-        // >> init html table
+        // init html table
         this._html = new dynamodb.Table(scope, 'html', {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: this.DEBUG ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
         });
 
         // const csv = new dynamodb.Table(scope, 'metadataPartition', {
@@ -61,6 +64,7 @@ export class TemplateService {
             rootDir: `${config.lambdaRoot}/uploadTemplate`,
             esbuildOptions: this._esbuildOptions,
         });
+        
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_10_X,
             rootDir: `${config.lambdaRoot}/listTemplates`,
