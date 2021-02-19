@@ -2,13 +2,13 @@ import React from 'react';
 import { AmplifySignOut } from '@aws-amplify/ui-react';
 import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
 import { TemplateService } from '../../services/templateService';
-import JSZip from 'jszip';
-import FileSaver from 'file-saver';
-const mammoth = require('mammoth');
 import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
 import { ToastComponentProperties, ToastInterfaces } from '../../models/toastInterfaces';
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
+import JSZip from 'jszip';
+import FileSaver from 'file-saver';
+const mammoth = require('mammoth');
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
     private _service: TemplateService;
@@ -27,7 +27,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
     //     this._service.getTemplates();
     // }
 
-    convertDocxFile(input: React.ChangeEvent<HTMLInputElement>): void {
+    private convertDocxFile(input: React.ChangeEvent<HTMLInputElement>): void {
         const files = input.target.files || [];
         if (!files.length) return;
         const file = files[0];
@@ -57,14 +57,14 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                     zip.file('images/image' + count + '.' + img[0], img[1], { base64: true });
                     count++;
                 }
-                zip.generateAsync({ type: 'blob' }).then(function (blob) {
+                zip.generateAsync({ type: 'blob' }).then(function (blob: any) {
                     FileSaver.saveAs(blob, 'images.zip');
                 });
             });
         };
         reader.readAsArrayBuffer(file);
     }
-    
+
     private _addToast(toast: ToastInterfaces): void {
         if (!this._toastMessages.some(messages => messages.id === toast.id)) {
             this._toastMessages.push(toast);
