@@ -1,15 +1,10 @@
 import * as db from './dbOperations';
-import { IDBResponse } from './interfaces';
+import { IDBResponse, IMetadataEntry } from './interfaces';
 
 export const handler = async (event: any = {}): Promise<any> => {
     // body of some lambda handler
-    const operationResponse: IDBResponse = db.AddMetadataEntry({
-        TemplateID: 'test12345',
-        Name: 'test',
-        TimeCreated: new Date(),
-        // Status: RecordStatus.IN_SERVICE // default
+    return db.AddMetadataEntry('test').then((result) => {
+        console.log(`add succeeded?: ${result.status.succeeded},
+        info: ${result.status.info}`);
     });
-
-    console.log(`add succeeded?: ${operationResponse.Succeeded},
-        info: ${operationResponse.Info}`);
 };
