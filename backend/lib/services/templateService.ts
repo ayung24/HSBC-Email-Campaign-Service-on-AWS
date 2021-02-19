@@ -7,11 +7,15 @@ import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 
 export class TemplateService {
+    private _metadata: dynamodb.Table;
+    private _html: dynamodb.Table;
+
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
 
     constructor(scope: cdk.Construct, api: agw.RestApi) {
+        this._initDynamo(scope);
         this._initFunctions(scope);
         this._initAuth(scope);
         this._initPaths(api)
@@ -22,6 +26,41 @@ export class TemplateService {
         this._authorizer = new agw.CognitoUserPoolsAuthorizer(scope, 'TemplateAuthorizer', {
             cognitoUserPools: [userPool],
         });
+    }
+
+    private _initDynamo(scope: cdk.Construct) {
+        // >> init metadata table
+        // combined timestamp and status sort key
+        const metaDataSortKey = { name: 'timeAndStatus', type: dynamodb.AttributeType.STRING };
+        this._metadata = new dynamodb.Table(scope, 'metadata', {
+            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
+            sortKey: metaDataSortKey,
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+        });
+        // query by name
+        this._metadata.addGlobalSecondaryIndex({
+            indexName: 'name-index',
+            partitionKey: {
+                name: 'name',
+                type: dynamodb.AttributeType.STRING,
+            },
+            sortKey: metaDataSortKey,
+            projectionType: dynamodb.ProjectionType.ALL,
+        })
+
+        // >> init html table
+        this._html = new dynamodb.Table(scope, 'html', {
+            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+        });
+
+        // const csv = new dynamodb.Table(scope, 'metadataPartition', {
+        //     partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
+        //     billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
+        // });
     }
 
     private _initFunctions(scope: cdk.Construct) {
