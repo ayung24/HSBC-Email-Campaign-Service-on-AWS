@@ -14,7 +14,7 @@ export class TemplateService {
         return this._requestService.GET('/helloWorld');
     }
 
-    public parseDocx(docx: File): [images: string[], html: string] {
+    public _parseDocx(docx: File): [images: string[], html: string] {
         let html = '';
         const images: any[] = [];
         const file = docx;
@@ -23,10 +23,11 @@ export class TemplateService {
         reader.onloadend = function () {
             const arrayBuffer = reader.result;
             mammoth.convertToHtml({ arrayBuffer: arrayBuffer }).then(function (resultObj: any) {
-                const parsed = resultObj.value;
                 html = resultObj.value;
-                const regExp = /"[^"]+"/g;
-                const allImages = parsed.match(regExp);
+                const imageRegExp = /"[^"]+"/g;
+                const allImages = html.match(imageRegExp) || '';
+
+                // image format is "data:image/{imageType};base64, {imageData}"
                 for (const image of allImages) {
                     if (image.includes('data:image')) {
                         const imageData = image.slice(image.indexOf(',') + 1, image.length);

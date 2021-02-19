@@ -24,6 +24,12 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
     //     this._service.getTemplates();
     // }
 
+    private _handleUpload(input: React.ChangeEvent<HTMLInputElement>): void {
+        const files = input.target.files || [];
+        const file = files[0];
+        this._service._parseDocx(file);
+    }
+
     private _addToast(toast: ToastInterfaces): void {
         if (!this._toastMessages.some(messages => messages.id === toast.id)) {
             this._toastMessages.push(toast);
@@ -46,6 +52,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                 </div>
                 <div className='upload-container'>
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
+                    <input type='file' onChange={this._handleUpload.bind(this)} />
                 </div>
                 <TemplateGridComponent addToast={this._addToast.bind(this)} />
                 <ViewTemplateModalComponent addToast={this._addToast.bind(this)} />
