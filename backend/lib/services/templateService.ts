@@ -10,9 +10,11 @@ import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 
 export class TemplateService {
     private readonly DEBUG: boolean = true;
+    private readonly PARTITION_KEY = 'templateId';
 
     private _metadata: dynamodb.Table;
     private _html: dynamodb.Table;
+    private _testdb: lambda.Function;
 
     private _upload: lambda.Function;
     private _list: lambda.Function;
@@ -22,7 +24,10 @@ export class TemplateService {
         this._initDynamo(scope);
         this._initFunctions(scope);
         this._initAuth(scope);
-        this._initPaths(api)
+        this._initPaths(api);
+
+        if (this.DEBUG)
+            this._initDebug(scope, api);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -33,33 +38,44 @@ export class TemplateService {
     }
 
     private _initDynamo(scope: cdk.Construct) {
-        let determinedRemovalPolicy =  this.DEBUG ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY
+        let determinedRemovalPolicy = this.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN
 
         // >> init metadata table
-        // combined timestamp and status sort key
-        const metaDataSortKey = { name: 'timeAndStatus', type: dynamodb.AttributeType.STRING };
+        // status sort key
+        const metaDataSortKey = { name: 'timeCreated', type: dynamodb.AttributeType.NUMBER};
         this._metadata = new dynamodb.Table(scope, 'metadata', {
-            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
+            partitionKey: { name: this.PARTITION_KEY, type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: determinedRemovalPolicy,
         });
-        
+
         // query by name
         this._metadata.addGlobalSecondaryIndex({
             indexName: 'name-index',
             partitionKey: {
-                name: 'name',
+                name: 'templateName',
                 type: dynamodb.AttributeType.STRING,
             },
             sortKey: metaDataSortKey,
             projectionType: dynamodb.ProjectionType.ALL,
-        })
+        });
+
+        // query by status
+        this._metadata.addGlobalSecondaryIndex({
+            indexName: 'status-index',
+            partitionKey: {
+                name: 'templateStatus',
+                type: dynamodb.AttributeType.STRING,
+            },
+            sortKey: metaDataSortKey,
+            projectionType: dynamodb.ProjectionType.ALL,
+        });
 
         // init html table
         this._html = new dynamodb.Table(scope, 'html', {
-            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
-            sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+            partitionKey: { name: this.PARTITION_KEY, type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'templateStatus', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: determinedRemovalPolicy,
         });
@@ -75,13 +91,25 @@ export class TemplateService {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
             bundling: {
-                externalModules: ['uuid']
-            }
+                externalModules: ['database', 'uuid']
+            },
+            environment: {
+                METADATA_TABLE_NAME: this._metadata.tableName,
+                HTML_TABLE_NAME: this._html.tableName,
+                PARTITION_KEY: this.PARTITION_KEY,
+            },
         });
-        
+
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/listTemplates/index.ts`,
+            bundling: {
+                externalModules: ['database']
+            },
+            environment: {
+                METADATA_TABLE_NAME: this._metadata.tableName,
+                PARTITION_KEY: this.PARTITION_KEY,
+            },
         });
     }
 
@@ -96,5 +124,40 @@ export class TemplateService {
 
         templatesResource.addMethod('POST', uploadIntegration, { authorizer: this._authorizer });
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
+
+
+    }
+
+    // TODO: delete this
+    private _initDebug(scope: cdk.Construct, api: agw.RestApi) {
+        // const lambdaARole = new iam.Role(scope, 'LambdaRole', {
+        //     assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+        // });
+
+        // lambdaARole.addManagedPolicy(
+        //     iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonDynamoDBFullAccess')
+        // );
+
+        this._testdb = new NodejsFunction(scope, 'TestDBHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambdaRoot}/databaseTest/index.ts`,
+            bundling: {
+                externalModules: ['aws-sdk']
+            },
+            environment: {
+                METADATA_TABLE_NAME: this._metadata.tableName,
+                HTML_TABLE_NAME: this._html.tableName,
+                PARTITION_KEY: this.PARTITION_KEY,
+            },
+            // role: lambdaARole,
+        });
+
+        // this doesn't work
+        this._metadata.grantReadWriteData(this._testdb);
+        this._html.grantReadWriteData(this._testdb);
+
+        const testResource = api.root.addResource('TestDB')
+        const testIntegration = new agw.LambdaIntegration(this._testdb);
+        testResource.addMethod('GET', testIntegration);
     }
 }

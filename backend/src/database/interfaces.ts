@@ -4,10 +4,16 @@ export enum EntryStatus {
     DELETED = 'Deleted',
 }
 
+// what the tables are called in the environment
+export enum TableName {
+    METADATA = 'metadata',
+    HTML = 'html,'
+}
+
 // metadata Entries and html Entries have/share ID and status
 export interface ITemplateComponent {
-    readonly templateID: string;
-    readonly status?: EntryStatus; // if not given, = IN_SERVICE
+    readonly templateId: string;
+    readonly status: EntryStatus;
 }
 
 // a metadata Entry, likely used for list
