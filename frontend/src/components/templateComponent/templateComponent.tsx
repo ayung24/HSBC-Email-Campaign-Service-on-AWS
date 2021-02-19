@@ -67,10 +67,6 @@ export class TemplateComponent extends React.Component {
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
                     <input type='file' onChange={this.convertDocxFile.bind(this)} />
                 </div>
-                <div className='convert'>
-                    <h3>convertToHtml</h3>
-                    <div id='result1'></div>
-                </div>
             </div>
         );
     }
