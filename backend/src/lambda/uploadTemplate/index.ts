@@ -6,16 +6,15 @@ import { IUploadTemplateRequestBody } from '../types';
 
 async function mySecrets(): Promise<string> {
     // Load the AWS SDK
-    var AWS = require('aws-sdk'),
-        region = config.secretsManager.REGION,
+    const AWS = require('aws-sdk'),
         secretName = config.secretsManager.SECRET_NAME;
 
     // Create a Secrets Manager client
-    var client = new AWS.SecretsManager({
-        region: region
+    const client = new AWS.SecretsManager({
+        region: config.secretsManager.REGION
     });
 
-    return new Promise((resolve,reject)=>{
+    return new Promise((resolve,reject) => {
         client.getSecretValue({SecretId: secretName}, function(err: any, data: any) {
 
             // In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
@@ -47,7 +46,7 @@ async function generateEncryptedApiKey(): Promise<string> {
 
     const secretValue: string = await mySecrets();
     const cryptr = new Cryptr(secretValue);
-    const encryptedApiKey:string = cryptr.encrypt(apiKey);
+    const encryptedApiKey: string = cryptr.encrypt(apiKey);
 
     return encryptedApiKey;
 }
