@@ -2,36 +2,32 @@ import { Handler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import * as dbDefinitions from '../../database/interfaces';
 
-// const AWS = require('aws-sdk');
-// AWS.config.update({ region: 'ca-central-1' });
-
 function test() {
-    const testid = 'test0'
-    let resultEntry: dbDefinitions.IMetadataEntry;
+    const testName = 'test0'
     let start = new Date();
     let end: Date;
 
-    let final:any = {};
-    return db.AddTemplate(testid, 'html', ['f1'], 'key').then((d) => {
-        final.i = 0;
+    let report:any = {};
+    return db.AddTemplate(testName, 'html', ['f1'], 'key').then((d) => {
+        report.i = 0;
         return db.GetEntryByID(d.templateId, dbDefinitions.TableName.METADATA);
-    }).then((entry: dbDefinitions.IMetadataEntry) => {
-        resultEntry = entry;
-        final.i = 1;
-        return db.AddTemplate(testid + 2, 'html', ['f1'], 'key')
-    }).then((d) => {
+    }).then((entry) => {
+        report.first = entry;
+        report.i = 1;
+        return db.AddTemplate(testName + 2, 'html', ['f1'], 'key')
+    }).then(() => {
         end = new Date();
-        final.i = 2;
-        return db.AddTemplate(testid + 3, 'html', ['f1'], 'key')
-    }).then((d) => {
-        final.i = 3;
+        report.i = 2;
+        return db.AddTemplate(testName + 3, 'html', ['f1'], 'key')
+    }).then(() => {
+        report.i = 3;
         return db.ListMetadataByDate(start, end);
-    }).then((ds) => {
-        final.list = {list: ds, first: resultEntry}
-        return final;
+    }).then((listResponse) => {
+        report.list = listResponse;
+        return report;
     }).catch((err) => {
-        final.err = err;
-        return final;
+        report.err = err;
+        return report;
     });
 }
 

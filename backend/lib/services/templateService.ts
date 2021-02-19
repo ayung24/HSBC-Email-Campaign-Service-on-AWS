@@ -91,7 +91,7 @@ export class TemplateService {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
             bundling: {
-                externalModules: ['database', 'uuid']
+                externalModules: ['uuid']
             },
             environment: {
                 METADATA_TABLE_NAME: this._metadata.tableName,
@@ -99,18 +99,18 @@ export class TemplateService {
                 PARTITION_KEY: this.PARTITION_KEY,
             },
         });
+        this._metadata.grantReadWriteData(this._upload);
+        this._html.grantReadWriteData(this._upload);
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/listTemplates/index.ts`,
-            bundling: {
-                externalModules: ['database']
-            },
             environment: {
                 METADATA_TABLE_NAME: this._metadata.tableName,
                 PARTITION_KEY: this.PARTITION_KEY,
             },
         });
+        this._metadata.grantReadWriteData(this._list);
     }
 
     /**
@@ -130,29 +130,17 @@ export class TemplateService {
 
     // TODO: delete this
     private _initDebug(scope: cdk.Construct, api: agw.RestApi) {
-        // const lambdaARole = new iam.Role(scope, 'LambdaRole', {
-        //     assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-        // });
-
-        // lambdaARole.addManagedPolicy(
-        //     iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonDynamoDBFullAccess')
-        // );
 
         this._testdb = new NodejsFunction(scope, 'TestDBHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/databaseTest/index.ts`,
-            bundling: {
-                externalModules: ['aws-sdk']
-            },
             environment: {
                 METADATA_TABLE_NAME: this._metadata.tableName,
                 HTML_TABLE_NAME: this._html.tableName,
                 PARTITION_KEY: this.PARTITION_KEY,
             },
-            // role: lambdaARole,
         });
 
-        // this doesn't work
         this._metadata.grantReadWriteData(this._testdb);
         this._html.grantReadWriteData(this._testdb);
 
