@@ -9,8 +9,6 @@ export class TemplateService {
     }
 
     public getTemplates(): Promise<any> {
-        // return this._requestService.GET('/helloWorld');
-
         // Temp
         return new Promise<any>(resolve => {
             // Returns an error
