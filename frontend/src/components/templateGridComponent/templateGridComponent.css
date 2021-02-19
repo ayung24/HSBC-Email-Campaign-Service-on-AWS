@@ -10,18 +10,12 @@
 }
 
 th {
-    border-style: solid none solid none;
-    padding: 12px 15px 12px 15px;
     font-size: 24px;
     background-color: #F0EFF0;
-    text-align: left;
 }
 
 td {
-    border-style: none none solid none;
-    padding: 10px 15px 10px 15px;
     font-size: 18px;
-    border-color: #F0EFF0;
 }
 
 .name {

@@ -31,6 +31,11 @@ module.exports = {
       project: './tsconfig.json',
     },
     rules: {
-        // additional rules if needed
+        "prettier/prettier": [
+            "error",
+            {
+                "endOfLine": "auto"
+            },
+        ],
     },
   };
