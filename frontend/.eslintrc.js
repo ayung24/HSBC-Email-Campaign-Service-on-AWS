@@ -32,5 +32,6 @@ module.exports = {
     },
     rules: {
         // additional rules if needed
+        '@typescript-eslint/no-var-requires': 0
     },
   };
