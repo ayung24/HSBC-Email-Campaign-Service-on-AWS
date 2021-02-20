@@ -15,7 +15,7 @@ export class EmailService {
     private _initAuth(scope: cdk.Construct) {
         const apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/emailApiAuth/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/emailApiAuth/index.ts`,
         });
 
         // TODO: Uncomment when implementing send

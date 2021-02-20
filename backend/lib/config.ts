@@ -8,14 +8,14 @@ export const config = {
     lambda: {
         LAMBDA_ROOT: 'src/lambda',
     },
-    secretsManager:{
-        REGION: "ca-central-1",
-        SECRET_NAME: "API_Key_Secret",
+    secretsManager: {
+        REGION: 'ca-central-1',
+        SECRET_NAME: 'API_Key_Secret',
     },
-    dynamo: { 
-        apiVersion: '2019.11. 21'
+    dynamo: {
+        apiVersion: '2019.11. 21',
     },
-    s3: { 
-        PRESIGNED_URL_EXPIRY: '600'
-    }
+    s3: {
+        PRESIGNED_URL_EXPIRY: '600',
+    },
 };
