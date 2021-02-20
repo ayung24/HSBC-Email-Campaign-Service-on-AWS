@@ -7,7 +7,7 @@ export enum EntryStatus {
 // what the tables are called in the environment
 export enum TableName {
     METADATA = 'metadata',
-    HTML = 'html,'
+    HTML = 'html',
 }
 
 // metadata Entries and html Entries have/share ID and status
