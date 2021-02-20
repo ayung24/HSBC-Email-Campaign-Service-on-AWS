@@ -30,7 +30,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
         Fields: {
             acl: 'bucket-owner-full-control',
         },
-        Expires: PRESIGNED_URL_EXPIRY ? null : Number.parseInt(PRESIGNED_URL_EXPIRY),
+        Expires: PRESIGNED_URL_EXPIRY ? Number.parseInt(PRESIGNED_URL_EXPIRY) : null,
     });
 };
 
