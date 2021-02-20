@@ -46,10 +46,12 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                     <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
                     <input type='file' onChange={this._handleUpload.bind(this)} />
                 </div>
+                <div className='template-component'>
+                    <ViewTemplateModalComponent addToast={this._addToast.bind(this)} />
+                </div>
                 <div className='template-container'>
                     <TemplateGridComponent addToast={this._addToast.bind(this)} />
                 </div>
-                <ViewTemplateModalComponent addToast={this._addToast.bind(this)} />
                 <ToastComponent ref={this._toastComponent} properties={this.state.properties} removeToast={this._removeToast.bind(this)} />
             </div>
         );

@@ -1,0 +1,26 @@
+.modal-dialog {
+    height:100%;
+    width:100% !important;
+    float: right;
+}
+
+.modal-content {
+    height: 100%;
+}
+
+.modal-footer {
+    justify-content: flex-start !important;
+}
+
+.nav-tabs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.nav-link {
+    width: 50%;
+    text-align: center;
+}
