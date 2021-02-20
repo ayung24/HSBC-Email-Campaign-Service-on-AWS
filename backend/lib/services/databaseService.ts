@@ -89,7 +89,7 @@ export class Database extends cdk.Construct {
     }
 
     private _initBucket(scope: cdk.Construct) {
-        this._imageBucket = new Bucket(scope, 'TemplateImgBucket', {
+        this._imageBucket = new Bucket(scope, 'ImageBucket', {
             versioned: false,
             encryption: BucketEncryption.UNENCRYPTED,
             publicReadAccess: false,
@@ -108,20 +108,11 @@ export class Database extends cdk.Construct {
         });
     }
 
-    private _tryAddConfig(lambda: lambda.Function) {
-        if (this._linkedLambdas[lambda.functionName] !== undefined) {
-            this._linkedLambdas[lambda.functionName] = true; // mark as linked
-            lambda.addEnvironment('dynamoApiVersion', config.dynamo.apiVersion);
-        }
-    }
-
     public AssignMetadataTable(lambda: lambda.Function): void {
-        this._tryAddConfig(lambda);
         this._metadata.grantReadWriteData(lambda);
     }
 
     public AssignHTMLTable(lambda: lambda.Function): void {
-        this._tryAddConfig(lambda);
         this._html.grantReadWriteData(lambda);
     }
 
@@ -129,7 +120,12 @@ export class Database extends cdk.Construct {
     public InitDebug(scope: cdk.Construct, api: agw.RestApi) {
         const testdb = new NodejsFunction(scope, 'TestDBHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/databaseTest/index.ts`,
+            entry: `${config.lambdaRoot}/databaseLambda/index.ts`,
+            environment: {
+                METADATA_TABLE_NAME: this._metadata.tableName,
+                HTML_TABLE_NAME: this._html.tableName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            }
         });
         this.AssignMetadataTable(testdb);
         this.AssignHTMLTable(testdb);

@@ -2,7 +2,6 @@ import * as cdk from '@aws-cdk/core';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import { TemplateService } from './services/templateService';
 import { EmailService } from './services/emailService';
-import { DataStore } from './dataStore';
 import { Database as Database } from './services/databaseService';
 
 /**
@@ -12,14 +11,11 @@ export class EmailCampaignServiceStack extends cdk.Stack {
     private _databaseService: Database;
     private _templateService: TemplateService;
     private _emailService: EmailService;
-    private _dataStore: DataStore;
 
     private _api: apiGateway.RestApi;
 
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
-
-        this._dataStore = new DataStore(this, 'DataStore');
 
         this._initApi();
 

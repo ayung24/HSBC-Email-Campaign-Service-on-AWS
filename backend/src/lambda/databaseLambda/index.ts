@@ -1,6 +1,5 @@
 import { Handler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
-import * as dbDefinitions from '../../database/interfaces';
 
 function tryDBOperations() {
     const testName = 'test0';
@@ -12,7 +11,7 @@ function tryDBOperations() {
         .AddTemplate(testName, 'html', ['f1'], 'key')
         .then(d => {
             report.i = 0;
-            return db.GetEntryByID(d.templateId, dbDefinitions.TableName.METADATA);
+            return db.GetMetadataByID(d.templateId);
         })
         .then(entry => {
             report.first = entry;
