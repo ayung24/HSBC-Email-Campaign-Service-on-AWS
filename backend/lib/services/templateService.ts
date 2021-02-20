@@ -2,18 +2,18 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
 
-import { UserPool } from '@aws-cdk/aws-cognito'
+import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
-import { DatabaseService } from './databaseService';
+import { Database } from '../constructs/database';
 
 export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
 
-    constructor(scope: cdk.Construct, api: agw.RestApi, database: DatabaseService) {
+    constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(api);
@@ -29,22 +29,30 @@ export class TemplateService {
         });
     }
 
-    private _initFunctions(scope: cdk.Construct, database: DatabaseService) {
+    private _initFunctions(scope: cdk.Construct, database: Database) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
             bundling: {
-                externalModules: ['uuid']
+                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post'],
+            },
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_TABLE_NAME: database.htmlTable().tableName,
+                S3_BUCKET_NAME: database.imageBucket().bucketName,
+                PRESIGNED_URL_EXPIRY: config.env.PRESIGNED_URL_EXPIRY,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
         });
-        database.AssignMetadataTable(this._upload);
-        database.AssignHTMLTable(this._upload);
+        // configure upload template lambda permissions
+        database.imageBucket().grantPut(this._upload); // PUT in image bucket
+        database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
+        database.htmlTable().grantReadWriteData(this._upload); // READ/WRITE on html table
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/listTemplates/index.ts`,
         });
-        database.AssignMetadataTable(this._list);
     }
 
     /**

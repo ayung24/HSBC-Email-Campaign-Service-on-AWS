@@ -2,40 +2,40 @@ import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as lambda from '@aws-cdk/aws-lambda';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
+import { BlockPublicAccess, Bucket, BucketEncryption, HttpMethods } from '@aws-cdk/aws-s3';
 
 import { config } from '../config';
-
-// dont really know how to get around this...
-import * as dbDefinitions from '../../src/database/interfaces';
 
 // TODO: delete this
 import * as agw from '@aws-cdk/aws-apigateway';
 
-export class DatabaseService {
-    private readonly DEBUG: boolean = true;
+export class Database extends cdk.Construct {
+    // TODO: #23
+    private static readonly DEBUG: boolean = true;
+    private static readonly REMOVAL_POLICY = Database.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
 
-    private readonly _metadata: dynamodb.Table;
-    private readonly _html: dynamodb.Table;
-    
-    private _linkedLambdas: any; 
+    private _metadata: dynamodb.Table;
+    private _html: dynamodb.Table;
+    private _imageBucket: Bucket;
 
-    constructor(scope: cdk.Construct) {
-        this._linkedLambdas = {}; // for checking that config is only added once
+    constructor(scope: cdk.Construct, id: string) {
+        super(scope, id);
+        this._initTables(scope);
+        this._initBucket(scope);
+    }
 
-        // TODO: #23
-        const determinedRemovalPolicy = this.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN
-
+    private _initTables(scope: cdk.Construct) {
         // shared template key name
         const TEMPLATE_KEY = 'templateId';
         // sort key
         const metaDataSortKey = { name: 'timeCreated', type: dynamodb.AttributeType.NUMBER };
 
         // >> init metadata table
-        this._metadata = new dynamodb.Table(scope, dbDefinitions.TableName.METADATA, {
+        this._metadata = new dynamodb.Table(scope, 'MetadataTable', {
             partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: determinedRemovalPolicy,
+            removalPolicy: Database.REMOVAL_POLICY,
         });
 
         // query by name
@@ -61,10 +61,10 @@ export class DatabaseService {
         });
 
         // >> init html table
-        this._html = new dynamodb.Table(scope, dbDefinitions.TableName.HTML, {
+        this._html = new dynamodb.Table(scope, 'HTMLTable', {
             partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: determinedRemovalPolicy,
+            removalPolicy: Database.REMOVAL_POLICY,
         });
 
         // query (filter) by status
@@ -84,36 +84,54 @@ export class DatabaseService {
         // });
     }
 
-    private _tryAddConfig(lambda: lambda.Function) {
-        if (this._linkedLambdas[lambda.functionName] !== undefined) {
-            this._linkedLambdas[lambda.functionName] = true; // mark as linked
-            lambda.addEnvironment('dynamoApiVersion', config.dynamo.apiVersion)
-        }
-    }
-
-    public AssignMetadataTable(lambda: lambda.Function): void {
-        this._tryAddConfig(lambda);
-        lambda.addEnvironment(dbDefinitions.TableName.METADATA, this._metadata.tableName);
-        this._metadata.grantReadWriteData(lambda);
-    }
-
-    public AssignHTMLTable(lambda: lambda.Function): void {
-        this._tryAddConfig(lambda);
-        lambda.addEnvironment(dbDefinitions.TableName.HTML, this._html.tableName);
-        this._html.grantReadWriteData(lambda);
+    private _initBucket(scope: cdk.Construct) {
+        this._imageBucket = new Bucket(scope, 'ImageBucket', {
+            versioned: false,
+            encryption: BucketEncryption.UNENCRYPTED,
+            publicReadAccess: false,
+            blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+            removalPolicy: Database.REMOVAL_POLICY,
+            // By default, every bucket accepts only GET requests from another domain,
+            // so need explicit CORS rule to enable upload from client
+            cors: [
+                {
+                    allowedOrigins: ['*'],
+                    allowedMethods: [HttpMethods.POST],
+                    maxAge: 3000,
+                    allowedHeaders: ['Authorization'],
+                },
+            ],
+        });
     }
 
     // TODO: delete this
     public InitDebug(scope: cdk.Construct, api: agw.RestApi) {
         const testdb = new NodejsFunction(scope, 'TestDBHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/databaseTest/index.ts`,
+            entry: `${config.lambdaRoot}/databaseLambda/index.ts`,
+            environment: {
+                METADATA_TABLE_NAME: this._metadata.tableName,
+                HTML_TABLE_NAME: this._html.tableName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            },
         });
-        this.AssignMetadataTable(testdb);
-        this.AssignHTMLTable(testdb);
+        this._metadata.grantReadWriteData(testdb);
+        this._html.grantReadWriteData(testdb);
 
-        const testResource = api.root.addResource('TestDB')
+        const testResource = api.root.addResource('TestDB');
         const testIntegration = new agw.LambdaIntegration(testdb);
         testResource.addMethod('GET', testIntegration);
+    }
+
+    public imageBucket(): Bucket {
+        return this._imageBucket;
+    }
+
+    public metadataTable(): dynamodb.Table {
+        return this._metadata;
+    }
+
+    public htmlTable(): dynamodb.Table {
+        return this._html;
     }
 }

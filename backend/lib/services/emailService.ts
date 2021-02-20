@@ -7,7 +7,7 @@ import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 
 export class EmailService {
     private _authorizer: Authorizer;
-    
+
     constructor(scope: cdk.Construct, api: agw.RestApi) {
         this._initAuth(scope);
     }
