@@ -1,24 +1,25 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
+
 import { UserPool } from '@aws-cdk/aws-cognito'
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
+import { DatabaseService } from './databaseService';
 
 export class TemplateService {
-    private _metadata: dynamodb.Table;
-    private _html: dynamodb.Table;
-
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
 
-    constructor(scope: cdk.Construct, api: agw.RestApi) {
-        this._initDynamo(scope);
-        this._initFunctions(scope);
+    constructor(scope: cdk.Construct, api: agw.RestApi, database: DatabaseService) {
+        this._initFunctions(scope, database);
         this._initAuth(scope);
-        this._initPaths(api)
+        this._initPaths(api);
+
+        // TODO: delete this
+        database.InitDebug(scope, api);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -28,53 +29,22 @@ export class TemplateService {
         });
     }
 
-    private _initDynamo(scope: cdk.Construct) {
-        // >> init metadata table
-        // combined timestamp and status sort key
-        const metaDataSortKey = { name: 'timeAndStatus', type: dynamodb.AttributeType.STRING };
-        this._metadata = new dynamodb.Table(scope, 'metadata', {
-            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
-            sortKey: metaDataSortKey,
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
-        });
-        // query by name
-        this._metadata.addGlobalSecondaryIndex({
-            indexName: 'name-index',
-            partitionKey: {
-                name: 'name',
-                type: dynamodb.AttributeType.STRING,
-            },
-            sortKey: metaDataSortKey,
-            projectionType: dynamodb.ProjectionType.ALL,
-        })
-
-        // >> init html table
-        this._html = new dynamodb.Table(scope, 'html', {
-            partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
-            sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
-        });
-
-        // const csv = new dynamodb.Table(scope, 'metadataPartition', {
-        //     partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
-        //     billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
-        // });
-    }
-
-    private _initFunctions(scope: cdk.Construct) {
+    private _initFunctions(scope: cdk.Construct, database: DatabaseService) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
             bundling: {
                 externalModules: ['uuid']
-            }
+            },
         });
+        database.AssignMetadataTable(this._upload);
+        database.AssignHTMLTable(this._upload);
+
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/listTemplates/index.ts`,
         });
+        database.AssignMetadataTable(this._list);
     }
 
     /**

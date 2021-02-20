@@ -1,11 +1,13 @@
 import { Handler } from 'aws-lambda';
 import { v4 as uuid } from 'uuid';
+import * as db from 'database';
 
 export const handler: Handler = async function (event) {
     // TODO: #9
     // stub
     console.log('request:', JSON.stringify(event, undefined, 2));
     const user = event.headers['Authorization'];
+
     return {
         statusCode: 200,
         headers: {
