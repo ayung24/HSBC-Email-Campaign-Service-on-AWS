@@ -10,7 +10,6 @@ function getDynamo(): AWS.DynamoDB {
 }
 
 export function AddTemplate(name: string, html: string, fieldNames: string[], apiKey: string): Promise<db.IDetailedEntry> {
-
     const ddb: AWS.DynamoDB = getDynamo();
     return new Promise((resolve, reject) => {
         // check name uniqueness
@@ -31,7 +30,8 @@ export function AddTemplate(name: string, html: string, fieldNames: string[], ap
                 resolve(data);
             }
         });
-    }).then(() => {
+    })
+        .then(() => {
             // add metadata entry
             const proposedMetadataEntry: AWS.DynamoDB.PutItemInput = {
                 TableName: METADATA_TABLE_NAME,
@@ -111,7 +111,7 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadata
 
         ddb.query(queryParams, (err: AWS.AWSError, data: AWS.DynamoDB.QueryOutput) => {
             if (err) {
-                reject({ error: err, message: 'failed to list metadata'});
+                reject({ error: err, message: 'failed to list metadata' });
             } else {
                 const items: AWS.DynamoDB.ItemList = data.Items;
                 if (items.length < 1) {
@@ -124,7 +124,7 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadata
                             name: item.templateName.S,
                             timeCreated: new Date(parseInt(item.timeCreated.N)),
                         };
-                    })
+                    });
                     resolve(result);
                 }
             }
@@ -144,10 +144,10 @@ export function GetMetadataByID(templateId: string): Promise<db.IMetadataEntry> 
             if (err) {
                 reject({ error: err, message: 'query failed' });
             }
-    
+
             const dynamoResult: AWS.DynamoDB.ItemList = data.Items;
             if (dynamoResult.length < 1) reject({ error: null, message: `no metadata entry matching ${templateId} found` });
-    
+
             const resultItem: AWS.DynamoDB.AttributeMap = data.Items[0]; // assuming only one, since id is unique
             resolve({
                 templateId: templateId,

@@ -125,7 +125,7 @@ export class Database extends cdk.Construct {
                 METADATA_TABLE_NAME: this._metadata.tableName,
                 HTML_TABLE_NAME: this._html.tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
-            }
+            },
         });
         this.AssignMetadataTable(testdb);
         this.AssignHTMLTable(testdb);
