@@ -2,7 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
 
-import { UserPool } from '@aws-cdk/aws-cognito'
+import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
@@ -45,9 +45,9 @@ export class TemplateService {
             },
         });
         // configure upload template lambda permissions
-        database.imageBucket().grantPut(this._upload);              // PUT in image bucket
-        database.metadataTable().grantReadWriteData(this._upload);  // READ/WRITE on metadata table
-        database.htmlTable().grantReadWriteData(this._upload);      // READ/WRITE on html table
+        database.imageBucket().grantPut(this._upload); // PUT in image bucket
+        database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
+        database.htmlTable().grantReadWriteData(this._upload); // READ/WRITE on html table
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,

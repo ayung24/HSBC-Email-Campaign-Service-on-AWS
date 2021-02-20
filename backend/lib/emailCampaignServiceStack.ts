@@ -22,7 +22,7 @@ export class EmailCampaignServiceStack extends cdk.Stack {
         this._dataStore = new DataStore(this, 'DataStore');
 
         this._initApi();
-        
+
         this._databaseService = new Database(this, 'EmailCampaignServiceDatabase');
         this._templateService = new TemplateService(this, this._api, this._databaseService);
         this._emailService = new EmailService(this, this._api);

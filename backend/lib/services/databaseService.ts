@@ -10,7 +10,6 @@ import { config } from '../config';
 import * as agw from '@aws-cdk/aws-apigateway';
 
 export class Database extends cdk.Construct {
-    
     // TODO: #23
     private static readonly DEBUG: boolean = true;
     private static readonly REMOVAL_POLICY = Database.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
@@ -18,8 +17,8 @@ export class Database extends cdk.Construct {
     private _metadata: dynamodb.Table;
     private _html: dynamodb.Table;
     private _imageBucket: Bucket;
-    
-    private _linkedLambdas: any; 
+
+    private _linkedLambdas: any;
 
     constructor(scope: cdk.Construct, id: string) {
         super(scope, id);
@@ -29,14 +28,14 @@ export class Database extends cdk.Construct {
         this._initBucket(scope);
     }
 
-    private _initTables(scope: cdk.Construct){
+    private _initTables(scope: cdk.Construct) {
         // shared template key name
         const TEMPLATE_KEY = 'templateId';
         // sort key
         const metaDataSortKey = { name: 'timeCreated', type: dynamodb.AttributeType.NUMBER };
 
         // >> init metadata table
-        this._metadata = new dynamodb.Table(scope, "MetadataTable", {
+        this._metadata = new dynamodb.Table(scope, 'MetadataTable', {
             partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -66,7 +65,7 @@ export class Database extends cdk.Construct {
         });
 
         // >> init html table
-        this._html = new dynamodb.Table(scope, "HTMLTable", {
+        this._html = new dynamodb.Table(scope, 'HTMLTable', {
             partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: Database.REMOVAL_POLICY,
@@ -95,22 +94,24 @@ export class Database extends cdk.Construct {
             encryption: BucketEncryption.UNENCRYPTED,
             publicReadAccess: false,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-            removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO #23: For dev only   
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO #23: For dev only
             // By default, every bucket accepts only GET requests from another domain,
             // so need explicit CORS rule to enable upload from client
-            cors: [{
-                allowedOrigins: ['*'],
-                allowedMethods: [HttpMethods.PUT],
-                maxAge: 3000,
-                allowedHeaders: ['Authorization'],
-            }],
+            cors: [
+                {
+                    allowedOrigins: ['*'],
+                    allowedMethods: [HttpMethods.PUT],
+                    maxAge: 3000,
+                    allowedHeaders: ['Authorization'],
+                },
+            ],
         });
     }
 
     private _tryAddConfig(lambda: lambda.Function) {
         if (this._linkedLambdas[lambda.functionName] !== undefined) {
             this._linkedLambdas[lambda.functionName] = true; // mark as linked
-            lambda.addEnvironment('dynamoApiVersion', config.dynamo.apiVersion)
+            lambda.addEnvironment('dynamoApiVersion', config.dynamo.apiVersion);
         }
     }
 
@@ -133,7 +134,7 @@ export class Database extends cdk.Construct {
         this.AssignMetadataTable(testdb);
         this.AssignHTMLTable(testdb);
 
-        const testResource = api.root.addResource('TestDB')
+        const testResource = api.root.addResource('TestDB');
         const testIntegration = new agw.LambdaIntegration(testdb);
         testResource.addMethod('GET', testIntegration);
     }
