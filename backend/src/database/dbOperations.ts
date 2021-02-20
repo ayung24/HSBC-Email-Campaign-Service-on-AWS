@@ -5,11 +5,15 @@ const AWS = require('aws-sdk');
 
 const NO_TABLE_ERROR = 'unable to access required table(s)';
 
+function _getDynamo(): any {
+    return new AWS.DynamoDB({apiVersion: process.env.dynamoApiVersion})
+}
+
 export function AddTemplate(name: string, html: string, fieldNames: string[], apiKey: string): Promise<db.IDetailedEntry> {
     if (process.env[db.TableName.METADATA] === undefined || process.env[db.TableName.HTML] === undefined)
         return Promise.reject({ message: NO_TABLE_ERROR });
 
-    const ddb = new AWS.DynamoDB(process.env.dynamoConfig); // current ver.
+    const ddb = _getDynamo();
     return new Promise((resolve, reject) => {
         // check name uniqueness
         const isNameTakenQuery = {
@@ -96,7 +100,7 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadata
     if (process.env[db.TableName.METADATA] === undefined)
         return Promise.reject({ message: NO_TABLE_ERROR });
     return new Promise((resolve, reject) => {
-        const ddb = new AWS.DynamoDB(process.env.dynamoConfig);
+        const ddb = _getDynamo();
         const queryParams = {
             IndexName: 'status-index',
             ExpressionAttributeValues: {
@@ -121,10 +125,10 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadata
                     for (let i = 0; i < data.Items.length; i++) {
                         const item = data.Items[i];
                         resultItems[i] = {
-                            templateId: item.templateId,
-                            status: item.templateStatus,
-                            name: item.templateName,
-                            timeCreated: new Date(item.timeCreated),
+                            templateId: item.templateId.S,
+                            status: item.templateStatus.S,
+                            name: item.templateName.S,
+                            timeCreated: new Date(parseInt(item.timeCreated.N)),
                         }
                     }
                     resolve(resultItems);
@@ -139,7 +143,7 @@ export function GetEntryByID(templateId: string, table: db.TableName): Promise<d
     if (process.env[envTableName] === undefined)
         return Promise.reject({ message: NO_TABLE_ERROR });
     return new Promise((resolve, reject) => {
-        const ddb = new AWS.DynamoDB({ apiVersion: '2019.11. 21' }); // current ver.
+        const ddb = _getDynamo();
         const queryParams = {
             ExpressionAttributeValues: { ':id': { S: templateId } },
             KeyConditionExpression: `templateId = :id`,
@@ -159,19 +163,19 @@ export function GetEntryByID(templateId: string, table: db.TableName): Promise<d
             switch (table) {
                 case db.TableName.METADATA:
                     resolve({
-                        templateId: resultItem.temaplateId,
-                        status: resultItem.templateStatus,
-                        name: resultItem.templateName,
-                        timeCreated: new Date(resultItem.timeCreated),
+                        templateId: templateId,
+                        status: resultItem.templateStatus.S,
+                        name: resultItem.templateName.S,
+                        timeCreated: new Date(parseInt(resultItem.timeCreated.N)),
                     });
                     break;
                 case db.TableName.HTML:
                     resolve({
-                        templateId: resultItem.temlpateId,
-                        status: resultItem.templateStatus,
-                        html: resultItem.html,
-                        fieldNames: resultItem.fieldNames,
-                        apiKey: resultItem.apiKey,
+                        templateId: templateId,
+                        status: resultItem.templateStatus.S,
+                        html: resultItem.html.S,
+                        fieldNames: resultItem.fieldNames.SS,
+                        apiKey: resultItem.apiKey.S,
                     });
                     break;
                 default:

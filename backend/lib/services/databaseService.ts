@@ -16,8 +16,12 @@ export class DatabaseService {
 
     private readonly _metadata: dynamodb.Table;
     private readonly _html: dynamodb.Table;
+    
+    private _linkedLambdas: any; 
 
     constructor(scope: cdk.Construct) {
+        this._linkedLambdas = {}; // for checking that config is only added once
+
         // TODO: #23
         const determinedRemovalPolicy = this.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN
 
@@ -80,12 +84,21 @@ export class DatabaseService {
         // });
     }
 
+    private _tryAddConfig(lambda: lambda.Function) {
+        if (this._linkedLambdas[lambda.functionName] !== undefined) {
+            this._linkedLambdas[lambda.functionName] = true; // mark as linked
+            lambda.addEnvironment('dynamoApiVersion', config.dynamo.apiVersion)
+        }
+    }
+
     public AssignMetadataTable(lambda: lambda.Function): void {
+        this._tryAddConfig(lambda);
         lambda.addEnvironment(dbDefinitions.TableName.METADATA, this._metadata.tableName);
         this._metadata.grantReadWriteData(lambda);
     }
 
     public AssignHTMLTable(lambda: lambda.Function): void {
+        this._tryAddConfig(lambda);
         lambda.addEnvironment(dbDefinitions.TableName.HTML, this._html.tableName);
         this._html.grantReadWriteData(lambda);
     }
