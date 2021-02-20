@@ -19,7 +19,7 @@ export interface ITemplateComponent {
 // a metadata Entry, likely used for list
 export interface IMetadataEntry extends ITemplateComponent {
     readonly name: string;
-    readonly timeCreated: Date;
+    readonly timeCreated: string;
 }
 
 // an html Entry, likely used for send email

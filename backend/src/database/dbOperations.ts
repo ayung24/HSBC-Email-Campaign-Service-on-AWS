@@ -1,5 +1,5 @@
 import * as db from './interfaces';
-import { v1 as uuid } from 'uuid';
+import { v4 as uuid } from 'uuid';
 import * as AWS from 'aws-sdk';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -83,7 +83,7 @@ export function AddTemplate(name: string, html: string, fieldNames: string[], ap
                             templateId: metadataEntry.templateId.S,
                             status: db.EntryStatus.IN_SERVICE,
                             name: metadataEntry.templateName.S,
-                            timeCreated: new Date(metadataEntry.timeCreated.N),
+                            timeCreated: metadataEntry.timeCreated.N,
                             html: htmlEntry.html.S,
                             fieldNames: htmlEntry.fieldNames.SS,
                             apiKey: htmlEntry.apiKey.S,
@@ -122,7 +122,7 @@ export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadata
                             templateId: item.templateId.S,
                             status: db.EntryStatus[item.templateStatus.S],
                             name: item.templateName.S,
-                            timeCreated: new Date(parseInt(item.timeCreated.N)),
+                            timeCreated: item.timeCreated.N,
                         };
                     });
                     resolve(result);
@@ -153,7 +153,7 @@ export function GetMetadataByID(templateId: string): Promise<db.IMetadataEntry> 
                 templateId: templateId,
                 status: db.EntryStatus[resultItem.templateStatus.S],
                 name: resultItem.templateName.S,
-                timeCreated: new Date(parseInt(resultItem.timeCreated.N)),
+                timeCreated: resultItem.timeCreated.N,
             });
         });
     });

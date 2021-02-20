@@ -17,9 +17,6 @@ export class TemplateService {
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api)
-
-        // TODO: delete this
-        database.InitDebug(scope, api);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -32,16 +29,18 @@ export class TemplateService {
     private _initFunctions(scope: cdk.Construct, database: Database) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/uploadTemplate/index.ts`,
             bundling: {
-                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post'],
+                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post', 'uuid', 'uuid-apikey', 'cryptr'],
             },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_TABLE_NAME: database.htmlTable().tableName,
                 S3_BUCKET_NAME: database.imageBucket().bucketName,
-                PRESIGNED_URL_EXPIRY: config.env.PRESIGNED_URL_EXPIRY,
+                PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
+                ENCRYPTION_KEY_SECRET: config.secretsManager.SECRET_NAME,
+                SECRET_MANAGER_REGION: config.secretsManager.REGION,
             },
         });
         // configure upload template lambda permissions
@@ -51,7 +50,7 @@ export class TemplateService {
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/listTemplates/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/listTemplates/index.ts`,
         });
     }
 

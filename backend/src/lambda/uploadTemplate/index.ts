@@ -3,24 +3,26 @@ import { IUploadTemplateReqBody } from '../types';
 import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
-import { config } from '../../../lib/config';
-import { v4 as uuid } from 'uuid';
+import { IDetailedEntry } from '../../database/interfaces';
+import * as AWS from 'aws-sdk';
 
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || '';
-const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY || null;
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY;
+const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
+const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
     'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
     'Content-Type': 'application/json',
 };
+const s3 = new S3Client({});
 
 /**
  * Creates a POST pre-signed URL client can directly use to access S3
  * @param key bucket key to put object in
  */
 const getPresignedPost = async function (key: string): Promise<PresignedPost> {
-    const s3 = new S3Client({});
     return createPresignedPost(s3, {
         Bucket: S3_BUCKET_NAME,
         Key: key,
@@ -48,18 +50,16 @@ const parseDynamicFields = function (html: string): string[] {
     return fields;
 }
 
-async function mySecrets(): Promise<string> {
+async function retrieveEncryptKey(): Promise<string> {
     // Load the AWS SDK
-    const AWS = require('aws-sdk'),
-    secretName = config.secretsManager.SECRET_NAME;
 
     // Create a Secrets Manager client
     const client = new AWS.SecretsManager({
-        region: config.secretsManager.REGION
+        region: SECRET_MANAGER_REGION
     });
 
     return new Promise((resolve,reject) => {
-        client.getSecretValue({SecretId: secretName}, function(err: any, data: any) {
+        client.getSecretValue({SecretId: ENCRYPTION_KEY_SECRET}, function(err: any, data: any) {
 
             // In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
             // See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
@@ -73,7 +73,7 @@ async function mySecrets(): Promise<string> {
                 if ('SecretString' in data) {
                     resolve(data.SecretString);
                 } else {
-                    let buff = new Buffer(data.SecretBinary, 'base64');
+                    let buff = Buffer.from(data.SecretBinary, 'base64');
                     resolve(buff.toString('ascii'));
                 }
             }
@@ -81,23 +81,24 @@ async function mySecrets(): Promise<string> {
     });
 }
 
-async function generateEncryptedApiKey(): Promise<string> {
+async function generateEncryptedApiKey(): Promise<{encryptedUUID, apiKey}> {
     const uuidAPIKey = require('uuid-apikey');
     const Cryptr = require('cryptr');
+    const {uuid, apiKey} = uuidAPIKey.create();
 
-    const apiKeyUuid: string = uuid();
-    const apiKey: string = uuidAPIKey.toAPIKey(apiKeyUuid);
+    // TODO: Add in key encryption
+    // const key: string = await retrieveEncryptKey();
+    // const cryptr = new Cryptr(key);
+    // const encryptedUUID= cryptr.encrypt(uuid);
 
-    const secretValue: string = await mySecrets();
-    const cryptr = new Cryptr(secretValue);
-    const encryptedApiKey: string = cryptr.encrypt(apiKey);
-
-    return encryptedApiKey;
+    return {
+        encryptedUUID: uuid,
+        apiKey: apiKey
+    };
 }
 
 export const handler = async function (event: APIGatewayProxyEvent) {
-    // const user = event.headers['Authorization'];
-    // console.log(user);
+
     if (!event.body) {
         return {
             headers,
@@ -110,56 +111,27 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     }
     
     const req: IUploadTemplateReqBody = JSON.parse(event.body);
+
+    const {encryptedUUID, apiKey} = await generateEncryptedApiKey();
     
-    // 1. validate name
-    const nameExists = (await db.GetMetadataByName(req.name)).status.succeeded;
-    if (nameExists) {
+    const addTemplate = db.AddTemplate(req.name, req.html, parseDynamicFields(req.html), encryptedUUID);
+    const createPostUrl = addTemplate.then((entry: IDetailedEntry) => getPresignedPost(entry.templateId));
+    return Promise.all([addTemplate, createPostUrl]).then(([entry, postUrl]: [IDetailedEntry, PresignedPost]) => {
         return {
             headers,
-            statusCode: 400,
+            statusCode: 200,
             body: JSON.stringify({
-                "message": `Duplicate template name: ${req.name}`,
-                "code": ""
-            })
+                "templateId": entry.templateId,
+                "name": entry.name,
+                "timeCreated": entry.timeCreated,
+                "imageUploadUrl": postUrl
+            }),
         }
-    }
-
-    // 2. generate & encrypt API key
-    const encryptedApiKey: string = await generateEncryptedApiKey();
-
-    // 3. store metadata to DynamoDB
-    const {status, metadata} =  await db.AddMetadataEntry(req.name)
-    if (!status.succeeded || !metadata) {
+    }).catch(err => {
         return {
             headers,
             statusCode: 500,
-            body: JSON.stringify({
-                "message": `Failed to upload template: ${status.info}`,
-                "code": ""
-            })
+            body: "Something failed!!!"
         }
-    }
-    
-    // 4. store HTML to DynamoDB
-    const addHtml = (await db.AddHTMLEntry({
-        html: req.html,
-        fieldNames: parseDynamicFields(req.html),
-        apiKey: '',
-        templateID: metadata.templateID
-    })).status
-    if (!addHtml.succeeded) {
-        // error
-    }
-
-    // 5. get S3 pre-signed URL
-    const presignedPost = await getPresignedPost(req.name); // TODO #9: Change to template ID
-    return {
-        headers,
-        statusCode: 200,
-        body: JSON.stringify({
-            "templateID": metadata.templateID,
-            "name": metadata.name,
-            "timeCreated": metadata.timeCreated,
-            "imageUpload": presignedPost}),
-    }
+    })
 }
