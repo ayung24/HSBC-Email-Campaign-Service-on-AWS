@@ -9,3 +9,8 @@ export interface IUploadTemplateResBody {
     timeCreated: string;
     imageUploadUrl: string;
 }
+
+export interface IListTemplatesBody {
+    start: Date;
+    limit: Date;
+}
