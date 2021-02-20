@@ -1,5 +1,5 @@
-import * as db from './dbOperations';
-import { IDBResponse, IMetadataEntry } from './interfaces';
+// import will just be 'database' since its a node module
+import * as db from './dbOperations'; 
 
 export const handler = async (event: any = {}): Promise<any> => {
     // body of some lambda handler

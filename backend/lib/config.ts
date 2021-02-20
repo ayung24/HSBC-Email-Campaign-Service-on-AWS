@@ -9,4 +9,5 @@ export const config = {
     env: {
         PRESIGNED_URL_EXPIRY: '600',
     },
+    dynamo: { apiVersion: '2019.11. 21' },
 };
