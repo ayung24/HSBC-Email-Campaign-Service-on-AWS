@@ -10,4 +10,8 @@ export const config = {
         REGION: "ca-central-1",
         SECRET_NAME: "API_Key_Secret",
     },
+    env: {
+        PRESIGNED_URL_EXPIRY: '600',
+    },
+    dynamo: { apiVersion: '2019.11. 21' },
 };

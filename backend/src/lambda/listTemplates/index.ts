@@ -5,6 +5,7 @@ export const handler: Handler = async function (event) {
     // stub
     console.log('request:', JSON.stringify(event, undefined, 2));
     const user = event.headers['Authorization'];
+
     return {
         statusCode: 200,
         headers: {

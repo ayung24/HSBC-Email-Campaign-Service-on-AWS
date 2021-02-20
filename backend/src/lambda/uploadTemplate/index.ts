@@ -3,36 +3,39 @@ import { IUploadTemplateReqBody } from '../types';
 import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
-import { Conditions } from '@aws-sdk/s3-presigned-post/types/types';
 import { config } from '../../../lib/config';
 import { v4 as uuid } from 'uuid';
 
-
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || '';
-const S3_BUCKET_KEY = process.env.S3_BUCKET_KEY || '';
-const postPolicy: Conditions[] = [
-    { acl: "bucket-owner-full-control"}, 
-    {bucket: S3_BUCKET_NAME}, 
-    ['starts-with', '$key', S3_BUCKET_KEY]
-];
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY || null;
+
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
     'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
     'Content-Type': 'application/json',
-}
+};
 
+/**
+ * Creates a POST pre-signed URL client can directly use to access S3
+ * @param key bucket key to put object in
+ */
 const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     const s3 = new S3Client({});
     return createPresignedPost(s3, {
         Bucket: S3_BUCKET_NAME,
-        Key: `${S3_BUCKET_NAME}/${key}`,
-        Conditions: postPolicy,
+        Key: key,
+        Conditions: [
+            { acl: 'bucket-owner-full-control' },
+            { bucket: S3_BUCKET_NAME },
+            ['starts-with', '$key', key],
+            ['starts-with', '$Content-Type', 'application/zip'], // only accept zip files
+        ],
         Fields: {
-            acl: "bucket-owner-full-control",
+            acl: 'bucket-owner-full-control',
         },
-        Expires: 60
-    })
-}
+        Expires: PRESIGNED_URL_EXPIRY ? null : Number.parseInt(PRESIGNED_URL_EXPIRY),
+    });
+};
 
 const parseDynamicFields = function (html: string): string[] {
     let regex = new RegExp(/\${(.*?)}/gm);
@@ -93,8 +96,8 @@ async function generateEncryptedApiKey(): Promise<string> {
 }
 
 export const handler = async function (event: APIGatewayProxyEvent) {
-    const user = event.headers['Authorization'];
-    console.log(user);
+    // const user = event.headers['Authorization'];
+    // console.log(user);
     if (!event.body) {
         return {
             headers,
@@ -147,16 +150,16 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     if (!addHtml.succeeded) {
         // error
     }
-    
+
     // 5. get S3 pre-signed URL
-    const presignedPost = await getPresignedPost(metadata.templateID);
+    const presignedPost = await getPresignedPost(req.name); // TODO #9: Change to template ID
     return {
         headers,
         statusCode: 200,
         body: JSON.stringify({
-        "templateID": metadata.templateID,
-        "name": metadata.name,
-        "timeCreated": metadata.timeCreated,
-        "imageUpload": presignedPost}),
+            "templateID": metadata.templateID,
+            "name": metadata.name,
+            "timeCreated": metadata.timeCreated,
+            "imageUpload": presignedPost}),
     }
 }
