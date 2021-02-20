@@ -18,12 +18,8 @@ export class Database extends cdk.Construct {
     private _html: dynamodb.Table;
     private _imageBucket: Bucket;
 
-    private _linkedLambdas: any;
-
     constructor(scope: cdk.Construct, id: string) {
         super(scope, id);
-
-        this._linkedLambdas = {}; // for checking that config is only added once
         this._initTables(scope);
         this._initBucket(scope);
     }
@@ -94,7 +90,7 @@ export class Database extends cdk.Construct {
             encryption: BucketEncryption.UNENCRYPTED,
             publicReadAccess: false,
             blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-            removalPolicy: cdk.RemovalPolicy.DESTROY, // TODO #23: For dev only
+            removalPolicy: Database.REMOVAL_POLICY,
             // By default, every bucket accepts only GET requests from another domain,
             // so need explicit CORS rule to enable upload from client
             cors: [
@@ -108,14 +104,6 @@ export class Database extends cdk.Construct {
         });
     }
 
-    public AssignMetadataTable(lambda: lambda.Function): void {
-        this._metadata.grantReadWriteData(lambda);
-    }
-
-    public AssignHTMLTable(lambda: lambda.Function): void {
-        this._html.grantReadWriteData(lambda);
-    }
-
     // TODO: delete this
     public InitDebug(scope: cdk.Construct, api: agw.RestApi) {
         const testdb = new NodejsFunction(scope, 'TestDBHandler', {
@@ -127,8 +115,8 @@ export class Database extends cdk.Construct {
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
         });
-        this.AssignMetadataTable(testdb);
-        this.AssignHTMLTable(testdb);
+        this._metadata.grantReadWriteData(testdb);
+        this._html.grantReadWriteData(testdb);
 
         const testResource = api.root.addResource('TestDB');
         const testIntegration = new agw.LambdaIntegration(testdb);

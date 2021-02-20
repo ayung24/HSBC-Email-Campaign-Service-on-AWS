@@ -6,7 +6,7 @@ import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
-import { Database } from './databaseService';
+import { Database } from '../constructs/database';
 
 export class TemplateService {
     private _upload: lambda.Function;
