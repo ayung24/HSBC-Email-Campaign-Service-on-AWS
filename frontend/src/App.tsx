@@ -1,12 +1,13 @@
 import React from 'react';
 import './App.css';
-import Amplify from 'aws-amplify';
 import { awsAuthConfiguration } from './awsAuthConfiguration';
 import { AuthState, onAuthUIStateChange } from '@aws-amplify/ui-components';
 import { TemplateComponent } from './components/templateComponent/templateComponent';
 import { AuthenticationComponent } from './components/loginComponent/authenticationComponent';
 import { HeaderComponent } from './components/headerComponent/headerComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { Amplify, Auth } from 'aws-amplify';
+import { Button } from 'react-bootstrap';
 
 Amplify.configure(awsAuthConfiguration);
 
@@ -23,7 +24,16 @@ function App(): JSX.Element {
 
     return (
         <div className='app-container'>
-            <HeaderComponent />
+            <div className='header-container'>
+                <HeaderComponent />
+                {authState === AuthState.SignedIn && (
+                    <div className='signout'>
+                        <Button onClick={() => Auth.signOut()} size='sm' className='logout-button'>
+                            Log out
+                        </Button>
+                    </div>
+                )}
+            </div>
             {component}
         </div>
     );

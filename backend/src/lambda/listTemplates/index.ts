@@ -15,6 +15,7 @@ export const handler: Handler = async function (event) {
     // stub
     console.log('request:', JSON.stringify(event, undefined, 2));
     const user = event.headers['Authorization'];
+
     console.log(user);
     if (!event.body) {
         return {
@@ -59,7 +60,6 @@ export const handler: Handler = async function (event) {
     //         ':indexHigh': params.Limit,
     //     },
     // }).promise();
-
 
     return {
         statusCode: 200,
