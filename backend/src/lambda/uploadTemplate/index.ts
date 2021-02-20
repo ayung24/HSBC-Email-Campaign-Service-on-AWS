@@ -7,7 +7,7 @@ import { IDetailedEntry } from '../../database/interfaces';
 import * as AWS from 'aws-sdk';
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
-const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY;
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY;  // OPTIONAL
 const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
 const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
 
@@ -23,7 +23,6 @@ const s3 = new S3Client({});
  */
 const validateEnv = function(): boolean {
     return !!S3_BUCKET_NAME &&
-    !!PRESIGNED_URL_EXPIRY &&
     !!ENCRYPTION_KEY_SECRET &&
     !!SECRET_MANAGER_REGION;
 }
