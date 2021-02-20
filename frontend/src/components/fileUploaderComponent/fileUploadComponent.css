@@ -1,0 +1,31 @@
+.file-uploader {
+    width: 100%;
+    height: 100%;
+    border: 1px solid gray;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.file-uploader--dragging {
+    background-color: gray;
+}
+
+.file-uploader__contents {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.file-uploader__file-name {
+    font-weight: 700;
+}
+
+/* Want to hide default select button because entire modal body is clickable */
+.file-uploader__input {
+    display: none;
+}
+
