@@ -6,4 +6,7 @@ export const config = {
         IDENTITY_POOL_ID: 'ca-central-1:097f9420-9dbf-4ee9-a9f6-f4ed5c610e10',
     },
     lambdaRoot: 'src/lambda',
+    env: {
+        PRESIGNED_URL_EXPIRY: '600',
+    },
 };

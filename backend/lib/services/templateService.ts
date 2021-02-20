@@ -1,10 +1,12 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
-import { UserPool } from '@aws-cdk/aws-cognito'
+import * as dynamodb from '@aws-cdk/aws-dynamodb';
+import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
+import { DataStore } from '../dataStore';
 
 export class TemplateService {
     private _metadata: dynamodb.Table;
@@ -14,11 +16,11 @@ export class TemplateService {
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
 
-    constructor(scope: cdk.Construct, api: agw.RestApi) {
+    constructor(scope: cdk.Construct, api: agw.RestApi, dataStore: DataStore) {
         this._initDynamo(scope);
-        this._initFunctions(scope);
+        this._initFunctions(scope, dataStore);
         this._initAuth(scope);
-        this._initPaths(api)
+        this._initPaths(api);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -36,7 +38,7 @@ export class TemplateService {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // todo, persist tables
         });
         // query by name
         this._metadata.addGlobalSecondaryIndex({
@@ -47,14 +49,14 @@ export class TemplateService {
             },
             sortKey: metaDataSortKey,
             projectionType: dynamodb.ProjectionType.ALL,
-        })
+        });
 
         // >> init html table
         this._html = new dynamodb.Table(scope, 'html', {
             partitionKey: { name: 'templateID', type: dynamodb.AttributeType.STRING },
             sortKey: { name: 'status', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: RemovalPolicy.DESTROY, // todo, persist tables
+            removalPolicy: cdk.RemovalPolicy.DESTROY, // todo, persist tables
         });
 
         // const csv = new dynamodb.Table(scope, 'metadataPartition', {
@@ -63,14 +65,21 @@ export class TemplateService {
         // });
     }
 
-    private _initFunctions(scope: cdk.Construct) {
+    private _initFunctions(scope: cdk.Construct, dataStore: DataStore) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/uploadTemplate/index.ts`,
             bundling: {
-                externalModules: ['uuid']
-            }
+                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post'],
+            },
+            environment: {
+                S3_BUCKET_NAME: dataStore.tempateImgBucket().bucketName,
+                PRESIGNED_URL_EXPIRY: config.env.PRESIGNED_URL_EXPIRY,
+            },
         });
+        // grant put access to image bucket on upload lambda
+        dataStore.tempateImgBucket().grantPut(this._upload);
+
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambdaRoot}/listTemplates/index.ts`,
@@ -86,7 +95,7 @@ export class TemplateService {
         const uploadIntegration = new agw.LambdaIntegration(this._upload);
         const listIntegration = new agw.LambdaIntegration(this._list);
 
-        templatesResource.addMethod('POST', uploadIntegration, { authorizer: this._authorizer });
+        templatesResource.addMethod('POST', uploadIntegration);
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
     }
 }
