@@ -64,7 +64,7 @@ export class TemplateService {
         const uploadIntegration = new agw.LambdaIntegration(this._upload);
         const listIntegration = new agw.LambdaIntegration(this._list);
 
-        templatesResource.addMethod('POST', uploadIntegration);
+        templatesResource.addMethod('POST', uploadIntegration, { authorizer: this._authorizer });
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
     }
 }

@@ -2,7 +2,7 @@ import * as cdk from '@aws-cdk/core';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import { TemplateService } from './services/templateService';
 import { EmailService } from './services/emailService';
-import { Database as Database } from './services/databaseService';
+import { Database } from './services/databaseService';
 
 /**
  * Main backend stack
