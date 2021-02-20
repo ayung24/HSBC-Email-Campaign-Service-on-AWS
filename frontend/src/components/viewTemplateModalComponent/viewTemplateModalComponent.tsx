@@ -49,117 +49,81 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                         <Modal.Title>Template name</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Tabs
-                            defaultActiveKey="single"
-                        >
-                            <Tab
-                                eventKey="single"
-                                title="Single"
-                            >
+                        <Tabs defaultActiveKey='single'>
+                            <Tab eventKey='single' title='Single'>
                                 <label>Recipient</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Recipient"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Recipient' />
                                 </InputGroup>
                                 <label>Parameter 1</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 1"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 1' />
                                 </InputGroup>
                                 <label>Parameter 2</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 2"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 2' />
                                 </InputGroup>
                                 <label>Parameter 3</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 3"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 3' />
                                 </InputGroup>
                                 <label>Parameter 4</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 4"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 4' />
                                 </InputGroup>
                                 <label>Parameter 5</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 5"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 5' />
                                 </InputGroup>
                             </Tab>
-                            <Tab
-                                eventKey="batch"
-                                title="Batch"
-                            >
+                            <Tab eventKey='batch' title='Batch'>
                                 <label>Recipient</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Recipient"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Recipient' />
                                 </InputGroup>
                                 <label>Parameter 1</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 1"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 1' />
                                 </InputGroup>
                                 <label>Parameter 2</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 2"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 2' />
                                 </InputGroup>
                                 <label>Parameter 3</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 3"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 3' />
                                 </InputGroup>
                                 <label>Parameter 4</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 4"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 4' />
                                 </InputGroup>
                                 <label>Parameter 5</label>
-                                <InputGroup className="mb-3">
-                                    <FormControl
-                                        placeholder="Parameter 5"
-                                    />
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 5' />
                                 </InputGroup>
                             </Tab>
                         </Tabs>
                     </Modal.Body>
                     <Modal.Footer>
                         <label>URL</label>
-                        <InputGroup className="mb-3">
-                            <FormControl
-                                placeholder="URL"
-                            />
+                        <InputGroup className='mb-3'>
+                            <FormControl placeholder='URL' />
                             <InputGroup.Append>
-                                <Button variant="outline-secondary">Button</Button>
+                                <Button variant='outline-secondary'>Button</Button>
                             </InputGroup.Append>
                         </InputGroup>
                         <label>API Key</label>
-                        <InputGroup className="mb-3">
-                            <FormControl
-                                placeholder="API Key"
-                            />
+                        <InputGroup className='mb-3'>
+                            <FormControl placeholder='API Key' />
                             <InputGroup.Append>
-                                <Button variant="outline-secondary">Button</Button>
+                                <Button variant='outline-secondary'>Button</Button>
                             </InputGroup.Append>
                         </InputGroup>
                         <label>Body</label>
                         <InputGroup>
-                            <FormControl as="textarea" aria-label="With textarea" />
+                            <FormControl as='textarea' aria-label='With textarea' />
                             <InputGroup.Append>
-                                <Button variant="outline-secondary">Button</Button>
+                                <Button variant='outline-secondary'>Button</Button>
                             </InputGroup.Append>
                         </InputGroup>
                     </Modal.Footer>
