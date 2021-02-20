@@ -7,7 +7,7 @@ import { IDetailedEntry } from '../../database/interfaces';
 import * as AWS from 'aws-sdk';
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
-const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY;  // OPTIONAL
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : null;  // OPTIONAL
 const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
 const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
 
@@ -44,7 +44,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
         Fields: {
             acl: 'bucket-owner-full-control',
         },
-        Expires: PRESIGNED_URL_EXPIRY ? null : Number.parseInt(PRESIGNED_URL_EXPIRY),
+        Expires: PRESIGNED_URL_EXPIRY,
     });
 };
 

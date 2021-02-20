@@ -28,7 +28,7 @@ function App(): JSX.Element {
                 <HeaderComponent />
                 {authState === AuthState.SignedIn && (
                     <div className='signout'>
-                        <Button onClick={() => Auth.signOut()} size='sm' className='logout-button'>
+                        <Button onClick={() => Auth.signOut()} className='logout-button'>
                             Log out
                         </Button>
                     </div>

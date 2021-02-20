@@ -1,4 +1,4 @@
-export interface ToastInterfaces {
+export interface ToastInterface {
     id: string;
     body: string;
     type: ToastType;
@@ -6,7 +6,7 @@ export interface ToastInterfaces {
 }
 
 export interface ToastComponentProperties {
-    properties: Array<ToastInterfaces>;
+    properties: Array<ToastInterface>;
 }
 
 export interface ToastComponentState {
@@ -25,5 +25,5 @@ export enum ToastType {
 }
 
 export interface ToastFunctionProperties {
-    addToast: (t: ToastInterfaces) => void;
+    addToast: (t: ToastInterface) => void;
 }

@@ -8,7 +8,7 @@ import { Database } from './constructs/database';
  * Main backend stack
  */
 export class EmailCampaignServiceStack extends cdk.Stack {
-    private _databaseService: Database;
+    private _database: Database;
     private _templateService: TemplateService;
     private _emailService: EmailService;
 
@@ -19,8 +19,8 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
         this._initApi();
 
-        this._databaseService = new Database(this, 'EmailCampaignServiceDatabase');
-        this._templateService = new TemplateService(this, this._api, this._databaseService);
+        this._database = new Database(this, 'EmailCampaignServiceDatabase');
+        this._templateService = new TemplateService(this, this._api, this._database);
         this._emailService = new EmailService(this, this._api);
     }
 
