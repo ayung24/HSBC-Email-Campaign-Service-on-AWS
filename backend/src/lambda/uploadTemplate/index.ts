@@ -4,7 +4,7 @@ import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME || '';
-const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY || null;
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : null;
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -30,7 +30,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
         Fields: {
             acl: 'bucket-owner-full-control',
         },
-        Expires: PRESIGNED_URL_EXPIRY ? Number.parseInt(PRESIGNED_URL_EXPIRY) : null,
+        Expires: PRESIGNED_URL_EXPIRY,
     });
 };
 
