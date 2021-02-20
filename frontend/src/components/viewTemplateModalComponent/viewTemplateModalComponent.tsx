@@ -44,9 +44,6 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                     onHide={() => {
                         this._handleModalClose();
                     }}
-                    onClick={() => {
-                        this._handleModalClose();
-                    }}
                 >
                     <Modal.Header>
                         <div className='headerDiv'>
