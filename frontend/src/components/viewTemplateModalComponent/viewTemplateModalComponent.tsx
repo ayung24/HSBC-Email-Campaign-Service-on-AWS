@@ -41,12 +41,29 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                 <Modal
                     show={this.state.isViewOpen}
                     scrollable
+                    onHide={() => {
+                        this._handleModalClose();
+                    }}
                     onClick={() => {
                         this._handleModalClose();
                     }}
                 >
-                    <Modal.Header closeButton>
-                        <Modal.Title>Template name</Modal.Title>
+                    <Modal.Header>
+                        <div className='headerDiv'>
+                            <Button
+                                variant='outline-dark'
+                                onClick={() => {
+                                    this._handleModalOpen();
+                                }}
+                            >
+                                Close Arrow
+                            </Button>
+                            <Button variant='outline-dark' className='float-right'>
+                                See Logs
+                            </Button>
+                            <Modal.Title>Template name</Modal.Title>
+                            <span>Created at timestamp</span>
+                        </div>
                     </Modal.Header>
                     <Modal.Body>
                         <Tabs defaultActiveKey='single'>
@@ -71,10 +88,6 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 4' />
                                 </InputGroup>
-                                <label>Parameter 5</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
-                                </InputGroup>
                             </Tab>
                             <Tab eventKey='batch' title='Batch'>
                                 <label>Recipient</label>
@@ -96,10 +109,6 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 <label>Parameter 4</label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                                <label>Parameter 5</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
                                 </InputGroup>
                             </Tab>
                         </Tabs>
