@@ -19,6 +19,16 @@ const headers = {
 const s3 = new S3Client({});
 
 /**
+ * Validates lambda's runtime env variables
+ */
+const validateEnv = function(): boolean {
+    return !!S3_BUCKET_NAME &&
+    !!PRESIGNED_URL_EXPIRY &&
+    !!ENCRYPTION_KEY_SECRET &&
+    !!SECRET_MANAGER_REGION;
+}
+
+/**
  * Creates a POST pre-signed URL client can directly use to access S3
  * @param key bucket key to put object in
  */
@@ -39,6 +49,10 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     });
 };
 
+/**
+ * Parses given html string and outputs dynamic field names in an array
+ * @param html html containing dynamic fields as ${...}
+ */
 const parseDynamicFields = function (html: string): string[] {
     let regex = new RegExp(/\${(.*?)}/gm);
     let matches = regex.exec(html);
@@ -51,8 +65,6 @@ const parseDynamicFields = function (html: string): string[] {
 }
 
 async function retrieveEncryptKey(): Promise<string> {
-    // Load the AWS SDK
-
     // Create a Secrets Manager client
     const client = new AWS.SecretsManager({
         region: SECRET_MANAGER_REGION
@@ -99,13 +111,22 @@ async function generateEncryptedApiKey(): Promise<{encryptedUUID, apiKey}> {
 
 export const handler = async function (event: APIGatewayProxyEvent) {
 
-    if (!event.body) {
+    if (!validateEnv()) {
+        return {
+            headers,
+            statusCode: 500,
+            body: JSON.stringify({
+                message: "Internal server error",
+                code: ""
+            })
+        }
+    } else if (!event.body) {
         return {
             headers,
             statusCode: 400,
             body: JSON.stringify({
-                "message": "Invalid request format",
-                "code": ""
+                message: "Invalid request format",
+                code: ""
             })
         }
     }
@@ -131,7 +152,10 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         return {
             headers,
             statusCode: 500,
-            body: "Something failed!!!"
+            body: JSON.stringify({
+                message: err.message,
+                code: ""
+            })
         }
     })
 }
