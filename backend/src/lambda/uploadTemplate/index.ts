@@ -93,7 +93,7 @@ async function generateEncryptedApiKey(): Promise<{ encryptedUUID; apiKey }> {
     const Cryptr = require('cryptr');
     const { uuid, apiKey } = uuidAPIKey.create();
 
-    // TODO: Add in key encryption
+    // TODO #46: Add in key encryption
     // const key: string = await retrieveEncryptKey();
     // const cryptr = new Cryptr(key);
     // const encryptedUUID= cryptr.encrypt(uuid);
@@ -103,6 +103,8 @@ async function generateEncryptedApiKey(): Promise<{ encryptedUUID; apiKey }> {
         apiKey: apiKey,
     };
 }
+
+// TODO #46: Add error codes to responses
 
 export const handler = async function (event: APIGatewayProxyEvent) {
     if (!validateEnv()) {
@@ -139,6 +141,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 body: JSON.stringify({
                     templateId: entry.templateId,
                     name: entry.name,
+                    apiKey: entry.apiKey,
+                    fieldNames: entry.fieldNames,
                     timeCreated: entry.timeCreated,
                     imageUploadUrl: postUrl,
                 }),
