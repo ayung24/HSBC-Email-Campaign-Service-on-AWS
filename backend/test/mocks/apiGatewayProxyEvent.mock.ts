@@ -1,33 +1,33 @@
-import {APIGatewayProxyEvent} from 'aws-lambda';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 
 const getDefaults = (): APIGatewayProxyEvent => ({
-    resource: "/",
-    path: "/",
-    httpMethod: "GET",
+    resource: '/',
+    path: '/',
+    httpMethod: 'GET',
     requestContext: {
         resourceId: 'resourceId',
-        resourcePath: "/",
-        httpMethod: "GET",
-        path: "/prod/",
-        requestId: "requestId",
+        resourcePath: '/',
+        httpMethod: 'GET',
+        path: '/prod/',
+        requestId: 'requestId',
         requestTimeEpoch: 0,
-        accountId: "accountId",
-        protocol: "HTTP/1.1",
-        apiId: "apiId",
+        accountId: 'accountId',
+        protocol: 'HTTP/1.1',
+        apiId: 'apiId',
         authorizer: null,
-        stage: "prod",
+        stage: 'prod',
         identity: {
             cognitoIdentityPoolId: null,
             accountId: null,
             cognitoIdentityId: null,
             caller: null,
-            sourceIp: "sourceIp",
+            sourceIp: 'sourceIp',
             principalOrgId: null,
             accessKey: null,
             cognitoAuthenticationType: null,
             cognitoAuthenticationProvider: null,
             userArn: null,
-            userAgent: "userAgent",
+            userAgent: 'userAgent',
             user: null,
             apiKey: null,
             apiKeyId: null,
@@ -40,12 +40,12 @@ const getDefaults = (): APIGatewayProxyEvent => ({
     pathParameters: null,
     stageVariables: null,
     body: null,
-    isBase64Encoded: false
-})
+    isBase64Encoded: false,
+});
 
-export function ApiGatewayProxyEventMockBuilder(p? : Partial<APIGatewayProxyEvent>): APIGatewayProxyEvent {
+export function ApiGatewayProxyEventMockBuilder(p?: Partial<APIGatewayProxyEvent>): APIGatewayProxyEvent {
     return {
-        ... getDefaults(),
-        ... p
-    }
+        ...getDefaults(),
+        ...p,
+    };
 }

@@ -2,6 +2,7 @@
     left: 50%;
     position: fixed;
     bottom: 30px;
+    z-index: 9999;
 }
 
 .toast.show {

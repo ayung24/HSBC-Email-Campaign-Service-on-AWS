@@ -88,7 +88,7 @@ export class Database extends cdk.Construct {
             cors: [
                 {
                     allowedOrigins: ['*'],
-                    allowedMethods: [HttpMethods.PUT],
+                    allowedMethods: [HttpMethods.POST],
                     maxAge: 3000,
                     allowedHeaders: ['Authorization'],
                 },

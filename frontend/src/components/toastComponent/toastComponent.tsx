@@ -1,6 +1,6 @@
 import React from 'react';
 import Toast from 'react-bootstrap/Toast';
-import { ToastComponentProperties, ToastComponentState, ToastInterfaces, ToastState } from '../../models/toastInterfaces';
+import { ToastComponentProperties, ToastComponentState, ToastInterface, ToastState } from '../../models/toastInterfaces';
 import './toastComponent.css';
 
 interface ToastComponentPropsWithCloseFunction extends ToastComponentProperties {
@@ -8,7 +8,7 @@ interface ToastComponentPropsWithCloseFunction extends ToastComponentProperties 
 }
 
 export class ToastComponent extends React.Component<ToastComponentPropsWithCloseFunction, ToastComponentState> {
-    private _toastProperties: Array<ToastInterfaces> = [];
+    private _toastProperties: Array<ToastInterface> = [];
     private _removeToast: (id: string) => void;
 
     constructor(props: ToastComponentPropsWithCloseFunction) {
@@ -18,7 +18,7 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
         this.updateToasts(props.properties);
     }
 
-    public updateToasts(toasts: Array<ToastInterfaces>): void {
+    public updateToasts(toasts: Array<ToastInterface>): void {
         this._toastProperties = toasts;
         const states = this._toastProperties.map(prop => ({ id: prop.id, open: prop.open }));
         this.setState({ states: states });
@@ -54,7 +54,13 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
         return (
             <div className='toast-component'>
                 {this._toastProperties.map(prop => (
-                    <Toast className={prop.type} onClose={() => this._closeToast(prop.id)} show={this._isOpen(prop.id)} animation={false}>
+                    <Toast
+                        key={prop.id}
+                        className={prop.type}
+                        onClose={() => this._closeToast(prop.id)}
+                        show={this._isOpen(prop.id)}
+                        animation={false}
+                    >
                         <Toast.Header className={prop.type}>
                             <strong className='header-text'>{prop.type.toString()}</strong>
                         </Toast.Header>

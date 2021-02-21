@@ -1,9 +1,9 @@
 import React from 'react';
 import './viewTemplateModalComponent.css';
-import { ToastFunctionProperties, ToastInterfaces, ToastType } from '../../models/toastInterfaces';
+import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 
 export class ViewTemplateModalComponent extends React.Component<ToastFunctionProperties> {
-    private _addToast: (t: ToastInterfaces) => void;
+    private _addToast: (t: ToastInterface) => void;
 
     constructor(props: ToastFunctionProperties) {
         super(props);

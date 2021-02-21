@@ -16,7 +16,7 @@ export class TemplateService {
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
-        this._initPaths(scope, api)
+        this._initPaths(scope, api);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -59,38 +59,37 @@ export class TemplateService {
      * All template related (internal API) endpoints MUST include the templateAuth authorizer
      * */
     private _initPaths(scope: cdk.Construct, api: agw.RestApi) {
-        
-        const uploadReqValidator = new agw.RequestValidator(scope, "UploadTemplateValidator", {
+        const uploadReqValidator = new agw.RequestValidator(scope, 'UploadTemplateValidator', {
             restApi: api,
             requestValidatorName: 'template-upload-req-validator',
-            validateRequestBody: true 
-        })
-        const uploadReqModel = new agw.Model(scope, "UploadTemplateReqModel", {
+            validateRequestBody: true,
+        });
+        const uploadReqModel = new agw.Model(scope, 'UploadTemplateReqModel', {
             restApi: api,
-            contentType: "application/json",
-            description: "Upload template request payload",
+            contentType: 'application/json',
+            description: 'Upload template request payload',
             schema: {
                 type: agw.JsonSchemaType.OBJECT,
                 properties: {
                     name: {
-                        type: agw.JsonSchemaType.STRING
+                        type: agw.JsonSchemaType.STRING,
                     },
                     html: {
-                        type: agw.JsonSchemaType.STRING
-                    }
+                        type: agw.JsonSchemaType.STRING,
+                    },
                 },
-                required: ["name", "html"]
-            }
-        })
+                required: ['name', 'html'],
+            },
+        });
 
         const templatesResource = api.root.addResource('templates');
         const uploadIntegration = new agw.LambdaIntegration(this._upload);
         const listIntegration = new agw.LambdaIntegration(this._list);
 
-        templatesResource.addMethod('POST', uploadIntegration, { 
+        templatesResource.addMethod('POST', uploadIntegration, {
             authorizer: this._authorizer,
             requestValidator: uploadReqValidator,
-            requestModels: {"application/json": uploadReqModel}
+            requestModels: { 'application/json': uploadReqModel },
         });
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
     }
