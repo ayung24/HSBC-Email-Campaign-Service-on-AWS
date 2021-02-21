@@ -1,7 +1,7 @@
 import * as db from './interfaces';
 import { v4 as uuid } from 'uuid';
 import * as AWS from 'aws-sdk';
-import {IHTMLEntry, IMetadataEntry} from "./interfaces";
+import { IHTMLEntry, IMetadataEntry } from './interfaces';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_TABLE_NAME = process.env.HTML_TABLE_NAME;
@@ -59,20 +59,23 @@ export function AddTemplate(name: string, html: string, fieldNames: string[], ap
                     templateStatus: { S: db.EntryStatus.IN_SERVICE },
                 },
             };
-            return new Promise<[any, any]>(((resolve, reject) => {
-                console.log("Adding template metadata and html");
-                ddb.transactWriteItems({
-                    TransactItems: [{ Put: proposedMetadataEntry }, { Put: proposedHtmlEntry }]
-                }, (err: AWS.AWSError, data: AWS.DynamoDB.TransactWriteItemsOutput) => {
-                    if (err) {
-                        console.log("Add template failed");
-                        reject({ error: err, message: 'Metadata or HTML add failed' });
-                    } else {
-                        console.log(`Add template success: ${proposedMetadataEntry.Item}`);
-                        resolve([proposedMetadataEntry.Item, proposedHtmlEntry.Item]);
-                    }
-                })
-            }));
+            return new Promise<[any, any]>((resolve, reject) => {
+                console.log('Adding template metadata and html');
+                ddb.transactWriteItems(
+                    {
+                        TransactItems: [{ Put: proposedMetadataEntry }, { Put: proposedHtmlEntry }],
+                    },
+                    (err: AWS.AWSError, data: AWS.DynamoDB.TransactWriteItemsOutput) => {
+                        if (err) {
+                            console.log('Add template failed');
+                            reject({ error: err, message: 'Metadata or HTML add failed' });
+                        } else {
+                            console.log(`Add template success: ${proposedMetadataEntry.Item}`);
+                            resolve([proposedMetadataEntry.Item, proposedHtmlEntry.Item]);
+                        }
+                    },
+                );
+            });
         })
         .then(([metadataEntry, htmlEntry]) => {
             const finalEntry: db.IDetailedEntry = {

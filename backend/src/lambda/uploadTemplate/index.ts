@@ -150,7 +150,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
-            console.log(`Error: ${err.error.message}`)
+            console.log(`Error: ${err.error.message}`);
             return {
                 headers: headers,
                 statusCode: 500,
