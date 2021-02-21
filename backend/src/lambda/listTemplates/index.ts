@@ -44,7 +44,7 @@ export const handler: Handler = async function (event) {
         return {
             headers,
             statusCode: 500,
-            body: "Something in listTemplates failed!!!"
+            body: "Something failed!!!"
         }
     })
     
