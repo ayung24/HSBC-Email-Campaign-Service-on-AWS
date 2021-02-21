@@ -1,14 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
-import * as lambda from '@aws-cdk/aws-lambda';
-import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket, BucketEncryption, HttpMethods } from '@aws-cdk/aws-s3';
-
-import { config } from '../config';
-
-// TODO: delete this
-import * as agw from '@aws-cdk/aws-apigateway';
-
 export class Database extends cdk.Construct {
     // TODO: #23
     private static readonly DEBUG: boolean = true;
@@ -102,25 +94,6 @@ export class Database extends cdk.Construct {
                 },
             ],
         });
-    }
-
-    // TODO: delete this
-    public InitDebug(scope: cdk.Construct, api: agw.RestApi) {
-        const testdb = new NodejsFunction(scope, 'TestDBHandler', {
-            runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/databaseLambda/index.ts`,
-            environment: {
-                METADATA_TABLE_NAME: this._metadata.tableName,
-                HTML_TABLE_NAME: this._html.tableName,
-                DYNAMO_API_VERSION: config.dynamo.apiVersion,
-            },
-        });
-        this._metadata.grantReadWriteData(testdb);
-        this._html.grantReadWriteData(testdb);
-
-        const testResource = api.root.addResource('TestDB');
-        const testIntegration = new agw.LambdaIntegration(testdb);
-        testResource.addMethod('GET', testIntegration);
     }
 
     public imageBucket(): Bucket {
