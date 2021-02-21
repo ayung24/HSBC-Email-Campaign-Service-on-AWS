@@ -38,13 +38,13 @@ jobs:
         run: npm run cdk:diff
         env:
           AWS_DEFAULT_REGION: 'us-west-2'
-          AWS_ACCESS_KEY_ID: ${{ secrets.TOOLS_ACCOUNT_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TOOLS_ACCOUNT_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: CDK Deploy
         if: contains(github.event_name, 'push')
         run: npm run cdk:deploy
         env:
           AWS_DEFAULT_REGION: 'ca-central-1'
-          AWS_ACCESS_KEY_ID: ${{ secrets.TOOLS_ACCOUNT_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.TOOLS_ACCOUNT_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
