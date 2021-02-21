@@ -3,14 +3,14 @@ name: cdk
 on:
   push:
     branches:
-       prod-v2
+      - main
     paths:
       - 'backend/**'
       - '.github/workflows/**'
   pull_request:
 jobs:
   aws_cdk:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./backend
