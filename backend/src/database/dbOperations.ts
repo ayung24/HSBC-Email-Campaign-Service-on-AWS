@@ -88,14 +88,14 @@ export function AddTemplate(name: string, html: string, fieldNames: string[], ap
         });
 }
 
-export function ListMetadataByDate(start: Date, end: Date): Promise<db.IMetadataEntry[]> {
+export function ListMetadataByDate(start: string, end: string): Promise<db.IMetadataEntry[]> {
     return new Promise((resolve, reject) => {
         const ddb = getDynamo();
         const queryParams = {
             IndexName: 'status-index',
             ExpressionAttributeValues: {
-                ':startTime': { N: start.getTime().toString() },
-                ':endTime': { N: end.getTime().toString() },
+                ':startTime': { N: start },
+                ':endTime': { N: end },
                 ':inService': { S: db.EntryStatus.IN_SERVICE },
             },
             KeyConditionExpression: `templateStatus = :inService AND timeCreated BETWEEN :startTime AND :endTime`,

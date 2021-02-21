@@ -11,6 +11,6 @@ export interface IUploadTemplateResBody {
 }
 
 export interface IListTemplatesBody {
-    start: Date;
-    limit: Date;
+    start: string;
+    limit: string;
 }
