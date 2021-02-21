@@ -12,26 +12,12 @@ const headers = {
     'Content-Type': 'application/json',
 }
 export const handler: Handler = async function (event) {
-    // TODO: #10
-    // stub
-    console.log('request:', JSON.stringify(event, undefined, 2));
-    const user = event.headers['Authorization'];
-
-    console.log(user);
-    if (!event.body) {
-        return {
-            headers,
-            statusCode: 400,
-            body: JSON.stringify({
-                "message": "Invalid request format",
-                "code": ""
-            })
-        }
-    }
 
     // get items from start to start + limit
-    const req: IListTemplatesBody = JSON.parse(event.body);
-    const listTemplates = db.ListMetadataByDate(req.start, req.limit);
+    //console.log(event.start);
+    //const req: IListTemplatesBody = JSON.parse(event.body);
+    // might need to convert start/limit to date objects
+    const listTemplates = db.ListMetadataByDate(event.start, event.limit);
     return listTemplates.then((res) => {
         return {
             headers,
