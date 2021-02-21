@@ -1,15 +1,19 @@
 import React from 'react';
 import './uploadTemplateModalComponent.css';
 import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComponent';
-import { Button, Modal } from 'react-bootstrap';
+import { Button, Modal, Spinner } from 'react-bootstrap';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
+import { ITemplate } from '../../models/templateInterfaces';
 
 type State = {
     dragging: boolean;
     file: File | null;
     isModalShown: boolean;
     templateName: string;
+    html: string;
+    images: any;
+    isLoading: boolean;
 };
 
 export class UploadTemplateModalComponent extends React.Component<ToastFunctionProperties, State> {
@@ -20,7 +24,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     constructor(props: ToastFunctionProperties) {
         super(props);
         this._addToast = props.addToast;
-        this.state = { dragging: false, file: null, isModalShown: false, templateName: '' };
+        this.state = { dragging: false, file: null, isModalShown: false, templateName: '', html: '', images: null, isLoading: false };
         this._templateService = new TemplateService();
     }
 
@@ -29,7 +33,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _closeModal(): void {
-        this.setState({ file: null });
+        this.setState({ file: null, templateName: '', html: '', images: null });
         this.toggleModal();
     }
 
@@ -78,10 +82,9 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     private _handleUploadFile(file: File): void {
         if (this._isValidFileType(file.type)) {
             this.setState({ file: file });
-            this._templateService.parseDocx(file);
+            this._templateService.parseDocx(file).then(([images, html]) => this.setState({ html: html, images: images }));
         } else {
-            this._addToast(this._createErrorToast(file));
-            console.log(`Uploaded file is of type ${file.type}`);
+            this._addToast(this._createFileTypeErrorToast(file));
         }
     }
 
@@ -97,13 +100,43 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' === fileType;
     }
 
-    private _createErrorToast(file: File): ToastInterface {
+    private _createFileTypeErrorToast(file: File): ToastInterface {
         return {
             id: `wrongFileType-${file.name}`,
             body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.docx]`,
             type: ToastType.ERROR,
             open: true,
         };
+    }
+
+    private _createUploadErrorToast(err: any): ToastInterface {
+        return {
+            id: `uploadTemplateError-${err.response}`,
+            body: `An error occured when uploading template. Error: [${err.response}]`,
+            type: ToastType.ERROR,
+            open: true,
+        };
+    }
+
+    private _createUploadSuccessToast(name: string): ToastInterface {
+        return {
+            id: `uploadTemplateSuccess-${name}`,
+            body: `Template [${name}] uploaded successfully!`,
+            type: ToastType.SUCCESS,
+            open: true,
+        };
+    }
+
+    private _doUpload(): void {
+        this.setState({ isLoading: true });
+        this._templateService
+            .uploadTemplate(this.state.templateName, this.state.html, this.state.images)
+            .then((t: ITemplate) => {
+                this._addToast(this._createUploadSuccessToast(t.name));
+                this._closeModal();
+            })
+            .catch(err => this._addToast(this._createUploadErrorToast(err)))
+            .finally(() => this.setState({ isLoading: false }));
     }
 
     componentDidMount(): void {
@@ -152,9 +185,16 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                                     onChange={this._onTemplateNameChanged.bind(this)}
                                 />
                             </div>
-                            <Button className='create-template-button' disabled={this._disableCreate()}>
+                            <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUpload.bind(this)}>
                                 Create
                             </Button>
+                            {this.state.isLoading && (
+                                <div className='parentDisable'>
+                                    <div className='overlay-box'>
+                                        <Spinner animation='border' role='status' />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </Modal.Body>
                 </Modal>

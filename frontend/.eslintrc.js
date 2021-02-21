@@ -32,6 +32,8 @@ module.exports = {
     },
     rules: {
         // additional rules if needed
-        '@typescript-eslint/no-var-requires': 0
+        '@typescript-eslint/no-var-requires': 'off',
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
     },
   };

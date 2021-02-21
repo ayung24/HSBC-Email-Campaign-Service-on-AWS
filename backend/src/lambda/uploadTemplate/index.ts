@@ -37,7 +37,8 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             { acl: 'bucket-owner-full-control' },
             { bucket: S3_BUCKET_NAME },
             ['starts-with', '$key', key],
-            ['starts-with', '$Content-Type', 'application/zip'], // only accept zip files
+            // TODO: Restrict content type to zip files
+            // ['starts-with', '$Content-Type', 'binary/octet-stream'], // only accept zip files
         ],
         Fields: {
             acl: 'bucket-owner-full-control',
@@ -93,7 +94,7 @@ async function generateEncryptedApiKey(): Promise<{ encryptedUUID; apiKey }> {
     const Cryptr = require('cryptr');
     const { uuid, apiKey } = uuidAPIKey.create();
 
-    // TODO: Add in key encryption
+    // TODO #46: Add in key encryption
     // const key: string = await retrieveEncryptKey();
     // const cryptr = new Cryptr(key);
     // const encryptedUUID= cryptr.encrypt(uuid);
@@ -104,10 +105,12 @@ async function generateEncryptedApiKey(): Promise<{ encryptedUUID; apiKey }> {
     };
 }
 
+// TODO #46: Add error codes to responses
+
 export const handler = async function (event: APIGatewayProxyEvent) {
     if (!validateEnv()) {
         return {
-            headers,
+            headers: headers,
             statusCode: 500,
             body: JSON.stringify({
                 message: 'Internal server error',
@@ -116,7 +119,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     } else if (!event.body) {
         return {
-            headers,
+            headers: headers,
             statusCode: 400,
             body: JSON.stringify({
                 message: 'Invalid request format',
@@ -134,19 +137,22 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     return Promise.all([addTemplate, createPostUrl])
         .then(([entry, postUrl]: [IDetailedEntry, PresignedPost]) => {
             return {
-                headers,
+                headers: headers,
                 statusCode: 200,
                 body: JSON.stringify({
                     templateId: entry.templateId,
                     name: entry.name,
+                    apiKey: entry.apiKey,
+                    fieldNames: entry.fieldNames,
                     timeCreated: entry.timeCreated,
                     imageUploadUrl: postUrl,
                 }),
             };
         })
         .catch(err => {
+            console.log(`Error: ${err.error.message}`)
             return {
-                headers,
+                headers: headers,
                 statusCode: 500,
                 body: JSON.stringify({
                     message: err.message,

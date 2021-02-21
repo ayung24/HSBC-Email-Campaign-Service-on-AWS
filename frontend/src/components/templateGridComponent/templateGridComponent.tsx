@@ -3,7 +3,7 @@ import Table from 'react-bootstrap/Table';
 import './templateGridComponent.css';
 import { TemplateService } from '../../services/templateService';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
-import { TemplateDisplay } from '../../models/templateDisplay';
+import { ITemplateDisplay } from '../../models/templateInterfaces';
 
 export class TemplateGridComponent extends React.Component<ToastFunctionProperties, { templates: JSX.Element[] }> {
     private _templateService: TemplateService;
@@ -23,7 +23,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
         this._templateService
             .getTemplates()
             .then(response => {
-                const templates = response.map((template: TemplateDisplay) => {
+                const templates = response.map((template: ITemplateDisplay) => {
                     const { id, name, uploadTime } = template;
 
                     const dateStr =

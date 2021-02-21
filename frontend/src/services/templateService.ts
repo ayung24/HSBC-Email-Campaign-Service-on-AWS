@@ -1,7 +1,8 @@
 import { RequestService } from './requestService';
-import { TemplateDisplay } from '../models/templateDisplay';
 import JSZip from 'jszip';
-import FileSaver from 'file-saver';
+import { PresignedPost } from '@aws-sdk/s3-presigned-post';
+import { ITemplate, ITemplateDisplay, ITemplateMetadataUploadResponse, IUploadTemplateReqBody } from '../models/templateInterfaces';
+
 const mammoth = require('mammoth');
 
 export class TemplateService {
@@ -11,9 +12,48 @@ export class TemplateService {
         this._requestService = new RequestService();
     }
 
-    public getTemplates(): Promise<Array<TemplateDisplay>> {
+    public uploadTemplate(name: string, html: string, images: any): Promise<ITemplate> {
+        const requestBody: IUploadTemplateReqBody = {
+            name: name,
+            html: html,
+        };
+        return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
+            this._uploadTemplateImages(metadataResponse.imageUploadUrl, images).then(() => {
+                return {
+                    id: metadataResponse.templateId,
+                    apiKey: metadataResponse.apiKey,
+                    name: metadataResponse.name,
+                    params: metadataResponse.fieldNames,
+                    uploadTime: new Date(parseInt(metadataResponse.timeCreated)),
+                };
+            }),
+        );
+    }
+
+    private _uploadTemplateImages(presignedPost: PresignedPost, images: any): Promise<any> {
+        const formData = new FormData();
+        const typedPresignedPost: { url: string; [key: string]: any } = presignedPost;
+        Object.keys(presignedPost.fields).forEach(key => {
+            formData.append(key, typedPresignedPost.fields[key]);
+        });
+        formData.append('file', images);
+        formData.append('Content-Type', 'binary/octet-stream');
+        return new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', typedPresignedPost.url, true);
+            xhr.send(formData);
+            xhr.onload = function () {
+                this.status === 204 ? resolve() : reject(this.responseText);
+            };
+        });
+    }
+
+    public getTemplates(): Promise<Array<ITemplateDisplay>> {
         // TODO: Call backend
-        return new Promise<Array<TemplateDisplay>>(resolve => {
+        // return this._requestService.GET('/templates', templateResponse => {
+        //     return new Promise<Array<ITemplateDisplay>>(resolve => []);
+        // });
+        return new Promise<Array<ITemplateDisplay>>(resolve => {
             // Returns an error
             // throw new Error('error');
             // Returns list
@@ -55,16 +95,29 @@ export class TemplateService {
         });
     }
 
-    public parseDocx(docx: File): [images: string[], html: string] {
+    public parseDocx(docx: File): Promise<[images: any, html: string]> {
         let html = '';
-        const images: any[] = [];
-        const file = docx;
-
-        const reader = new FileReader();
-        reader.onloadend = function () {
-            const arrayBuffer = reader.result;
-            mammoth.convertToHtml({ arrayBuffer: arrayBuffer }).then(function (resultObj: any) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject({ error: reader.error, message: reader.error });
+            reader.onload = () => resolve(reader.result);
+            reader.readAsArrayBuffer(docx);
+        })
+            .then(arrayBuffer => mammoth.convertToHtml({ arrayBuffer: arrayBuffer }))
+            .then(resultObj => {
                 html = resultObj.value;
+
+                // TODO: Link images somehow?
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const imgs = doc.getElementsByTagName('img');
+                for (let i = 0; i < imgs.length; i++) {
+                    const img = imgs[i];
+                    img.src = 'blank.jpg';
+                }
+                html = doc.documentElement.outerHTML;
+
+                const images: any[] = [];
                 const imageRegExp = /"[^"]+"/g;
                 const allImages = html.match(imageRegExp) || '';
 
@@ -82,12 +135,8 @@ export class TemplateService {
                     zip.file('images/image' + count + '.' + img[0], img[1], { base64: true });
                     count++;
                 }
-                zip.generateAsync({ type: 'blob' }).then(function (blob: any) {
-                    FileSaver.saveAs(blob, 'images.zip');
-                });
-            });
-        };
-        reader.readAsArrayBuffer(file);
-        return [images, html];
+                return zip.generateAsync({ type: 'blob' });
+            })
+            .then(blob => [blob, html]);
     }
 }
