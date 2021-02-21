@@ -10,19 +10,20 @@ const headers = {
 }
 export const handler: APIGatewayProxyHandler = async function (event: APIGatewayProxyEvent) {
 
-    if (!event.body) {
-        return {
-            headers: headers,
-            statusCode: 400,
-            body: JSON.stringify({
-                message: 'Invalid request format',
-                code: '',
-            }),
-        };
-    }
-
+    // TODO: Put back event body check after pagination implemented
+    // if (!event.body) {
+    //     return {
+    //         headers: headers,
+    //         statusCode: 400,
+    //         body: JSON.stringify({
+    //             message: 'Invalid request format',
+    //             code: '',
+    //         }),
+    //     };
+    // }
     // get items from start to start + limit
-    const req: IListTemplatesBody = JSON.parse(event.body);
+    // const req: IListTemplatesBody = JSON.parse(event.body);
+    
     // TODO: Implement pagination (Requesting whole range of dates temporarily)
     const listTemplates = db.ListMetadataByDate('0', new Date().getTime().toString());
     return listTemplates.then((res: IMetadataEntry[]) => {
