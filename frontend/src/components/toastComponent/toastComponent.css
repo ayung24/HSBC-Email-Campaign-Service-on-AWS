@@ -1,0 +1,53 @@
+.toast-component {
+    left: 50%;
+    position: fixed;
+    bottom: 30px;
+    z-index: 9999;
+}
+
+.toast.show {
+    border-width: 2px;
+    width: 350px;
+    margin-left: -175px;
+}
+
+.toast-header {
+    justify-content: space-between;
+    border-bottom: 1px solid;
+}
+
+.toast.Success.show {
+    border-color: green;
+}
+
+.toast-header.Success {
+    background-color: #e4f7d4;
+}
+
+.toast-body.Success {
+    background-color: #e4f7d4;
+}
+
+.toast.Error.show {
+    border-color: #db0011;
+}
+
+.toast-header.Error {
+    background-color: #f5e3e4;
+}
+
+.toast-body.Error {
+    background-color: #f5e3e4;
+}
+
+.toast.Notification.show {
+    border-color: #626469;
+}
+
+.toast-header.Notification {
+    background-color: #f0eff0;
+}
+
+.toast-body.Notification {
+    background-color: #f0eff0;
+}

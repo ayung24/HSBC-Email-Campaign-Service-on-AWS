@@ -7,3 +7,32 @@
 .upload-container {
     padding: 0px 100px;
 }
+
+.template-container {
+    margin-top: 20px;
+}
+
+.upload-button.btn.btn-primary {
+    background-color: #000000;
+    border-color: #000000;
+    font-weight: bold;
+    font-size: medium;
+    padding: 0.5rem 2rem;
+    height: fit-content;
+}
+
+.template-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 80%;
+    margin: 20px auto 0 auto;
+    padding: 0.5em 0 0 0;
+    align-items: center;
+}
+
+.template-grid-title {
+    font-size: 30px;
+    font-weight: bold;
+    padding: 0.2em 0;
+}

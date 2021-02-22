@@ -36,3 +36,19 @@
     transform: rotate(360deg);
   }
 }
+
+:root {
+  --amplify-primary-color: #db0011;
+  --amplify-primary-tint: #db0011;
+  --amplify-primary-shade: #db0011;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-container {
+  position: sticky;
+  top: 0;
+}

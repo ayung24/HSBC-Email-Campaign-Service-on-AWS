@@ -1,31 +1,60 @@
 import React from 'react';
-import './templateComponent.css';
-import { AmplifySignOut } from '@aws-amplify/ui-react';
+import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
 import { TemplateService } from '../../services/templateService';
+import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
+import { ToastComponentProperties, ToastInterface } from '../../models/toastInterfaces';
+import { ToastComponent } from '../toastComponent/toastComponent';
+import './templateComponent.css';
+import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
+import { Button } from 'react-bootstrap';
 
-export class TemplateComponent extends React.Component {
-    private _service: TemplateService;
+export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
+    private _templateService: TemplateService;
+    private _toastMessages: Array<ToastInterface> = [];
+    private readonly _toastComponent: React.RefObject<ToastComponent>;
+    private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
 
     constructor(props = {}) {
         super(props);
-        this._service = new TemplateService();
+        this._toastComponent = React.createRef();
+        this._uploadModalComponent = React.createRef();
+        this.state = { properties: this._toastMessages };
+        this._templateService = new TemplateService();
     }
 
-    // TODO: Uncomment when ready (i.e. we have a prod environment set up for the backend APIs)
-    // componentDidMount(): void {
-    //     this._service.getTemplates();
-    // }
+    private _addToast(toast: ToastInterface): void {
+        if (!this._toastMessages.some(messages => messages.id === toast.id)) {
+            this._toastMessages.push(toast);
+            this._toastComponent.current?.updateToasts(this._toastMessages);
+        }
+    }
+
+    private _removeToast(id: string): void {
+        const toastIndex = this._toastMessages.findIndex(toast => toast.id === id);
+        if (toastIndex > -1) {
+            this._toastMessages.splice(toastIndex, 1);
+        }
+    }
+
+    private _toggleUploadModal(): void {
+        this._uploadModalComponent.current?.toggleModal();
+    }
 
     render(): JSX.Element {
         return (
             <div className='template-component'>
-                <div className='signout'>
-                    <AmplifySignOut />
+                <div className='template-header'>
+                    <span className='template-grid-title'>All Templates</span>
+                    <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>
+                        UPLOAD +
+                    </Button>
                 </div>
-                <div className='upload-container'>
-                    <h4 className='upload-desc'>Please choose a template file to upload. Accepted file format: .docx</h4>
-                    <input type='file' />
+                <UploadTemplateModalComponent ref={this._uploadModalComponent} addToast={this._addToast.bind(this)} />
+                <div className='template-container'>
+                    <TemplateGridComponent addToast={this._addToast.bind(this)} />
                 </div>
+                <ViewTemplateModalComponent addToast={this._addToast.bind(this)} />
+                <ToastComponent ref={this._toastComponent} properties={this.state.properties} removeToast={this._removeToast.bind(this)} />
             </div>
         );
     }
