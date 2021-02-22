@@ -64,7 +64,6 @@ export class TemplateService {
         };
         return this._requestService.GET<ITemplateDisplay[]>('/templates', (templateResponse: IGetTemplatesResponse) => {
             return new Promise<Array<ITemplateDisplay>>(resolve => {
-                console.log(templateResponse);
                 const templates = templateResponse.templates.map((template : IGetTemplatesResponseItem) => {
                     return {
                         id: template.templateId,

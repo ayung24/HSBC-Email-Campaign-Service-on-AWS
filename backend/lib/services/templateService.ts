@@ -56,13 +56,11 @@ export class TemplateService {
             },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
-                HTML_TABLE_NAME: database.htmlTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
-        database.htmlTable().grantReadData(this._list); // READ on html table
     }
 
     /**
