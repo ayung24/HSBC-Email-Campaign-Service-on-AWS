@@ -1,4 +1,4 @@
-name: cdk
+name: cdk prod
 
 on:
   push:

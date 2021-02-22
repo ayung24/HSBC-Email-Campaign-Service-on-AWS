@@ -1,9 +1,9 @@
-name: cdk
+name: cdk dev
 
 on:
   push:
     branches:
-      - prod-v2
+      - dev
     paths:
       - 'backend/**'
       - '.github/workflows/**'
