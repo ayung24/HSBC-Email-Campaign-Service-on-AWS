@@ -29,6 +29,7 @@ jobs:
       - name: Build
         run: npm run build
 
+      # TODO: uncomment when we finish implementing the tests.  
       # - name: Unit tests
       #   if: contains(github.event_name, 'pull_request')
       #   run: npm run test:app
@@ -45,6 +46,6 @@ jobs:
         if: contains(github.event_name, 'push')
         run: npm run cdk:deploy
         env:
-          AWS_DEFAULT_REGION: 'ca-central-1'
+          AWS_DEFAULT_REGION: 'us-west-2'
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
