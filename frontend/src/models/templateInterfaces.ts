@@ -27,3 +27,17 @@ export interface IUploadTemplateReqBody {
     name: string;
     html: string;
 }
+
+export interface IGetTemplatesReqBody {
+    start: string;
+    limit: number;
+}
+
+export interface IGetTemplatesResponse {
+    templates: IGetTemplatesResponseItem[];
+}
+export interface IGetTemplatesResponseItem {
+    templateId: string;
+    name: string;
+    timeCreated: string;
+}

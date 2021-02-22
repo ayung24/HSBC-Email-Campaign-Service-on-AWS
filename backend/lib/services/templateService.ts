@@ -51,7 +51,16 @@ export class TemplateService {
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/listTemplates/index.ts`,
+            bundling: {
+                nodeModules: ['uuid'],
+            },
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            },
         });
+        // configure list templates lambda permissions
+        database.metadataTable().grantReadData(this._list); // READ on metadata table
     }
 
     /**
