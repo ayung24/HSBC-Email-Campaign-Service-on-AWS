@@ -24,7 +24,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             .getTemplates()
             .then(response => {
                 const templates = response.map((template: ITemplateDisplay) => {
-                    const { id, name, uploadTime } = template;
+                    const { templateId, templateName, uploadTime } = template;
 
                     const dateStr =
                         // Plus one because month is returned from 0-11
@@ -39,8 +39,8 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                         String(uploadTime.getMinutes()).padStart(2, '0');
 
                     return (
-                        <tr key={id}>
-                            <td className={'name'}>{name}</td>
+                        <tr key={templateId}>
+                            <td className={'name'}>{templateName}</td>
                             <td className={'upload-time'}>{dateStr}</td>
                         </tr>
                     );

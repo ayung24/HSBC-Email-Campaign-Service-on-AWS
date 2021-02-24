@@ -1,0 +1,19 @@
+.parentDisable{
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #F0EFF0;
+    opacity: 0.8;
+    z-index: 998;
+    height: 100%;
+    width: 100%;
+}
+
+.overlay-box {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -50%);
+    color: black; background: #F0EFF0; opacity: .8;
+    z-index: 1000;
+}

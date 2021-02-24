@@ -1,13 +1,13 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { IUploadTemplateReqBody } from '../types';
+import { IUploadTemplateReqBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
-import { IDetailedEntry } from '../../database/interfaces';
 import * as AWS from 'aws-sdk';
+import {ITemplateFullEntry} from "../../database/dbInterfaces";
 
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
-const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : null; // OPTIONAL
+const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
 const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
 const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
 
@@ -22,7 +22,7 @@ const s3 = new S3Client({});
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!S3_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
+    return !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
 };
 
 /**
@@ -31,11 +31,11 @@ const validateEnv = function (): boolean {
  */
 const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     return createPresignedPost(s3, {
-        Bucket: S3_BUCKET_NAME,
+        Bucket: HTML_BUCKET_NAME!,
         Key: key,
         Conditions: [
             { acl: 'bucket-owner-full-control' },
-            { bucket: S3_BUCKET_NAME },
+            { bucket: HTML_BUCKET_NAME! },
             ['starts-with', '$key', key],
             // TODO: Restrict content type to zip files
             // ['starts-with', '$Content-Type', 'binary/octet-stream'], // only accept zip files
@@ -44,22 +44,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             acl: 'bucket-owner-full-control',
         },
         Expires: PRESIGNED_URL_EXPIRY,
-    });
-};
-
-/**
- * Parses given html string and outputs dynamic field names in an array
- * @param html html containing dynamic fields as ${...}
- */
-const parseDynamicFields = function (html: string): string[] {
-    const regex = new RegExp(/\${(.*?)}/gm);
-    let matches = regex.exec(html);
-    const fields = [];
-    while (matches) {
-        fields.push(matches[1]);
-        matches = regex.exec(html);
-    }
-    return fields;
+    }).catch(err => Promise.reject({ error: err, message: err.message }));
 };
 
 async function retrieveEncryptKey(): Promise<string> {
@@ -69,7 +54,7 @@ async function retrieveEncryptKey(): Promise<string> {
     });
 
     return new Promise((resolve, reject) => {
-        client.getSecretValue({ SecretId: ENCRYPTION_KEY_SECRET }, function (err: any, data: any) {
+        client.getSecretValue({ SecretId: ENCRYPTION_KEY_SECRET! }, function (err: any, data: any) {
             // In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
             // See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
             // We rethrow the exception by default.
@@ -89,7 +74,7 @@ async function retrieveEncryptKey(): Promise<string> {
     });
 }
 
-async function generateEncryptedApiKey(): Promise<{ encryptedUUID; apiKey }> {
+async function generateEncryptedApiKey(): Promise<{ encryptedUUID: string; apiKey: string }> {
     const uuidAPIKey = require('uuid-apikey');
     const Cryptr = require('cryptr');
     const { uuid, apiKey } = uuidAPIKey.create();
@@ -132,25 +117,26 @@ export const handler = async function (event: APIGatewayProxyEvent) {
 
     const { encryptedUUID, apiKey } = await generateEncryptedApiKey();
 
-    const addTemplate = db.AddTemplate(req.name, req.html, parseDynamicFields(req.html), encryptedUUID);
-    const createPostUrl = addTemplate.then((entry: IDetailedEntry) => getPresignedPost(entry.templateId));
+    const addTemplate = db.AddTemplate(req.templateName, req.fieldNames, encryptedUUID);
+    const createPostUrl = addTemplate.then((entry: ITemplateFullEntry) => getPresignedPost(entry.templateId));
     return Promise.all([addTemplate, createPostUrl])
-        .then(([entry, postUrl]: [IDetailedEntry, PresignedPost]) => {
+        .then(([entry, postUrl]: [ITemplateFullEntry, PresignedPost]) => {
             return {
                 headers: headers,
                 statusCode: 200,
                 body: JSON.stringify({
                     templateId: entry.templateId,
-                    name: entry.name,
+                    timeCreated: entry.timeCreated,
+                    templateStatus: entry.templateStatus,
+                    templateName: entry.templateName,
                     apiKey: entry.apiKey,
                     fieldNames: entry.fieldNames,
-                    timeCreated: entry.timeCreated,
                     imageUploadUrl: postUrl,
                 }),
             };
         })
         .catch(err => {
-            console.log(`Error: ${err.error.message}`);
+            console.log(`Error: ${err.error.stack}`);
             return {
                 headers: headers,
                 statusCode: 500,

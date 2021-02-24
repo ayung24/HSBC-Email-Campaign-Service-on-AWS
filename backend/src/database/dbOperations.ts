@@ -1,35 +1,41 @@
-import * as db from './interfaces';
-import { v4 as uuid } from 'uuid';
-import * as AWS from 'aws-sdk';
-import { IHTMLEntry, IMetadataEntry } from './interfaces';
+import {v4 as uuid} from 'uuid';
+import {EntryStatus, ITemplateBase, ITemplateFullEntry} from './dbInterfaces';
+import {CommonFunctions} from '../commonFunctions';
+import * as process from "process";
+import {AWSError, DynamoDB, S3} from "aws-sdk";
+import {GetObjectOutput} from "aws-sdk/clients/s3";
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
-const HTML_TABLE_NAME = process.env.HTML_TABLE_NAME;
+const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 
-function getDynamo(): AWS.DynamoDB {
-    return new AWS.DynamoDB({ apiVersion: process.env.DYNAMO_API_VERSION });
+function getDynamo(): DynamoDB {
+    return new DynamoDB({apiVersion: process.env.DYNAMO_API_VERSION});
 }
 
-export function AddTemplate(name: string, html: string, fieldNames: string[], apiKey: string): Promise<db.IDetailedEntry> {
-    const ddb: AWS.DynamoDB = getDynamo();
-    console.log(`Adding template with name: ${name}, html: ${html}, fieldNames: ${fieldNames}, key: ${apiKey}`);
+export function AddTemplate(name: string, fieldNames: string[], apiKey: string): Promise<ITemplateFullEntry> {
+    const ddb: DynamoDB = getDynamo();
+    console.log(`Adding template with name: ${name}, fieldNames: ${fieldNames}, key: ${apiKey}`);
     return new Promise((resolve, reject) => {
+        if (CommonFunctions.isEmpty(name) || CommonFunctions.isEmpty(apiKey)) {
+            const error = new Error('Template name or api key is empty');
+            reject({error: error, message: error.message});
+        }
         // check name uniqueness
         const isNameTakenQuery = {
-            TableName: METADATA_TABLE_NAME,
+            TableName: METADATA_TABLE_NAME!,
             IndexName: 'name-index',
             ExpressionAttributeValues: {
-                ':proposedName': { S: name },
+                ':proposedName': {S: name},
             },
             KeyConditionExpression: 'templateName = :proposedName',
         };
-        ddb.query(isNameTakenQuery, (err: AWS.AWSError, data: AWS.DynamoDB.QueryOutput) => {
+        ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
                 console.log(`Name validation failure`);
-                reject({ error: err, message: err.message });
-            } else if (data.Count > 0) {
+                reject({error: err, message: err.message});
+            } else if (data.Count && data.Count > 0) {
                 console.log(`Name not unique`);
-                reject({ info: data, message: 'name not unique' });
+                reject({info: data, message: 'Template name not unique'});
             } else {
                 console.log(`Name validation success`);
                 resolve(data);
@@ -38,146 +44,126 @@ export function AddTemplate(name: string, html: string, fieldNames: string[], ap
     })
         .then(() => {
             // add metadata entry
-            const proposedMetadataEntry: AWS.DynamoDB.PutItemInput = {
-                TableName: METADATA_TABLE_NAME,
+            const proposedMetadataEntry: DynamoDB.PutItemInput = {
+                TableName: METADATA_TABLE_NAME!,
                 Item: {
-                    templateId: { S: uuid() }, // time based
-                    // timeAndStatus: generateTimeAndStatus(),
-                    timeCreated: { N: `${new Date().getTime()}` },
-                    templateStatus: { S: db.EntryStatus.IN_SERVICE },
-                    templateName: { S: name },
+                    templateId: {S: uuid()}, // time based
+                    timeCreated: {N: `${new Date().getTime()}`},
+                    templateStatus: {S: EntryStatus.IN_SERVICE},
+                    templateName: {S: name},
+                    apiKey: {S: apiKey},
+                    fieldNames: {SS: fieldNames},
                 },
             };
-            // add html entry
-            const proposedHtmlEntry = {
-                TableName: HTML_TABLE_NAME,
-                Item: {
-                    templateId: { S: proposedMetadataEntry.Item.templateId.S }, // time based
-                    html: { S: html },
-                    fieldNames: { SS: fieldNames },
-                    apiKey: { S: apiKey },
-                    templateStatus: { S: db.EntryStatus.IN_SERVICE },
-                },
-            };
-            return new Promise<[any, any]>((resolve, reject) => {
+            return new Promise<any>((resolve, reject) => {
                 console.log('Adding template metadata and html');
-                ddb.transactWriteItems(
-                    {
-                        TransactItems: [{ Put: proposedMetadataEntry }, { Put: proposedHtmlEntry }],
-                    },
-                    (err: AWS.AWSError, data: AWS.DynamoDB.TransactWriteItemsOutput) => {
-                        if (err) {
-                            console.log('Add template failed');
-                            reject({ error: err, message: 'Metadata or HTML add failed' });
-                        } else {
-                            console.log(`Add template success: ${proposedMetadataEntry.Item}`);
-                            resolve([proposedMetadataEntry.Item, proposedHtmlEntry.Item]);
-                        }
-                    },
-                );
+                ddb.putItem(proposedMetadataEntry, (err: AWSError, data: DynamoDB.PutItemOutput) => {
+                    if (err) {
+                        console.log('Add template failed');
+                        reject({error: err, message: 'Add template failed'});
+                    } else {
+                        console.log(`Add template success: ${proposedMetadataEntry.Item}`);
+                        resolve(proposedMetadataEntry.Item);
+                    }
+                })
             });
         })
-        .then(([metadataEntry, htmlEntry]) => {
-            const finalEntry: db.IDetailedEntry = {
-                templateId: metadataEntry.templateId.S,
-                status: db.EntryStatus.IN_SERVICE,
-                name: metadataEntry.templateName.S,
-                timeCreated: metadataEntry.timeCreated.N,
-                html: htmlEntry.html.S,
-                fieldNames: htmlEntry.fieldNames.SS,
-                apiKey: htmlEntry.apiKey.S,
-            };
-            return Promise.resolve(finalEntry);
-        });
+        .then(metadataEntry => Promise.resolve({
+            templateId: metadataEntry.templateId.S,
+            templateStatus: EntryStatus.IN_SERVICE,
+            templateName: metadataEntry.templateName.S,
+            timeCreated: metadataEntry.timeCreated.N,
+            fieldNames: metadataEntry.fieldNames.SS,
+            apiKey: metadataEntry.apiKey.S,
+        }));
 }
 
-export function ListMetadataByDate(start: string, end: string): Promise<db.IMetadataEntry[]> {
+export function ListMetadataByDate(start: string, end: string): Promise<ITemplateBase[]> {
+    const ddb = getDynamo();
+    console.log(`Getting all templates`);
     return new Promise((resolve, reject) => {
-        const ddb = getDynamo();
         const queryParams = {
             IndexName: 'status-index',
             ExpressionAttributeValues: {
-                ':startTime': { N: start },
-                ':endTime': { N: end },
-                ':inService': { S: db.EntryStatus.IN_SERVICE },
+                ':startTime': {N: start},
+                ':endTime': {N: end},
+                ':inService': {S: EntryStatus.IN_SERVICE},
             },
             KeyConditionExpression: `templateStatus = :inService AND timeCreated BETWEEN :startTime AND :endTime`,
-            TableName: METADATA_TABLE_NAME,
+            TableName: METADATA_TABLE_NAME!,
         };
-
-        ddb.query(queryParams, (err: AWS.AWSError, data: AWS.DynamoDB.QueryOutput) => {
+        ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
-                reject({ error: err, message: 'failed to list metadata' });
+                reject({error: err, message: 'Failed to get templates from database'});
+            }
+            const items = data.Items;
+            if (!items || items.length < 0) {
+                const error = new Error('Failed to get templates from database');
+                reject({error: error, message: error.message});
             } else {
-                const items: AWS.DynamoDB.ItemList = data.Items;
-                if (items.length < 1) {
-                    reject({ error: null, message: 'no metadata entries found' });
-                } else {
-                    const result: db.IMetadataEntry[] = items.map((item: AWS.DynamoDB.AttributeMap) => {
-                        return {
-                            templateId: item.templateId.S,
-                            status: db.EntryStatus[item.templateStatus.S],
-                            name: item.templateName.S,
-                            timeCreated: item.timeCreated.N,
-                        };
-                    });
-                    resolve(result);
-                }
+                const results: ITemplateBase[] = items.map((item: DynamoDB.AttributeMap) => {
+                    return {
+                        templateId: item.templateId.S!,
+                        timeCreated: Number.parseInt(item.timeCreated.N!),
+                        templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                        templateName: item.templateName.S!,
+                    };
+                });
+                resolve(results);
             }
         });
     });
 }
 
-export function GetMetadataByID(templateId: string): Promise<db.IMetadataEntry> {
+export function GetMetadataByID(templateId: string): Promise<ITemplateFullEntry> {
+    const ddb = getDynamo();
     const queryParams = {
-        ExpressionAttributeValues: { ':id': { S: templateId } },
+        ExpressionAttributeValues: {':id': {S: templateId}},
         KeyConditionExpression: `templateId = :id`,
-        TableName: METADATA_TABLE_NAME,
+        TableName: METADATA_TABLE_NAME!,
     };
-
-    return new Promise<db.IMetadataEntry>((resolve, reject) => {
-        getDynamo().query(queryParams, (err: AWS.AWSError, data: AWS.DynamoDB.QueryOutput) => {
+    return new Promise<ITemplateFullEntry>((resolve, reject) => {
+        ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
-                reject({ error: err, message: 'query failed' });
+                reject({error: err, message: `Failed to get template ${templateId} from database`});
             }
-
-            const dynamoResult: AWS.DynamoDB.ItemList = data.Items;
-            if (dynamoResult.length < 1) reject({ error: null, message: `no metadata entry matching ${templateId} found` });
-
-            const resultItem: AWS.DynamoDB.AttributeMap = data.Items[0]; // assuming only one, since id is unique
-            resolve({
-                templateId: templateId,
-                status: db.EntryStatus[resultItem.templateStatus.S],
-                name: resultItem.templateName.S,
-                timeCreated: resultItem.timeCreated.N,
-            });
+            const dynamoResult = data.Items;
+            if (!dynamoResult || dynamoResult.length < 1) {
+                const error = new Error(`No template with id ${templateId} found`);
+                reject({error: error, message: error.message});
+            } else {
+                const item: DynamoDB.AttributeMap = dynamoResult[0]; // assuming only one, since id is unique
+                resolve({
+                    templateId: item.templateId.S!,
+                    timeCreated: Number.parseInt(item.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                    templateName: item.templateName.S!,
+                    apiKey: item.apiKey.S!,
+                    fieldNames: item.fieldNames.SS!
+                });
+            }
         });
     });
 }
 
-export function GetHTMLByID(templateId: string): Promise<db.IHTMLEntry> {
+export function GetHTMLByID(templateId: string): Promise<string> {
+    const s3 = new S3();
     const queryParams = {
-        ExpressionAttributeValues: { ':id': { S: templateId } },
-        KeyConditionExpression: `templateId = :id`,
-        TableName: HTML_TABLE_NAME,
+        Bucket: HTML_BUCKET_NAME!,
+        Key: templateId
     };
     return new Promise((resolve, reject) => {
-        getDynamo().query(queryParams, (err: AWS.AWSError, data: AWS.DynamoDB.QueryOutput) => {
+        s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
             if (err) {
-                reject({ error: err, message: 'query failed' });
+                reject({ error: err, message: `Failed to get HTML with template id ${templateId} from bucket`})
             }
-
-            const dynamoResult: AWS.DynamoDB.ItemList = data.Items;
-            if (dynamoResult.length < 1) reject({ message: 'no entries found' });
-
-            const resultItem: AWS.DynamoDB.AttributeMap = data.Items[0]; // assuming only one, since id is unique
-            resolve({
-                templateId: templateId,
-                status: db.EntryStatus[resultItem.templateStatus.S],
-                html: resultItem.html.S,
-                fieldNames: resultItem.fieldNames.SS,
-                apiKey: resultItem.apiKey.S,
-            });
+            const result = data.Body?.toString('utf-8');
+            if (!result || CommonFunctions.isEmpty(result)) {
+                const error = new Error(`No HTML with template id ${templateId} found`);
+                reject({error: error, message: error.message});
+            } else {
+                resolve(result);
+            }
         });
     });
 }

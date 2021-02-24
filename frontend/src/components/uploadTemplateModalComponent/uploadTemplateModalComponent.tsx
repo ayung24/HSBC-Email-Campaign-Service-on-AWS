@@ -5,14 +5,16 @@ import { Button, Modal, Spinner } from 'react-bootstrap';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
+import { IError } from '../../models/iError';
+import {SpinnerComponent} from "../spinnerComponent/spinnerComponent";
 
 type State = {
     dragging: boolean;
     file: File | null;
     isModalShown: boolean;
     templateName: string;
-    html: string;
-    images: any;
+    htmlFile: any;
+    fieldNames: Array<string>;
     isLoading: boolean;
 };
 
@@ -24,7 +26,15 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     constructor(props: ToastFunctionProperties) {
         super(props);
         this._addToast = props.addToast;
-        this.state = { dragging: false, file: null, isModalShown: false, templateName: '', html: '', images: null, isLoading: false };
+        this.state = {
+            dragging: false,
+            file: null,
+            isModalShown: false,
+            templateName: '',
+            htmlFile: undefined,
+            fieldNames: [],
+            isLoading: false,
+        };
         this._templateService = new TemplateService();
     }
 
@@ -33,7 +43,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _closeModal(): void {
-        this.setState({ file: null, templateName: '', html: '', images: null });
+        this.setState({ file: null, templateName: '', htmlFile: undefined, fieldNames: [] });
         this.toggleModal();
     }
 
@@ -82,7 +92,12 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     private _handleUploadFile(file: File): void {
         if (this._isValidFileType(file.type)) {
             this.setState({ file: file });
-            this._templateService.parseDocx(file).then(([images, html]) => this.setState({ html: html, images: images }));
+            this._templateService
+                .parseDocx(file)
+                .then(([htmlFile, fieldNames]) => {
+                    this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
+                })
+                .catch(err => console.log(err));
         } else {
             this._addToast(this._createFileTypeErrorToast(file));
         }
@@ -130,12 +145,14 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     private _doUpload(): void {
         this.setState({ isLoading: true });
         this._templateService
-            .uploadTemplate(this.state.templateName, this.state.html, this.state.images)
+            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
             .then((t: ITemplate) => {
-                this._addToast(this._createUploadSuccessToast(t.name));
+                this._addToast(this._createUploadSuccessToast(t.templateName));
                 this._closeModal();
             })
-            .catch(err => this._addToast(this._createUploadErrorToast(err)))
+            .catch((err: IError) => {
+                this._addToast(this._createUploadErrorToast(err));
+            })
             .finally(() => this.setState({ isLoading: false }));
     }
 
@@ -188,13 +205,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                             <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUpload.bind(this)}>
                                 Create
                             </Button>
-                            {this.state.isLoading && (
-                                <div className='parentDisable'>
-                                    <div className='overlay-box'>
-                                        <Spinner animation='border' role='status' />
-                                    </div>
-                                </div>
-                            )}
+                            {this.state.isLoading && <SpinnerComponent />}
                         </div>
                     </Modal.Body>
                 </Modal>
