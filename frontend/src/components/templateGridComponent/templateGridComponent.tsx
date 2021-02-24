@@ -2,12 +2,12 @@ import React from 'react';
 import Table from 'react-bootstrap/Table';
 import './templateGridComponent.css';
 import { TemplateService } from '../../services/templateService';
-import { ToastFunctionProperties, ToastInterfaces, ToastType } from '../../models/toastInterfaces';
-import { TemplateDisplay } from '../../models/templateDisplay';
+import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { ITemplateDisplay } from '../../models/templateInterfaces';
 
 export class TemplateGridComponent extends React.Component<ToastFunctionProperties, { templates: JSX.Element[] }> {
     private _templateService: TemplateService;
-    private _addToast: (t: ToastInterfaces) => void;
+    private _addToast: (t: ToastInterface) => void;
 
     constructor(props: ToastFunctionProperties) {
         super(props);
@@ -23,7 +23,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
         this._templateService
             .getTemplates()
             .then(response => {
-                const templates = response.map((template: TemplateDisplay) => {
+                const templates = response.map((template: ITemplateDisplay) => {
                     const { id, name, uploadTime } = template;
 
                     const dateStr =

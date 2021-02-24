@@ -35,7 +35,7 @@
     text-align: end;
 }
 
-.logout-button.btn.btn-primary.btn-sm {
+.logout-button.btn.btn-primary {
     background-color: #db0011;
     border-color: #db0011;
 }

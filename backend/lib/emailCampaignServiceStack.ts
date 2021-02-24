@@ -2,13 +2,13 @@ import * as cdk from '@aws-cdk/core';
 import * as apiGateway from '@aws-cdk/aws-apigateway';
 import { TemplateService } from './services/templateService';
 import { EmailService } from './services/emailService';
-import { DatabaseService } from './services/databaseService';
+import { Database } from './constructs/database';
 
 /**
  * Main backend stack
  */
 export class EmailCampaignServiceStack extends cdk.Stack {
-    private _databaseService: DatabaseService;
+    private _database: Database;
     private _templateService: TemplateService;
     private _emailService: EmailService;
 
@@ -16,10 +16,11 @@ export class EmailCampaignServiceStack extends cdk.Stack {
 
     constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
+
         this._initApi();
-        
-        this._databaseService = new DatabaseService(this);
-        this._templateService = new TemplateService(this, this._api, this._databaseService);
+
+        this._database = new Database(this, 'EmailCampaignServiceDatabase');
+        this._templateService = new TemplateService(this, this._api, this._database);
         this._emailService = new EmailService(this, this._api);
     }
 

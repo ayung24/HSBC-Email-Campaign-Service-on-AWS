@@ -1,6 +1,6 @@
 import React from 'react';
 import './viewTemplateModalComponent.css';
-import { ToastComponentProperties, ToastFunctionProperties, ToastInterfaces, ToastType } from '../../models/toastInterfaces';
+import { ToastComponentProperties, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Button, Modal, Tabs, Tab, InputGroup, FormControl } from 'react-bootstrap/';
 
 interface ModalComponentProperties extends ToastComponentProperties {
@@ -8,8 +8,8 @@ interface ModalComponentProperties extends ToastComponentProperties {
 }
 
 export class ViewTemplateModalComponent extends React.Component<any, ModalComponentProperties> {
-    private _addToast: (t: ToastInterfaces) => void;
-    private _toastMessages: Array<ToastInterfaces> = [];
+    private _addToast: (t: ToastInterface) => void;
+    private _toastMessages: Array<ToastInterface> = [];
 
     constructor(props: ToastFunctionProperties) {
         super(props);

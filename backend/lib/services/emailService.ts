@@ -7,7 +7,7 @@ import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 
 export class EmailService {
     private _authorizer: Authorizer;
-    
+
     constructor(scope: cdk.Construct, api: agw.RestApi) {
         this._initAuth(scope);
     }
@@ -15,7 +15,7 @@ export class EmailService {
     private _initAuth(scope: cdk.Construct) {
         const apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambdaRoot}/emailApiAuth/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/emailApiAuth/index.ts`,
         });
 
         // TODO: Uncomment when implementing send
