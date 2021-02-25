@@ -1,24 +1,23 @@
 import React from 'react';
 import './uploadTemplateModalComponent.css';
 import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComponent';
-import { Button, Modal, Spinner } from 'react-bootstrap';
+import { Button, Modal } from 'react-bootstrap';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
 import { IError } from '../../models/iError';
-import {SpinnerComponent} from "../spinnerComponent/spinnerComponent";
+import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 
-type State = {
+interface UploadModalState extends SpinnerState {
     dragging: boolean;
     file: File | null;
     isModalShown: boolean;
     templateName: string;
     htmlFile: any;
     fieldNames: Array<string>;
-    isLoading: boolean;
-};
+}
 
-export class UploadTemplateModalComponent extends React.Component<ToastFunctionProperties, State> {
+export class UploadTemplateModalComponent extends React.Component<ToastFunctionProperties, UploadModalState> {
     private _templateService: TemplateService;
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;

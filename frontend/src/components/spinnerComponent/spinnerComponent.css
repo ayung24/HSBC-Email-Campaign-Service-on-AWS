@@ -1,4 +1,4 @@
-.parentDisable{
+.spinner-component {
     position: fixed;
     top: 0;
     left: 0;
@@ -9,7 +9,7 @@
     width: 100%;
 }
 
-.overlay-box {
+.spinner-overlay {
     position:absolute;
     top:50%;
     left:50%;

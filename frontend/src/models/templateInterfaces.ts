@@ -37,6 +37,7 @@ export interface IGetTemplatesReqBody {
 export interface IGetTemplatesResponse {
     templates: IGetTemplatesResponseItem[];
 }
+
 export interface IGetTemplatesResponseItem {
     templateId: string;
     templateName: string;
