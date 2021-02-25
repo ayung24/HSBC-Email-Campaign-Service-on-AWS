@@ -147,16 +147,14 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         this._templateService
             .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
             .then((t: ITemplate) => {
+                EventEmitter.getInstance().dispatch('refreshGrid');
                 this._addToast(this._createUploadSuccessToast(t.templateName));
                 this._closeModal();
             })
             .catch((err: IError) => {
                 this._addToast(this._createUploadErrorToast(err));
             })
-            .finally(() => {
-                this.setState({ isLoading: false });
-                EventEmitter.getInstance().dispatch('refreshGrid');
-            });
+            .finally(() => this.setState({ isLoading: false }));
     }
 
     componentDidMount(): void {
