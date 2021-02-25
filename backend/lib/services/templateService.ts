@@ -43,7 +43,7 @@ export class TemplateService {
             },
         });
         // configure upload template lambda permissions
-        database.htmlBucket().grantPut(this._upload); // PUT in image bucket
+        database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
@@ -83,6 +83,9 @@ export class TemplateService {
                     },
                     fieldNames: {
                         type: agw.JsonSchemaType.ARRAY,
+                        items: {
+                            type: agw.JsonSchemaType.STRING
+                        }
                     },
                 },
                 required: ['templateName', 'fieldNames'],

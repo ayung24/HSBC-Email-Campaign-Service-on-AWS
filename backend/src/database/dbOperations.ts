@@ -56,7 +56,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 },
             };
             return new Promise<any>((resolve, reject) => {
-                console.log('Adding template metadata and html');
+                console.log('Adding template to dynamo');
                 ddb.putItem(proposedMetadataEntry, (err: AWSError, data: DynamoDB.PutItemOutput) => {
                     if (err) {
                         console.log('Add template failed');

@@ -4,7 +4,7 @@ export enum EntryStatus {
     DELETED = 'Deleted',
 }
 
-// metadata Entries and html Entries have/share ID and status
+// a base entry, used for list
 export interface ITemplateBase {
     readonly templateId: string;
     readonly timeCreated: number;
@@ -12,7 +12,7 @@ export interface ITemplateBase {
     readonly templateName: string;
 }
 
-// a metadata Entry, likely used for list
+// a full entry, used for getting details
 export interface ITemplateFullEntry extends ITemplateBase {
     readonly apiKey: string;
     readonly fieldNames: string[];

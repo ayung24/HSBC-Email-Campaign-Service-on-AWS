@@ -7,6 +7,7 @@ import * as AWS from 'aws-sdk';
 import {ITemplateFullEntry} from "../../database/dbInterfaces";
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
 const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
 const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
@@ -22,7 +23,7 @@ const s3 = new S3Client({});
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
+    return !! METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
 };
 
 /**
