@@ -7,6 +7,7 @@ import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
 import { IError } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
+import { EventEmitter } from '../../services/eventEmitter';
 
 interface UploadModalState extends SpinnerState {
     dragging: boolean;
@@ -152,7 +153,10 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
             .catch((err: IError) => {
                 this._addToast(this._createUploadErrorToast(err));
             })
-            .finally(() => this.setState({ isLoading: false }));
+            .finally(() => {
+                this.setState({ isLoading: false });
+                EventEmitter.getInstance().dispatch('refreshGrid');
+            });
     }
 
     componentDidMount(): void {

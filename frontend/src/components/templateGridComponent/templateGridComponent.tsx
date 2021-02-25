@@ -5,6 +5,7 @@ import { TemplateService } from '../../services/templateService';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
+import { EventEmitter } from '../../services/eventEmitter';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;
@@ -29,10 +30,6 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
         this.setState({ isLoading: true }, () =>
             this._templateService
                 .getTemplates()
-                .then(response => {
-                    setTimeout(() => console.log('Done'), 1000);
-                    return response;
-                })
                 .then(response => {
                     const templates = response.map((template: ITemplateDisplay) => {
                         const { templateId, templateName, uploadTime } = template;
@@ -73,6 +70,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
     }
 
     componentDidMount(): void {
+        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates());
         this.renderTemplates();
     }
 
@@ -90,7 +88,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             <div className={'templates'}>
                 <Table hover>
                     <thead>{this.renderHeader()}</thead>
-                    {!this.state.isLoading && <tbody>{this.state.templates}</tbody>}
+                    <tbody>{this.state.templates}</tbody>
                 </Table>
                 {this.state.isLoading && <SpinnerComponent />}
             </div>
