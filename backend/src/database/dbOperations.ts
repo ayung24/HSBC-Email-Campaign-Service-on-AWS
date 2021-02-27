@@ -1,6 +1,6 @@
 import {v4 as uuid} from 'uuid';
 import {EntryStatus, ITemplateBase, ITemplateFullEntry} from './dbInterfaces';
-import {CommonFunctions} from '../commonFunctions';
+import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from "process";
 import {AWSError, DynamoDB, S3} from "aws-sdk";
 import {GetObjectOutput} from "aws-sdk/clients/s3";
@@ -12,11 +12,19 @@ function getDynamo(): DynamoDB {
     return new DynamoDB({apiVersion: process.env.DYNAMO_API_VERSION});
 }
 
+function toSS(set: string[]): DynamoDB.StringSetAttributeValue {
+    return isEmptyArray(set) ? [""] : set;
+}
+
+function fromSS(ss?: DynamoDB.StringSetAttributeValue): string[] {
+    return (ss && ss != [""]) ? ss : [];
+}
+
 export function AddTemplate(name: string, fieldNames: string[], apiKey: string): Promise<ITemplateFullEntry> {
     const ddb: DynamoDB = getDynamo();
     console.log(`Adding template with name: ${name}, fieldNames: ${fieldNames}, key: ${apiKey}`);
     return new Promise((resolve, reject) => {
-        if (CommonFunctions.isEmpty(name) || CommonFunctions.isEmpty(apiKey)) {
+        if (isEmpty(name) || isEmpty(apiKey)) {
             const error = new Error('Template name or api key is empty');
             reject({error: error, message: error.message});
         }
@@ -52,7 +60,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                     templateStatus: {S: EntryStatus.IN_SERVICE},
                     templateName: {S: name},
                     apiKey: {S: apiKey},
-                    fieldNames: {SS: fieldNames},
+                    fieldNames: {SS: toSS(fieldNames)}, // dynamoDB disallows empty Set
                 },
             };
             return new Promise<any>((resolve, reject) => {
@@ -73,7 +81,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             templateStatus: EntryStatus.IN_SERVICE,
             templateName: metadataEntry.templateName.S,
             timeCreated: metadataEntry.timeCreated.N,
-            fieldNames: metadataEntry.fieldNames.SS,
+            fieldNames: fromSS(metadataEntry.fieldNames.SS),
             apiKey: metadataEntry.apiKey.S,
         }));
 }
@@ -139,7 +147,7 @@ export function GetMetadataByID(templateId: string): Promise<ITemplateFullEntry>
                     templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
                     templateName: item.templateName.S!,
                     apiKey: item.apiKey.S!,
-                    fieldNames: item.fieldNames.SS!
+                    fieldNames: fromSS(item.fieldNames.SS)
                 });
             }
         });
@@ -158,7 +166,7 @@ export function GetHTMLByID(templateId: string): Promise<string> {
                 reject({ error: err, message: `Failed to get HTML with template id ${templateId} from bucket`})
             }
             const result = data.Body?.toString('utf-8');
-            if (!result || CommonFunctions.isEmpty(result)) {
+            if (!result || isEmpty(result)) {
                 const error = new Error(`No HTML with template id ${templateId} found`);
                 reject({error: error, message: error.message});
             } else {

@@ -2,9 +2,8 @@ import { TemplateService } from '../../lib/services/templateService';
 import { Stack } from '@aws-cdk/core';
 import { RestApi } from '@aws-cdk/aws-apigateway'
 import { Database } from '../../lib/constructs/database';
-import { arrayWith, Capture, countResources, expect as expectCDK, haveResource, haveResourceLike, objectLike, stringLike, SynthUtils } from '@aws-cdk/assert/';
+import { arrayWith, countResources, expect as expectCDK, haveResource, haveResourceLike, objectLike, stringLike, SynthUtils } from '@aws-cdk/assert/';
 import { config } from '../../lib/config'
-import '@aws-cdk/assert/jest'
 
 let stack: Stack;
 let templateService: TemplateService;
