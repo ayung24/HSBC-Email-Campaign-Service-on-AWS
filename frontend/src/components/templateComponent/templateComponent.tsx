@@ -53,7 +53,6 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                 <div className='template-container'>
                     <TemplateGridComponent addToast={this._addToast.bind(this)} />
                 </div>
-                <ViewTemplateModalComponent addToast={this._addToast.bind(this)} />
                 <ToastComponent ref={this._toastComponent} properties={this.state.properties} removeToast={this._removeToast.bind(this)} />
             </div>
         );
