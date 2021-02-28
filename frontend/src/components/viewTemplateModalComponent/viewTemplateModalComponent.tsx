@@ -1,12 +1,12 @@
 import React from 'react';
 import './viewTemplateModalComponent.css';
-import { TemplateService } from '../../services/templateService';
 import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
 import { ToastComponentProperties, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+//import * as db from '../../../backend/src/database/dbOperations';
 
 interface ModalComponentProperties extends ToastComponentProperties {
     isViewOpen: boolean;
@@ -38,6 +38,7 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
     }
 
     // private getTemplateParameters() {
+    //     //console.log(db.GetMetadataByID(this.props.id));
     //     return 'parameters';
     // }
 
