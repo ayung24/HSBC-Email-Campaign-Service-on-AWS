@@ -1,7 +1,7 @@
 # 4-MakeBank
 
 **URL**\
-https://prod.d8qm65h4ngdjk.amplifyapp.com
+https://main.d8zlt2xxyx88t.amplifyapp.com/
 
 **Login credential**\
 Username: admin\
