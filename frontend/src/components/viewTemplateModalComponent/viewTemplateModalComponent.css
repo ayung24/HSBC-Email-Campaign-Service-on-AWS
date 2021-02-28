@@ -33,3 +33,28 @@
     width:100%;
     height:100%;
 }
+
+.input-group>.form-control {
+    height: auto;
+}
+
+#tools {
+    margin-top: -9px;
+}
+
+#arrow, #tools {
+    border: none;
+}
+
+#arrow:hover, #tools:hover {
+    border: none;
+    background: none;
+}
+
+#arrow:focus, #copyBtn:focus, #tools:focus {
+    box-shadow: none;
+}
+
+#copyBtn:hover {
+    background: none;
+}

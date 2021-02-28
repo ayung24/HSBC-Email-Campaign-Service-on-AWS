@@ -1,10 +1,18 @@
 import React from 'react';
 import './viewTemplateModalComponent.css';
+import { TemplateService } from '../../services/templateService';
+import copyImage from '../../images/copyText.png';
+import copiedImage from '../../images/copiedText.png';
+import arrowIcon from '../../images/arrow.png';
+import toolsIcon from '../../images/tools.png';
 import { ToastComponentProperties, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
-import { Button, Modal, Tabs, Tab, InputGroup, FormControl } from 'react-bootstrap/';
+import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
 
 interface ModalComponentProperties extends ToastComponentProperties {
     isViewOpen: boolean;
+    url: string;
+    apiKey: string;
+    jsonBody: string;
 }
 
 export class ViewTemplateModalComponent extends React.Component<any, ModalComponentProperties> {
@@ -17,6 +25,9 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
         this.state = {
             isViewOpen: false,
             properties: this._toastMessages,
+            url: '',
+            apiKey: '',
+            jsonBody: '',
         };
     }
     private _handleModalClose() {
@@ -26,17 +37,31 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
         this.setState({ isViewOpen: true });
     }
 
+    // private getTemplateParameters() {
+    //     return 'parameters';
+    // }
+
+    private _copyText(text: string, event: any) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        event.target.src = copiedImage;
+        document.body.removeChild(textArea);
+    }
+
     render(): JSX.Element {
-        const toast = { id: 'testSuccess', body: 'This is to test success works', type: ToastType.SUCCESS, open: true };
         return (
             <div>
                 <Button
-                    variant='primary'
+                    id='tools'
+                    variant='outline-dark'
                     onClick={() => {
                         this._handleModalOpen();
                     }}
                 >
-                    View Template
+                    <Image src={toolsIcon} alt='tools icon' />
                 </Button>
                 <Modal
                     show={this.state.isViewOpen}
@@ -48,62 +73,41 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                     <Modal.Header>
                         <div className='headerDiv'>
                             <Button
+                                id='arrow'
                                 variant='outline-dark'
                                 onClick={() => {
-                                    this._handleModalOpen();
+                                    this._handleModalClose();
                                 }}
                             >
-                                Close Arrow
+                                <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
-                            <Button variant='outline-dark' className='float-right'>
-                                See Logs
+                            <Button variant='outline-dark' className='float-right' style={{ marginTop: '10px' }}>
+                                Delete
                             </Button>
-                            <Modal.Title>Template name</Modal.Title>
-                            <span>Created at timestamp</span>
+                            <Modal.Title>{this.props.name}</Modal.Title>
+                            <span>Created at {this.props.time}</span>
                         </div>
                     </Modal.Header>
                     <Modal.Body>
                         <Tabs defaultActiveKey='single'>
                             <Tab eventKey='single' title='Single'>
-                                <label>Recipient</label>
+                                <Form.Label>Recipient</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Recipient' />
                                 </InputGroup>
-                                <label>Parameter 1</label>
+                                <Form.Label>Parameter 1</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 1' />
                                 </InputGroup>
-                                <label>Parameter 2</label>
+                                <Form.Label>Parameter 2</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 2' />
                                 </InputGroup>
-                                <label>Parameter 3</label>
+                                <Form.Label>Parameter 3</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 3' />
                                 </InputGroup>
-                                <label>Parameter 4</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                            </Tab>
-                            <Tab eventKey='batch' title='Batch'>
-                                <label>Recipient</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                <label>Parameter 1</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 1' />
-                                </InputGroup>
-                                <label>Parameter 2</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 2' />
-                                </InputGroup>
-                                <label>Parameter 3</label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 3' />
-                                </InputGroup>
-                                <label>Parameter 4</label>
+                                <Form.Label>Parameter 4</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Parameter 4' />
                                 </InputGroup>
@@ -111,30 +115,61 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                         </Tabs>
                     </Modal.Body>
                     <Modal.Footer>
-                        <label>URL</label>
+                        <Form.Label>URL</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl placeholder='URL' />
+                            <FormControl
+                                disabled
+                                placeholder='URL'
+                                value={this.state.url}
+                                onChange={event => this.setState({ url: event.target.value })}
+                            />
                             <InputGroup.Append>
-                                <Button variant='outline-secondary'>Button</Button>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <label>API Key</label>
+                        <Form.Label>API Key</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl placeholder='API Key' />
+                            <FormControl
+                                disabled
+                                placeholder='API Key'
+                                value={this.state.apiKey}
+                                onChange={event => this.setState({ apiKey: event.target.value })}
+                            />
                             <InputGroup.Append>
-                                <Button variant='outline-secondary'>Button</Button>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image
+                                        src={copyImage}
+                                        alt='copy icon'
+                                        onClick={event => this._copyText(this.state.apiKey, event)}
+                                        fluid
+                                    />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <label>Body</label>
+                        <Form.Label>Body</Form.Label>
                         <InputGroup>
-                            <FormControl as='textarea' aria-label='With textarea' />
+                            <FormControl
+                                disabled
+                                as='textarea'
+                                aria-label='With textarea'
+                                value={this.state.jsonBody}
+                                onChange={event => this.setState({ jsonBody: event.target.value })}
+                            />
                             <InputGroup.Append>
-                                <Button variant='outline-secondary'>Button</Button>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image
+                                        src={copyImage}
+                                        alt='copy icon'
+                                        onClick={event => this._copyText(this.state.jsonBody, event)}
+                                        fluid
+                                    />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
                     </Modal.Footer>
                 </Modal>
-                <button onClick={() => this._addToast(toast)}>Trigger Success</button>
             </div>
         );
     }
