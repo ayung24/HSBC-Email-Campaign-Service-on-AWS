@@ -1,5 +1,4 @@
 import { RequestService } from './requestService';
-import JSZip from 'jszip';
 import { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import {
     IGetTemplatesReqBody,
@@ -20,32 +19,32 @@ export class TemplateService {
         this._requestService = new RequestService();
     }
 
-    public uploadTemplate(name: string, html: string, images: any): Promise<ITemplate> {
+    public uploadTemplate(name: string, htmlFile: any, fieldNames: Array<string>): Promise<ITemplate> {
         const requestBody: IUploadTemplateReqBody = {
-            name: name,
-            html: html,
+            templateName: name,
+            fieldNames: fieldNames,
         };
         return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
-            this._uploadTemplateImages(metadataResponse.imageUploadUrl, images).then(() => {
+            this._uploadTemplateHTML(metadataResponse.imageUploadUrl, htmlFile).then(() => {
                 return {
-                    id: metadataResponse.templateId,
+                    templateId: metadataResponse.templateId,
                     apiKey: metadataResponse.apiKey,
-                    name: metadataResponse.name,
-                    params: metadataResponse.fieldNames,
-                    uploadTime: new Date(parseInt(metadataResponse.timeCreated)),
+                    templateName: metadataResponse.templateName,
+                    fieldNames: metadataResponse.fieldNames,
+                    uploadTime: new Date(metadataResponse.timeCreated),
                 };
             }),
         );
     }
 
-    private _uploadTemplateImages(presignedPost: PresignedPost, images: any): Promise<any> {
+    private _uploadTemplateHTML(presignedPost: PresignedPost, htmlFile: any): Promise<void> {
         const formData = new FormData();
         const typedPresignedPost: { url: string; [key: string]: any } = presignedPost;
         Object.keys(presignedPost.fields).forEach(key => {
             formData.append(key, typedPresignedPost.fields[key]);
         });
-        formData.append('file', images);
-        formData.append('Content-Type', 'binary/octet-stream');
+        formData.append('file', htmlFile);
+        formData.append('Content-Type', 'text/html; charset=UTF-8');
         return new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', typedPresignedPost.url, true);
@@ -66,8 +65,8 @@ export class TemplateService {
             return new Promise<Array<ITemplateDisplay>>(resolve => {
                 const templates = templateResponse.templates.map((template: IGetTemplatesResponseItem) => {
                     return {
-                        id: template.templateId,
-                        name: template.name,
+                        templateId: template.templateId,
+                        templateName: template.templateName,
                         uploadTime: new Date(parseInt(template.timeCreated)),
                     };
                 });
@@ -76,8 +75,8 @@ export class TemplateService {
         });
     }
 
-    public parseDocx(docx: File): Promise<[images: any, html: string]> {
-        let html = '';
+    public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
+        let fieldNames: Array<string> = [];
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject({ error: reader.error, message: reader.error });
@@ -86,38 +85,25 @@ export class TemplateService {
         })
             .then(arrayBuffer => mammoth.convertToHtml({ arrayBuffer: arrayBuffer }))
             .then(resultObj => {
-                html = resultObj.value;
+                const html: string = resultObj.value;
+                const file = new File([html], 'templateHTML.html');
+                fieldNames = this._parseFieldsFromHTML(html);
+                return [file, fieldNames];
+            });
+    }
 
-                // TODO: Link images somehow?
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const imgs = doc.getElementsByTagName('img');
-                for (let i = 0; i < imgs.length; i++) {
-                    const img = imgs[i];
-                    img.src = 'blank.jpg';
-                }
-                html = doc.documentElement.outerHTML;
-
-                const images: any[] = [];
-                const imageRegExp = /"[^"]+"/g;
-                const allImages = html.match(imageRegExp) || '';
-
-                // image format is "data:image/{imageType};base64, {imageData}"
-                for (const image of allImages) {
-                    if (image.includes('data:image')) {
-                        const imageData = image.slice(image.indexOf(',') + 1, image.length);
-                        const imageType = image.slice(image.indexOf('/') + 1, image.indexOf(';'));
-                        images.push([imageType, imageData]);
-                    }
-                }
-                const zip = new JSZip();
-                let count = 0;
-                for (const img of images) {
-                    zip.file('images/image' + count + '.' + img[0], img[1], { base64: true });
-                    count++;
-                }
-                return zip.generateAsync({ type: 'blob' });
-            })
-            .then(blob => [blob, html]);
+    /**
+     * Parses given html string and outputs dynamic field names in an array
+     * @param html HTML string containing dynamic fields as ${...}
+     */
+    private _parseFieldsFromHTML(html: string): Array<string> {
+        const dynamicFieldRegex = new RegExp(/\${(.*?)}/gm);
+        let matches = dynamicFieldRegex.exec(html);
+        const fields = [];
+        while (matches) {
+            fields.push(matches[1]);
+            matches = dynamicFieldRegex.exec(html);
+        }
+        return fields;
     }
 }

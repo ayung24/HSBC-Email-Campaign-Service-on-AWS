@@ -1,20 +1,68 @@
 {
-  "dev": {
-    "awscloudformation": {
-      "AuthRoleName": "amplify-emailcampaignservice-dev-230953-authRole",
-      "UnauthRoleArn": "arn:aws:iam::098856158973:role/amplify-emailcampaignservice-dev-230953-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::098856158973:role/amplify-emailcampaignservice-dev-230953-authRole",
-      "Region": "ca-central-1",
-      "DeploymentBucketName": "amplify-emailcampaignservice-dev-230953-deployment",
-      "UnauthRoleName": "amplify-emailcampaignservice-dev-230953-unauthRole",
-      "StackName": "amplify-emailcampaignservice-dev-230953",
-      "StackId": "arn:aws:cloudformation:ca-central-1:098856158973:stack/amplify-emailcampaignservice-dev-230953/a3bbe4e0-6e93-11eb-8a25-0258842499ec",
-      "AmplifyAppId": "dp5ljq12bq7hi"
+    "dev": {
+        "awscloudformation": {
+            "AuthRoleName": "amplify-emailcampaignservice-dev-230953-authRole",
+            "UnauthRoleArn": "arn:aws:iam::098856158973:role/amplify-emailcampaignservice-dev-230953-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::098856158973:role/amplify-emailcampaignservice-dev-230953-authRole",
+            "Region": "ca-central-1",
+            "DeploymentBucketName": "amplify-emailcampaignservice-dev-230953-deployment",
+            "UnauthRoleName": "amplify-emailcampaignservice-dev-230953-unauthRole",
+            "StackName": "amplify-emailcampaignservice-dev-230953",
+            "StackId": "arn:aws:cloudformation:ca-central-1:098856158973:stack/amplify-emailcampaignservice-dev-230953/a3bbe4e0-6e93-11eb-8a25-0258842499ec",
+            "AmplifyAppId": "dp5ljq12bq7hi"
+        },
+        "categories": {
+            "auth": {
+                "emailcampaignserviceHSBC": {}
+            }
+        }
     },
-    "categories": {
-      "auth": {
-        "emailcampaignserviceHSBC": {}
-      }
+    "prod": {
+        "awscloudformation": {
+            "AuthRoleName": "amplify-emailcampaignservice-prod-143922-authRole",
+            "UnauthRoleArn": "arn:aws:iam::353747297524:role/amplify-emailcampaignservice-prod-143922-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::353747297524:role/amplify-emailcampaignservice-prod-143922-authRole",
+            "Region": "ca-central-1",
+            "DeploymentBucketName": "amplify-emailcampaignservice-prod-143922-deployment",
+            "UnauthRoleName": "amplify-emailcampaignservice-prod-143922-unauthRole",
+            "StackName": "amplify-emailcampaignservice-prod-143922",
+            "StackId": "arn:aws:cloudformation:ca-central-1:353747297524:stack/amplify-emailcampaignservice-prod-143922/a60d0a80-794c-11eb-aca7-0258842499ec",
+            "AmplifyAppId": "d8zlt2xxyx88t"
+        },
+        "categories": {
+            "auth": {
+                "emailcampaignserviceHSBC": {}
+            },
+            "hosting": {
+                "amplifyhosting": {
+                    "appId": "d8zlt2xxyx88t",
+                    "type": "cicd"
+                }
+            }
+        }
+    },
+    "staging": {
+        "awscloudformation": {
+            "AuthRoleName": "amplify-emailcampaignservice-staging-145504-authRole",
+            "UnauthRoleArn": "arn:aws:iam::353747297524:role/amplify-emailcampaignservice-staging-145504-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::353747297524:role/amplify-emailcampaignservice-staging-145504-authRole",
+            "Region": "ca-central-1",
+            "DeploymentBucketName": "amplify-emailcampaignservice-staging-145504-deployment",
+            "UnauthRoleName": "amplify-emailcampaignservice-staging-145504-unauthRole",
+            "StackName": "amplify-emailcampaignservice-staging-145504",
+            "StackId": "arn:aws:cloudformation:ca-central-1:353747297524:stack/amplify-emailcampaignservice-staging-145504/d6463f30-794e-11eb-8a33-064ab1fbb634",
+            "AmplifyAppId": "d8zlt2xxyx88t"
+        },
+        "categories": {
+            "auth": {
+                "emailcampaignserviceHSBC": {}
+            },
+            "hosting": {
+                "amplifyhosting": {
+                    "appId": "d8zlt2xxyx88t",
+                    "type": "cicd"
+                }
+            }
+        }
     }
-  }
 }
