@@ -33,7 +33,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             TableName: METADATA_TABLE_NAME!,
             IndexName: 'name-index',
             ExpressionAttributeValues: {
-                ':proposedName': { S: name },
+                ':proposedName': {S: name},
             },
             KeyConditionExpression: 'templateName = :proposedName',
         };
@@ -129,7 +129,7 @@ export function ListMetadataByDate(start: string, end: string): Promise<ITemplat
 export function GetMetadataByID(templateId: string): Promise<ITemplateFullEntry> {
     const ddb = getDynamo();
     const queryParams = {
-        ExpressionAttributeValues: { ':id': { S: templateId } },
+        ExpressionAttributeValues: {':id': {S: templateId}},
         KeyConditionExpression: `templateId = :id`,
         TableName: METADATA_TABLE_NAME!,
     };

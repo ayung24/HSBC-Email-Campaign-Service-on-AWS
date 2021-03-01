@@ -5,7 +5,6 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import * as AWS from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
-import '../../errorCode';
 import { ErrorCode } from '../../errorCode';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -135,7 +134,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
-            console.log(`Error: ${JSON.stringify(err)}`);
+            console.log(`Error: ${err.message}`);
             return {
                 headers: headers,
                 statusCode: 500,

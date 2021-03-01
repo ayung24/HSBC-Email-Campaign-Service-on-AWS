@@ -1,7 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateBase } from '../../database/dbInterfaces';
-import '../../errorCode';
 import { ErrorCode } from '../../errorCode';
 
 const headers = {
