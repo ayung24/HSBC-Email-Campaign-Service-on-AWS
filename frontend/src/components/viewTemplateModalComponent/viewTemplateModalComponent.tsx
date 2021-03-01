@@ -153,22 +153,9 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 onChange={event => this.setState({ url: event.target.value })}
                             />
                             <InputGroup.Append>
-                                <OverlayTrigger
-                                    trigger='click'
-                                    rootClose
-                                    key='bottom'
-                                    placement='bottom'
-                                    overlay={<Tooltip id={`tooltip-bottom`}>Copied!</Tooltip>}
-                                >
-                                    <Button id='copyBtn' variant='outline-secondary'>
-                                        <Image
-                                            src={copyImage}
-                                            alt='copy icon'
-                                            onClick={event => this._copyText(this.state.url, event)}
-                                            fluid
-                                        />
-                                    </Button>
-                                </OverlayTrigger>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
                         <Form.Label>API Key</Form.Label>
@@ -180,22 +167,14 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 onChange={event => this.setState({ apiKey: event.target.value })}
                             />
                             <InputGroup.Append>
-                                <OverlayTrigger
-                                    trigger='click'
-                                    rootClose
-                                    key='bottom'
-                                    placement='bottom'
-                                    overlay={<Tooltip id={`tooltip-bottom`}>Copied!</Tooltip>}
-                                >
-                                    <Button id='copyBtn' variant='outline-secondary'>
-                                        <Image
-                                            src={copyImage}
-                                            alt='copy icon'
-                                            onClick={event => this._copyText(this.state.apiKey, event)}
-                                            fluid
-                                        />
-                                    </Button>
-                                </OverlayTrigger>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image
+                                        src={copyImage}
+                                        alt='copy icon'
+                                        onClick={event => this._copyText(this.state.apiKey, event)}
+                                        fluid
+                                    />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
                         <div className='updateBtnDiv'>
@@ -214,22 +193,14 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 onChange={event => this.setState({ jsonBody: event.target.value })}
                             />
                             <InputGroup.Append>
-                                <OverlayTrigger
-                                    trigger='click'
-                                    rootClose
-                                    key='bottom'
-                                    placement='bottom'
-                                    overlay={<Tooltip id={`tooltip-bottom`}>Copied!</Tooltip>}
-                                >
-                                    <Button id='copyBtn' variant='outline-secondary'>
-                                        <Image
-                                            src={copyImage}
-                                            alt='copy icon'
-                                            onClick={event => this._copyText(this.state.jsonBody, event)}
-                                            fluid
-                                        />
-                                    </Button>
-                                </OverlayTrigger>
+                                <Button id='copyBtn' variant='outline-secondary'>
+                                    <Image
+                                        src={copyImage}
+                                        alt='copy icon'
+                                        onClick={event => this._copyText(this.state.jsonBody, event)}
+                                        fluid
+                                    />
+                                </Button>
                             </InputGroup.Append>
                         </InputGroup>
                     </Modal.Footer>
