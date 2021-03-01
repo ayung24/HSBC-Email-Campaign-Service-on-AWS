@@ -9,8 +9,10 @@ export const config = {
         LAMBDA_ROOT: 'src/lambda',
     },
     secretsManager: {
+        ACCOUNT_ID: '353747297524',
         REGION: 'ca-central-1',
         SECRET_NAME: 'API_Key_Secret',
+        SECRET_SUFFIX: 'ORGVxe',
     },
     dynamo: {
         apiVersion: '2019.11. 21',

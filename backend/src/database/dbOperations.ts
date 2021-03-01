@@ -70,7 +70,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         console.log('Add template failed');
                         reject({error: err, message: 'Add template failed'});
                     } else {
-                        console.log(`Add template success: ${proposedMetadataEntry.Item}`);
+                        console.log(`Add template success: ${JSON.stringify(proposedMetadataEntry.Item)}`);
                         resolve(proposedMetadataEntry.Item);
                     }
                 })

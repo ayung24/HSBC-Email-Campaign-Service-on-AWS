@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
+import * as sm from '@aws-cdk/aws-secretsmanager';
 
 import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
@@ -12,7 +13,6 @@ export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
-
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);

@@ -9,7 +9,6 @@ import {
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
 } from '../models/templateInterfaces';
-import JSZip from 'jszip';
 
 const mammoth = require('mammoth');
 
@@ -44,8 +43,8 @@ export class TemplateService {
         Object.keys(presignedPost.fields).forEach(key => {
             formData.append(key, typedPresignedPost.fields[key]);
         });
+        formData.set('Content-Type', 'text/html; charset=UTF-8');
         formData.append('file', htmlFile);
-        formData.append('Content-Type', 'text/html; charset=UTF-8');
         return new Promise<void>((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', typedPresignedPost.url, true);

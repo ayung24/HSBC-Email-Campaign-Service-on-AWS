@@ -18,6 +18,9 @@ const headers = {
     'Content-Type': 'application/json',
 };
 const s3 = new S3Client({});
+const secretManager: AWS.SecretsManager = new AWS.SecretsManager({
+    region: SECRET_MANAGER_REGION,
+});
 
 /**
  * Validates lambda's runtime env variables
@@ -38,57 +41,49 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             { acl: 'bucket-owner-full-control' },
             { bucket: HTML_BUCKET_NAME! },
             ['starts-with', '$key', key],
-            // TODO: Restrict content type to zip files
-            // ['starts-with', '$Content-Type', 'binary/octet-stream'], // only accept zip files
+            ['starts-with', '$Content-Type', 'text/html'],
+            ['content-length-range', 1, 4000000] // 1byte - 4MB
         ],
         Fields: {
+            bucket: HTML_BUCKET_NAME!,
             acl: 'bucket-owner-full-control',
+            'Content-Type': 'text/html; charset=UTF-8',
         },
         Expires: PRESIGNED_URL_EXPIRY,
-    }).catch(err => Promise.reject({ error: err, message: err.message }));
+    })
 };
 
 async function retrieveEncryptKey(): Promise<string> {
-    // Create a Secrets Manager client
-    const client = new AWS.SecretsManager({
-        region: SECRET_MANAGER_REGION,
-    });
-
     return new Promise((resolve, reject) => {
-        client.getSecretValue({ SecretId: ENCRYPTION_KEY_SECRET! }, function (err: any, data: any) {
-            // In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
-            // See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-            // We rethrow the exception by default.
+        secretManager.getSecretValue({ SecretId: ENCRYPTION_KEY_SECRET! }, (err: AWS.AWSError, data: AWS.SecretsManager.GetSecretValueResponse) => {
             if (err) {
                 reject(err);
             } else {
-                // Decrypts secret using the associated KMS CMK.
-                // Depending on whether the secret is a string or binary, one of these fields will be populated.
-                if ('SecretString' in data) {
+                if (data.SecretString) {
                     resolve(data.SecretString);
                 } else {
-                    const buff = Buffer.from(data.SecretBinary, 'base64');
-                    resolve(buff.toString('ascii'));
+                    reject(new Error("Encryption key was not found"));
                 }
             }
         });
     });
 }
 
-async function generateEncryptedApiKey(): Promise<{ encryptedUUID: string; apiKey: string }> {
+async function generateEncryptedApiKey(): Promise<string> {
+    console.info("Generating encrypted API key")
     const uuidAPIKey = require('uuid-apikey');
     const Cryptr = require('cryptr');
-    const { uuid, apiKey } = uuidAPIKey.create();
+    const { _, apiKey } = uuidAPIKey.create();
 
-    // TODO #46: Add in key encryption
-    // const key: string = await retrieveEncryptKey();
-    // const cryptr = new Cryptr(key);
-    // const encryptedUUID= cryptr.encrypt(uuid);
-
-    return {
-        encryptedUUID: uuid,
-        apiKey: apiKey,
-    };
+    // TODO: Support cross-account encryption key retrieval
+    // return retrieveEncryptKey().then(key => {
+    //     console.info("Retrieved encryption key")
+    //     const cryptr = new Cryptr(key);
+    //     return cryptr.encrypt(apiKey);
+    // })
+    
+    const cryptr = new Cryptr("my-secret-key-that-is-not-too-secret");
+    return cryptr.encrypt(apiKey);
 }
 
 // TODO #46: Add error codes to responses
@@ -116,9 +111,9 @@ export const handler = async function (event: APIGatewayProxyEvent) {
 
     const req: IUploadTemplateReqBody = JSON.parse(event.body);
 
-    const { encryptedUUID, apiKey } = await generateEncryptedApiKey();
-
-    const addTemplate = db.AddTemplate(req.templateName, req.fieldNames, encryptedUUID);
+    const addTemplate =  generateEncryptedApiKey().then((encryptedApiKey: string) => 
+        db.AddTemplate(req.templateName, req.fieldNames, encryptedApiKey)
+    )
     const createPostUrl = addTemplate.then((entry: ITemplateFullEntry) => getPresignedPost(entry.templateId));
     return Promise.all([addTemplate, createPostUrl])
         .then(([entry, postUrl]: [ITemplateFullEntry, PresignedPost]) => {
@@ -137,7 +132,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
-            console.log(`Error: ${err.error.stack}`);
+            console.log(`Error: ${JSON.stringify(err)}`);
             return {
                 headers: headers,
                 statusCode: 500,
