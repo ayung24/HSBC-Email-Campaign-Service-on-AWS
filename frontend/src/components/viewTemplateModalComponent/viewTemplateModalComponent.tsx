@@ -38,8 +38,7 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
     }
 
     // private getTemplateParameters() {
-    //     //console.log(db.GetMetadataByID(this.props.id));
-    //     return 'parameters';
+    //
     // }
 
     private _copyText(text: string, event: any) {
@@ -49,6 +48,7 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
         textArea.select();
         document.execCommand('copy');
         event.target.src = copiedImage;
+        setTimeout(() => (event.target.src = copyImage), 1000);
         document.body.removeChild(textArea);
     }
 
@@ -113,6 +113,28 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                     <FormControl placeholder='Parameter 4' />
                                 </InputGroup>
                             </Tab>
+                            <Tab eventKey='batch' title='Batch'>
+                                <Form.Label>Recipient</Form.Label>
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Recipient' />
+                                </InputGroup>
+                                <Form.Label>Parameter 1</Form.Label>
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 1' />
+                                </InputGroup>
+                                <Form.Label>Parameter 2</Form.Label>
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 2' />
+                                </InputGroup>
+                                <Form.Label>Parameter 3</Form.Label>
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 3' />
+                                </InputGroup>
+                                <Form.Label>Parameter 4</Form.Label>
+                                <InputGroup className='mb-3'>
+                                    <FormControl placeholder='Parameter 4' />
+                                </InputGroup>
+                            </Tab>
                         </Tabs>
                     </Modal.Body>
                     <Modal.Footer>
@@ -149,7 +171,12 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <Form.Label>Body</Form.Label>
+                        <div className='updateBtnDiv'>
+                            <Form.Label>Body</Form.Label>
+                            <Button id='updateBtn' variant='outline-secondary'>
+                                Update Preview
+                            </Button>
+                        </div>
                         <InputGroup>
                             <FormControl
                                 disabled
