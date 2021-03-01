@@ -17,11 +17,7 @@ export interface ITemplateDisplay {
 export interface ITemplateMetadataUploadResponse {
     templateId: string;
     timeCreated: number;
-<<<<<<< HEAD
     templateStatus: string;
-=======
-    templateStatus: string,
->>>>>>> dev
     templateName: string;
     apiKey: string;
     fieldNames: Array<string>;
