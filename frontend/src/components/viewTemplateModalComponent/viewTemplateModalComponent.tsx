@@ -5,7 +5,7 @@ import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
 import { ToastComponentProperties, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
-import { OverlayTrigger, Tooltip, Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
 
 interface ModalComponentProperties extends ToastComponentProperties {
     isViewOpen: boolean;
