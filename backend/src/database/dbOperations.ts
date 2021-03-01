@@ -3,7 +3,8 @@ import { EntryStatus, ITemplateBase, ITemplateFullEntry } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
-import { GetObjectOutput } from 'aws-sdk/clients/s3';
+import { DeleteObjectOutput, GetObjectOutput } from "aws-sdk/clients/s3";
+import { UpdateItemOutput } from "aws-sdk/clients/dynamodb";
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -39,10 +40,10 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
         };
         ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
-                console.info(`Name validation failure`);
-                reject({ error: err, message: err.message });
+                console.warn(`Name validation failure`);
+                reject({error: err, message: err.message});
             } else if (data.Count && data.Count > 0) {
-                console.info(`Name not unique`);
+                console.warn(`Name not unique`);
                 const err = new Error(`Template name not unique: ${JSON.stringify(data)}`);
                 reject({ error: err, message: err.message });
             } else {
@@ -68,10 +69,10 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 console.info('Adding template to dynamo');
                 ddb.putItem(proposedMetadataEntry, (err: AWSError, data: DynamoDB.PutItemOutput) => {
                     if (err) {
-                        console.info('Add template failed');
-                        reject({ error: err, message: 'Add template failed' });
+                        console.warn('Add template failed');
+                        reject({error: err, message: 'Add template failed'});
                     } else {
-                        console.info(`Add template success: ${JSON.stringify(proposedMetadataEntry.Item)}`);
+                        console.info(`Add template success: ${proposedMetadataEntry.Item}`);
                         resolve(proposedMetadataEntry.Item);
                     }
                 });
@@ -89,7 +90,61 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
         );
 }
 
-export function ListMetadataByDate(start: string, end: string): Promise<ITemplateBase[]> {
+export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
+    const ddb: DynamoDB = getDynamo();
+    console.info(`Deleting template with id [${templateId}]`);
+    return new Promise<any>((resolve, reject) => {
+        if (isEmpty(templateId)) {
+            const error = new Error('Template id is empty');
+            reject({error: error, message: error.message});
+        }
+        const deleteEntry: DynamoDB.UpdateItemInput = {
+            TableName: METADATA_TABLE_NAME!,
+            Key: {
+                templateId: {
+                    S: templateId
+                },
+            },
+            UpdateExpression: `set templateStatus = :${EntryStatus.DELETED}`,
+            ReturnValues: 'ALL_NEW',
+        }
+        ddb.updateItem(deleteEntry, ((err: AWSError, data: UpdateItemOutput) => {
+            if (err) {
+                console.warn('Delete template failed');
+                reject({error: err, message: 'Delete template failed'});
+            } else {
+                console.info(`Delete template success: [${templateId}]`);
+                resolve(data.Attributes);
+            }
+        }));
+    })
+        .then(attributeMap => Promise.resolve<ITemplateBase>({
+            templateId: attributeMap.templateId.S,
+            templateStatus: attributeMap.templateStatus.S,
+            templateName: attributeMap.templateName.S,
+            timeCreated: attributeMap.timeCreated.N,
+        }))
+        .then(template => {
+            const s3 = new S3();
+            const queryParams = {
+                Bucket: HTML_BUCKET_NAME!,
+                Key: templateId
+            };
+            return new Promise((resolve, reject) => {
+                s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
+                    if (err) {
+                        console.warn(`Delete S3 object failed: template id: [${templateId}]`);
+                        reject({ error: err, message: `Failed to delete HTML with template id ${templateId} from bucket`})
+                    }
+                    console.info(`Delete S3 object success: template id: [${templateId}]`);
+                    resolve(template);
+                });
+            });
+        });
+}
+
+
+export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {
     const ddb = getDynamo();
     console.info(`Getting all templates`);
     return new Promise((resolve, reject) => {
@@ -126,7 +181,7 @@ export function ListMetadataByDate(start: string, end: string): Promise<ITemplat
     });
 }
 
-export function GetMetadataByID(templateId: string): Promise<ITemplateFullEntry> {
+export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry> {
     const ddb = getDynamo();
     const queryParams = {
         ExpressionAttributeValues: { ':id': { S: templateId } },
@@ -157,7 +212,7 @@ export function GetMetadataByID(templateId: string): Promise<ITemplateFullEntry>
     });
 }
 
-export function GetHTMLByID(templateId: string): Promise<string> {
+export function GetHTMLById(templateId: string): Promise<string> {
     const s3 = new S3();
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,

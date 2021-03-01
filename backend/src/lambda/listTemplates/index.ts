@@ -24,7 +24,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     // const req: IListTemplatesBody = JSON.parse(event.body);
 
     // TODO: Implement pagination (Requesting whole range of dates temporarily)
-    const listTemplates = db.ListMetadataByDate('0', new Date().getTime().toString());
+    const listTemplates = db.ListTemplatesByDate('0', new Date().getTime().toString());
     return listTemplates
         .then((res: ITemplateBase[]) => {
             return {

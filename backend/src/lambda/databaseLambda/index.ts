@@ -11,7 +11,7 @@ function tryDBOperations() {
         .AddTemplate(testName, ['f1'], 'key')
         .then(d => {
             report.i = 0;
-            return db.GetMetadataByID(d.templateId);
+            return db.GetTemplateById(d.templateId);
         })
         .then(entry => {
             report.first = entry;
@@ -25,7 +25,7 @@ function tryDBOperations() {
         })
         .then(() => {
             report.i = 3;
-            return db.ListMetadataByDate(start, end);
+            return db.ListTemplatesByDate(start, end);
         })
         .then(listResponse => {
             report.list = listResponse;
