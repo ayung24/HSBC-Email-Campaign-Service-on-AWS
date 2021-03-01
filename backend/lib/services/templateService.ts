@@ -12,7 +12,6 @@ export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
-
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
@@ -84,8 +83,8 @@ export class TemplateService {
                     fieldNames: {
                         type: agw.JsonSchemaType.ARRAY,
                         items: {
-                            type: agw.JsonSchemaType.STRING
-                        }
+                            type: agw.JsonSchemaType.STRING,
+                        },
                     },
                 },
                 required: ['templateName', 'fieldNames'],
