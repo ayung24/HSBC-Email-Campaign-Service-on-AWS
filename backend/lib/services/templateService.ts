@@ -84,8 +84,8 @@ export class TemplateService {
                     fieldNames: {
                         type: agw.JsonSchemaType.ARRAY,
                         items: {
-                            type: agw.JsonSchemaType.STRING
-                        }
+                            type: agw.JsonSchemaType.STRING,
+                        },
                     },
                 },
                 required: ['templateName', 'fieldNames'],

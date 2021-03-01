@@ -2,3 +2,4 @@
 cdk.out
 build
 src/**/.build
+src/errorCode.ts

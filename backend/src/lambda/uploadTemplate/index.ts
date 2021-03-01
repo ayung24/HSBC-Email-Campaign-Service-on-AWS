@@ -4,7 +4,9 @@ import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import * as AWS from 'aws-sdk';
-import {ITemplateFullEntry} from "../../database/dbInterfaces";
+import { ITemplateFullEntry } from '../../database/dbInterfaces';
+import '../../errorCode';
+import { ErrorCode } from '../../errorCode';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -26,7 +28,7 @@ const secretManager: AWS.SecretsManager = new AWS.SecretsManager({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !! METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
+    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
 };
 
 /**
@@ -42,7 +44,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             { bucket: HTML_BUCKET_NAME! },
             ['starts-with', '$key', key],
             ['starts-with', '$Content-Type', 'text/html'],
-            ['content-length-range', 1, 4000000] // 1byte - 4MB
+            ['content-length-range', 1, 4000000], // 1byte - 4MB
         ],
         Fields: {
             bucket: HTML_BUCKET_NAME!,
@@ -50,43 +52,44 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             'Content-Type': 'text/html; charset=UTF-8',
         },
         Expires: PRESIGNED_URL_EXPIRY,
-    })
+    });
 };
 
 async function retrieveEncryptKey(): Promise<string> {
     return new Promise((resolve, reject) => {
-        secretManager.getSecretValue({ SecretId: ENCRYPTION_KEY_SECRET! }, (err: AWS.AWSError, data: AWS.SecretsManager.GetSecretValueResponse) => {
-            if (err) {
-                reject(err);
-            } else {
-                if (data.SecretString) {
-                    resolve(data.SecretString);
+        secretManager.getSecretValue(
+            { SecretId: ENCRYPTION_KEY_SECRET! },
+            (err: AWS.AWSError, data: AWS.SecretsManager.GetSecretValueResponse) => {
+                if (err) {
+                    reject(err);
                 } else {
-                    reject(new Error("Encryption key was not found"));
+                    if (data.SecretString) {
+                        resolve(data.SecretString);
+                    } else {
+                        reject(new Error('Encryption key was not found'));
+                    }
                 }
-            }
-        });
+            },
+        );
     });
 }
 
 async function generateEncryptedApiKey(): Promise<string> {
-    console.info("Generating encrypted API key")
+    console.info('Generating encrypted API key');
     const uuidAPIKey = require('uuid-apikey');
     const Cryptr = require('cryptr');
     const { _, apiKey } = uuidAPIKey.create();
 
-    // TODO: Support cross-account encryption key retrieval
     // return retrieveEncryptKey().then(key => {
     //     console.info("Retrieved encryption key")
     //     const cryptr = new Cryptr(key);
     //     return cryptr.encrypt(apiKey);
     // })
-    
-    const cryptr = new Cryptr("my-secret-key-that-is-not-too-secret");
+
+    // TODO: Support cross-account encryption key retrieval
+    const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
     return cryptr.encrypt(apiKey);
 }
-
-// TODO #46: Add error codes to responses
 
 export const handler = async function (event: APIGatewayProxyEvent) {
     if (!validateEnv()) {
@@ -95,7 +98,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 500,
             body: JSON.stringify({
                 message: 'Internal server error',
-                code: '',
+                code: ErrorCode.TS0,
             }),
         };
     } else if (!event.body) {
@@ -104,16 +107,16 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 400,
             body: JSON.stringify({
                 message: 'Invalid request format',
-                code: '',
+                code: ErrorCode.TS1,
             }),
         };
     }
 
     const req: IUploadTemplateReqBody = JSON.parse(event.body);
 
-    const addTemplate =  generateEncryptedApiKey().then((encryptedApiKey: string) => 
-        db.AddTemplate(req.templateName, req.fieldNames, encryptedApiKey)
-    )
+    const addTemplate = generateEncryptedApiKey().then((encryptedApiKey: string) =>
+        db.AddTemplate(req.templateName, req.fieldNames, encryptedApiKey),
+    );
     const createPostUrl = addTemplate.then((entry: ITemplateFullEntry) => getPresignedPost(entry.templateId));
     return Promise.all([addTemplate, createPostUrl])
         .then(([entry, postUrl]: [ITemplateFullEntry, PresignedPost]) => {
@@ -138,7 +141,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 statusCode: 500,
                 body: JSON.stringify({
                     message: err.message,
-                    code: '',
+                    code: ErrorCode.TS2,
                 }),
             };
         });
