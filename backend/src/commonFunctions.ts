@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 export function isEmpty(str: string): boolean {
     return !str || str.trim().length === 0;
 }
@@ -9,14 +8,4 @@ export function nonEmpty(str: string): boolean {
 
 export function isEmptyArray(obj: any): boolean {
     return Array.isArray(obj) && obj.length === 0;
-=======
-export class CommonFunctions {
-    public static isEmpty(str: string): boolean {
-        return !str || str.trim().length === 0;
-    }
-
-    public static nonEmpty(str: string): boolean {
-        return !CommonFunctions.isEmpty(str);
-    }
->>>>>>> dev
 }
