@@ -18,7 +18,7 @@ beforeAll(() => {
 
 describe('template service tests', () => {
     it('creates upload and list lambda functions', () => {
-        expect(stack).to(countResources('AWS::Lambda::Function', 2));
+        expect(stack).to(countResources('AWS::Lambda::Function', 3));
     });
 
     it('adds template endpoints to API gateway', () => {
@@ -149,6 +149,40 @@ describe('template service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('ListTemplatesHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('get template metadata lambda tests', () => {
+        it('get template metadata lambda has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            DYNAMO_API_VERSION: config.dynamo.apiVersion,
+                            METADATA_TABLE_NAME: objectLike({
+                                Ref: stringLike('MetadataTable*'),
+                            }),
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                }),
+            );
+        });
+
+        it('has READ permission on Metadata table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('dynamodb:Query', 'dynamodb:GetItem', 'dynamodb:Scan', 'dynamodb:ConditionCheckItem'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('GetTemplateMetaDataHandler*'),
                 }),
             );
         });

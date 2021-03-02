@@ -107,7 +107,6 @@ export class TemplateService {
         const templatesResource = api.root.addResource('templates');
         const uploadIntegration = new agw.LambdaIntegration(this._upload);
         const listIntegration = new agw.LambdaIntegration(this._list);
-        const getMetaDataIntegration = new agw.LambdaIntegration(this._templateMetaData);
 
         templatesResource.addMethod('POST', uploadIntegration, {
             authorizer: this._authorizer,
@@ -115,6 +114,9 @@ export class TemplateService {
             requestModels: { 'application/json': uploadReqModel },
         });
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
-        templatesResource.addMethod('GET', getMetaDataIntegration, {authorizer: this._authorizer });
+
+        const templateResource = templatesResource.addResource('{id}');
+        const getMetaDataIntegration = new agw.LambdaIntegration(this._templateMetaData);
+        templateResource.addMethod('GET', getMetaDataIntegration, {authorizer: this._authorizer });
     }
 }
