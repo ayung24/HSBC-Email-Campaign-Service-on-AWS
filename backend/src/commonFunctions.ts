@@ -1,9 +1,11 @@
-export class CommonFunctions {
-    public static isEmpty(str: string): boolean {
-        return !str || str.trim().length === 0;
-    }
+export function isEmpty(str: string): boolean {
+    return !str || str.trim().length === 0;
+}
 
-    public static nonEmpty(str: string): boolean {
-        return !CommonFunctions.isEmpty(str);
-    }
+export function nonEmpty(str: string): boolean {
+    return !isEmpty(str);
+}
+
+export function isEmptyArray(obj: any): boolean {
+    return Array.isArray(obj) && obj.length === 0;
 }

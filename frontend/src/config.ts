@@ -6,6 +6,6 @@ export const config = {
         IDENTITY_POOL_ID: 'ca-central-1:097f9420-9dbf-4ee9-a9f6-f4ed5c610e10',
     },
     api: {
-        DEPLOYMENT_ID: 'ntr24343ji',
+        DEPLOYMENT_ID: 'g60jf6vgg5',
     },
 };

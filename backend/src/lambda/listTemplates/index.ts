@@ -1,6 +1,7 @@
-import { APIGatewayProxyEvent, APIGatewayProxyHandler, Handler } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateBase } from '../../database/dbInterfaces';
+import { ErrorCode } from '../../errorCode';
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -40,7 +41,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
                 statusCode: 500,
                 body: JSON.stringify({
                     message: err.message,
-                    code: '',
+                    code: ErrorCode.TS3,
                 }),
             };
         });
