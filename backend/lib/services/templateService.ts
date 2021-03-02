@@ -11,6 +11,7 @@ import { Database } from '../constructs/database';
 export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
+    private _templateMetaData: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
@@ -44,6 +45,16 @@ export class TemplateService {
         // configure upload template lambda permissions
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
+        
+        this._templateMetaData = new NodejsFunction(scope, 'GetTemplateMetaDataHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/getTemplateMetaData/index.ts`,
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            },
+        });
+        database.metadataTable().grantReadData(this._templateMetaData);
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -58,6 +69,8 @@ export class TemplateService {
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
+
+
     }
 
     /**
@@ -94,6 +107,7 @@ export class TemplateService {
         const templatesResource = api.root.addResource('templates');
         const uploadIntegration = new agw.LambdaIntegration(this._upload);
         const listIntegration = new agw.LambdaIntegration(this._list);
+        const getMetaDataIntegration = new agw.LambdaIntegration(this._templateMetaData);
 
         templatesResource.addMethod('POST', uploadIntegration, {
             authorizer: this._authorizer,
@@ -101,5 +115,6 @@ export class TemplateService {
             requestModels: { 'application/json': uploadReqModel },
         });
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
+        templatesResource.addMethod('GET', getMetaDataIntegration, {authorizer: this._authorizer });
     }
 }
