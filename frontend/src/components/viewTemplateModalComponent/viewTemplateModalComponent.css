@@ -18,8 +18,8 @@
     justify-content: flex-start;  
 }
 
-a {
-    color: black !important;
+#single, #batch {
+    color: black;
 }
 
 .nav-tabs {
@@ -35,14 +35,14 @@ a {
     text-align: center;
 }
 
-.nav-tabs .nav-item.show .nav-link, .nav-tabs .nav-link.active {
+.nav-tabs .nav-item.show .nav-link, .nav-tabs #single.nav-link.active, #batch.nav-link.active {
     font-weight: bold;
-    border-bottom: 5px solid black !important;
+    border-bottom: 5px solid black;
 }
 
-.nav-tabs .nav-link {
-    border: none !important;
-    border-bottom: 1px solid black !important;
+.nav-tabs #single.nav-link, #batch.nav-link {
+    border: none;
+    border-bottom: 1px solid black;
 }
 
 .headerDiv {
@@ -58,8 +58,8 @@ a {
     height: auto;
 }
 
-.modal-footer>* {
-    margin: 0 !important;
+#footer>* {
+    margin: 0;
 }
 
 .modal-footer {
@@ -69,6 +69,10 @@ a {
 
 #tools {
     margin-top: -9px;
+}
+
+#arrow {
+    padding-left: 0;
 }
 
 #arrow, #tools, #updateBtn {
@@ -106,11 +110,11 @@ a {
 }
 
 @media (min-width: 576px) {
-    .modal-dialog-scrollable .modal-content {
-        max-height: 100vh !important;
+    .modal-dialog.modal-dialog-scrollable .modal-content {
+        max-height: 100vh;
     }
 }
 
-.modal-dialog-scrollable .modal-content {
-    max-height: 100vh !important;
+.modal-dialog.modal-dialog-scrollable .modal-content {
+    max-height: 100vh;
 }
