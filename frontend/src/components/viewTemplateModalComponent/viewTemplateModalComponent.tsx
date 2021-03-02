@@ -4,34 +4,34 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { ToastComponentProperties, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { ToastFunctionProperties, ToastInterface } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
 
-interface ModalComponentProperties extends ToastComponentProperties {
+interface ViewModalState {
     isViewOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: string;
 }
 
-export class ViewTemplateModalComponent extends React.Component<any, ModalComponentProperties> {
+export class ViewTemplateModalComponent extends React.Component<any, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
-    private _toastMessages: Array<ToastInterface> = [];
 
     constructor(props: ToastFunctionProperties) {
         super(props);
         this._addToast = props.addToast;
         this.state = {
             isViewOpen: false,
-            properties: this._toastMessages,
             url: '',
             apiKey: '',
             jsonBody: '',
         };
     }
+
     private _handleModalClose(): void {
         this.setState({ isViewOpen: false });
     }
+
     private _handleModalOpen(): void {
         this.setState({ isViewOpen: true });
     }
@@ -53,43 +53,25 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
     render(): JSX.Element {
         return (
             <div>
-                <Button
-                    id='tools'
-                    variant='outline-dark'
-                    onClick={() => {
-                        this._handleModalOpen();
-                    }}
-                >
+                <Button id='tools' variant='outline-dark' onClick={() => this._handleModalOpen()}>
                     <Image src={toolsIcon} alt='tools icon' />
                 </Button>
-                <Modal
-                    show={this.state.isViewOpen}
-                    scrollable
-                    onHide={() => {
-                        this._handleModalClose();
-                    }}
-                >
+                <Modal show={this.state.isViewOpen} scrollable onHide={() => this._handleModalClose()}>
                     <Modal.Header>
                         <div className='headerDiv'>
-                            <Button
-                                id='arrow'
-                                variant='outline-dark'
-                                onClick={() => {
-                                    this._handleModalClose();
-                                }}
-                            >
+                            <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
-                            <Button variant='outline-dark' className='float-right' style={{ marginTop: '10px' }}>
+                            <Button variant='outline-dark' className='float-right' style={{ marginTop: '12px' }}>
                                 Delete
                             </Button>
                             <Modal.Title>{this.props.name}</Modal.Title>
                             <span>Created at {this.props.time}</span>
                         </div>
                     </Modal.Header>
-                    <Modal.Body>
+                    <Modal.Body id='body'>
                         <Tabs defaultActiveKey='single'>
-                            <Tab eventKey='single' title='Single'>
+                            <Tab id='single' eventKey='single' title='Single'>
                                 <Form.Label>Recipient</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Recipient' />
@@ -115,7 +97,7 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                     <FormControl placeholder='Parameter 5' />
                                 </InputGroup>
                             </Tab>
-                            <Tab eventKey='batch' title='Batch'>
+                            <Tab id='batch' eventKey='batch' title='Batch'>
                                 <Form.Label>Recipient</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Recipient' />
@@ -143,15 +125,10 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                             </Tab>
                         </Tabs>
                     </Modal.Body>
-                    <Modal.Footer>
+                    <Modal.Footer id='footer'>
                         <Form.Label>URL</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl
-                                disabled
-                                placeholder='URL'
-                                value={this.state.url}
-                                onChange={event => this.setState({ url: event.target.value })}
-                            />
+                            <FormControl disabled placeholder='URL' onChange={event => this.setState({ url: event.target.value })} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
@@ -160,12 +137,7 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                         </InputGroup>
                         <Form.Label>API Key</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl
-                                disabled
-                                placeholder='API Key'
-                                value={this.state.apiKey}
-                                onChange={event => this.setState({ apiKey: event.target.value })}
-                            />
+                            <FormControl disabled placeholder='API Key' onChange={event => this.setState({ apiKey: event.target.value })} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image
@@ -188,7 +160,6 @@ export class ViewTemplateModalComponent extends React.Component<any, ModalCompon
                                 disabled
                                 as='textarea'
                                 aria-label='With textarea'
-                                value={this.state.jsonBody}
                                 style={{ minHeight: '45px' }}
                                 onChange={event => this.setState({ jsonBody: event.target.value })}
                             />
