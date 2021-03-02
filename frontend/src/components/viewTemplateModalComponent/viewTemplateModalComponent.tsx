@@ -165,7 +165,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 disabled
                                 as='textarea'
                                 aria-label='With textarea'
-                                style={{ minHeight: '45px' }}
+                                style={{ minHeight: '46px' }}
                                 onChange={event => this.setState({ jsonBody: event.target.value })}
                             />
                             <InputGroup.Append>
