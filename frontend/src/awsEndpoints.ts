@@ -1,7 +1,7 @@
 import { config } from './config';
 
 let region, deploymentID;
-if (process.env.NODE_ENV && process.env.NODE_ENV == 'production') {
+if (process.env.REACT_APP_BUILD_ENV && process.env.REACT_APP_BUILD_ENV == 'prod') {
     region = config.api.REGION_PROD;
     deploymentID = config.api.DEPLOYMENT_ID_PROD;
 } else {
