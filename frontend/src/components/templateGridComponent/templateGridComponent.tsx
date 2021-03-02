@@ -52,7 +52,11 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                                 <td className={'name'}>{templateName}</td>
                                 <td className={'upload-time'}>{dateStr}</td>
                                 <td className={'view-details'}>
-                                    <ViewTemplateModalComponent addToast={this._addToast.bind(this)} name={templateName} time={dateStr} />
+                                    <ViewTemplateModalComponent
+                                        addToast={this._addToast.bind(this)}
+                                        templateName={templateName}
+                                        timeCreated={dateStr}
+                                    />
                                 </td>
                             </tr>
                         );

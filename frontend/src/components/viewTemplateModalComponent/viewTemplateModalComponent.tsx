@@ -14,10 +14,15 @@ interface ViewModalState {
     jsonBody: string;
 }
 
-export class ViewTemplateModalComponent extends React.Component<any, ViewModalState> {
+interface ViewTemplateModalProperties extends ToastFunctionProperties {
+    templateName: string;
+    timeCreated: string;
+}
+
+export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
 
-    constructor(props: ToastFunctionProperties) {
+    constructor(props: ViewTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
         this.state = {
@@ -65,8 +70,8 @@ export class ViewTemplateModalComponent extends React.Component<any, ViewModalSt
                             <Button variant='outline-dark' className='float-right' style={{ marginTop: '12px' }}>
                                 Delete
                             </Button>
-                            <Modal.Title>{this.props.name}</Modal.Title>
-                            <span>Created at {this.props.time}</span>
+                            <Modal.Title>{this.props.templateName}</Modal.Title>
+                            <span>Created at {this.props.timeCreated}</span>
                         </div>
                     </Modal.Header>
                     <Modal.Body id='body'>
