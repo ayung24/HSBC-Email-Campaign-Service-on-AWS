@@ -87,7 +87,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             <tr>
                 <th className={'name'}>Name</th>
                 <th className={'upload-time'}>Upload Time</th>
-                <th className={'view-detatils'} />
+                <th className={'view-details'} />
             </tr>
         );
     }
