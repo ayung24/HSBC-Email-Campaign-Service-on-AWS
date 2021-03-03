@@ -11,7 +11,7 @@ import { Database } from '../constructs/database';
 export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
-    private _templateMetaData: lambda.Function;
+    private _templateMetadata: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
@@ -46,15 +46,15 @@ export class TemplateService {
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
 
-        this._templateMetaData = new NodejsFunction(scope, 'GetTemplateMetaDataHandler', {
+        this._templateMetadata = new NodejsFunction(scope, 'GetTemplateMetadataHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/getTemplateMetaData/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/getTemplateMetadata/index.ts`,
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
         });
-        database.metadataTable().grantReadData(this._templateMetaData);
+        database.metadataTable().grantReadData(this._templateMetadata);
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -111,7 +111,7 @@ export class TemplateService {
         templatesResource.addMethod('GET', listIntegration, { authorizer: this._authorizer });
 
         const templateResource = templatesResource.addResource('{id}');
-        const getMetaDataIntegration = new agw.LambdaIntegration(this._templateMetaData);
-        templateResource.addMethod('GET', getMetaDataIntegration, { authorizer: this._authorizer });
+        const getMetadataIntegration = new agw.LambdaIntegration(this._templateMetadata);
+        templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
     }
 }
