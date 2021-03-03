@@ -9,6 +9,7 @@ import {
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
 } from '../models/templateInterfaces';
+import { isTemplateLiteral } from 'typescript';
 
 const mammoth = require('mammoth');
 
@@ -75,9 +76,11 @@ export class TemplateService {
         });
     }
 
-    // public getTemplateMetaData(): {
-    //
-    // }
+    public getTemplateMetaData(templateId: string): Promise<ITemplate> {
+        return this._requestService.GET<ITemplate>(`/templates/${templateId}`, (template: ITemplate) => {
+            return new Promise<ITemplate>(resolve => resolve(template));
+        });
+    }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
         let fieldNames: Array<string> = [];

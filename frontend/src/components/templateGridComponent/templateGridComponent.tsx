@@ -56,6 +56,8 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                                         addToast={this._addToast.bind(this)}
                                         templateName={templateName}
                                         timeCreated={dateStr}
+                                        templateService={this._templateService}
+                                        templateId={templateId}
                                     />
                                 </td>
                             </tr>

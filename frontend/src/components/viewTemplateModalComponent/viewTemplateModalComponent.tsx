@@ -6,30 +6,62 @@ import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
 import { ToastFunctionProperties, ToastInterface } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+import { awsEndpoints } from '../../awsEndpoints';
+import { ITemplate } from '../../models/templateInterfaces';
+import { TemplateService } from '../../services/templateService';
 
 interface ViewModalState {
     isViewOpen: boolean;
     url: string;
     apiKey: string;
-    jsonBody: string;
+    jsonBody: {
+        templateId: string;
+        recipient: string;
+        fields: any;
+    };
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
     templateName: string;
     timeCreated: string;
+    templateId: string;
+    templateService: TemplateService;
 }
 
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
+    private _templateService: TemplateService;
+    private _onModalOpen: () => void;
 
     constructor(props: ViewTemplateModalProperties) {
         super(props);
+        // console.log(props.templateService);
         this._addToast = props.addToast;
         this.state = {
             isViewOpen: false,
-            url: '',
+            url: this._getUrl(),
             apiKey: '',
-            jsonBody: '',
+            jsonBody: {
+                templateId: props.templateId,
+                recipient: '',
+                fields: {},
+            },
+        };
+        this._templateService = props.templateService;
+        this._onModalOpen = () => {
+            // set myself to do nothing on first run
+            this._onModalOpen = () => {
+                return;
+            };
+            // this.setState({ apiKey: 'asdf' });
+            this._templateService
+                .getTemplateMetaData(props.templateId)
+                .then((template: ITemplate) => {
+                    this.setState({ apiKey: template.apiKey });
+                })
+                .catch(err => {
+                    this.setState({ apiKey: err });
+                });
         };
     }
 
@@ -39,11 +71,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _handleModalOpen(): void {
         this.setState({ isViewOpen: true });
+        this._onModalOpen(); // load details on first open
     }
 
-    // private getTemplateParameters() {
-    //
-    // }
+    private _getUrl(): string {
+        const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
+        return productionEndpoint ? `${productionEndpoint.endpoint}/email` : 'url config not set';
+    }
 
     private _copyText(text: string, event: any): void {
         const textArea = document.createElement('textarea');
@@ -133,7 +167,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     <Modal.Footer id='footer'>
                         <Form.Label>URL</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl disabled placeholder='URL' onChange={event => this.setState({ url: event.target.value })} />
+                            <FormControl disabled value={this.state.url} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
@@ -142,7 +176,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                         <Form.Label>API Key</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl disabled placeholder='API Key' onChange={event => this.setState({ apiKey: event.target.value })} />
+                            <FormControl disabled value={this.state.apiKey} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image
@@ -165,15 +199,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 disabled
                                 as='textarea'
                                 aria-label='With textarea'
-                                style={{ minHeight: '46px' }}
-                                onChange={event => this.setState({ jsonBody: event.target.value })}
+                                style={{
+                                    minHeight: '46px',
+                                    resize: 'none',
+                                }}
+                                value={JSON.stringify(this.state.jsonBody, null, 1)}
                             />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image
                                         src={copyImage}
                                         alt='copy icon'
-                                        onClick={event => this._copyText(this.state.jsonBody, event)}
+                                        onClick={event => this._copyText(JSON.stringify(this.state.jsonBody), event)}
                                         fluid
                                     />
                                 </Button>
