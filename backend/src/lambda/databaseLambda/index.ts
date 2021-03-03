@@ -3,29 +3,29 @@ import * as db from '../../database/dbOperations';
 
 function tryDBOperations() {
     const testName = 'test0';
-    const start = new Date();
-    let end: Date;
+    const start = new Date().getDate().toString();
+    let end: string;
 
     const report: any = {};
     return db
-        .AddTemplate(testName, 'html', ['f1'], 'key')
+        .AddTemplate(testName, ['f1'], 'key')
         .then(d => {
             report.i = 0;
-            return db.GetMetadataByID(d.templateId);
+            return db.GetTemplateById(d.templateId);
         })
         .then(entry => {
             report.first = entry;
             report.i = 1;
-            return db.AddTemplate(testName + 2, 'html', ['f1'], 'key');
+            return db.AddTemplate(testName + 2, ['f1'], 'key');
         })
         .then(() => {
-            end = new Date();
+            end = new Date().getDate().toString();
             report.i = 2;
-            return db.AddTemplate(testName + 3, 'html', ['f1'], 'key');
+            return db.AddTemplate(testName + 3, ['f1'], 'key');
         })
         .then(() => {
             report.i = 3;
-            return db.ListMetadataByDate(start, end);
+            return db.ListTemplatesByDate(start, end);
         })
         .then(listResponse => {
             report.list = listResponse;

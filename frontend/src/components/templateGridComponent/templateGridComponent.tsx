@@ -1,11 +1,18 @@
 import React from 'react';
 import Table from 'react-bootstrap/Table';
 import './templateGridComponent.css';
+import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
 import { TemplateService } from '../../services/templateService';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { ITemplateDisplay } from '../../models/templateInterfaces';
+import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
+import { EventEmitter } from '../../services/eventEmitter';
 
-export class TemplateGridComponent extends React.Component<ToastFunctionProperties, { templates: JSX.Element[] }> {
+interface TemplateGridState extends SpinnerState {
+    templates: Array<JSX.Element>;
+}
+
+export class TemplateGridComponent extends React.Component<ToastFunctionProperties, TemplateGridState> {
     private _templateService: TemplateService;
     private _addToast: (t: ToastInterface) => void;
 
@@ -16,50 +23,62 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
 
         this.state = {
             templates: [],
+            isLoading: true,
         };
     }
 
     renderTemplates(): void {
-        this._templateService
-            .getTemplates()
-            .then(response => {
-                const templates = response.map((template: ITemplateDisplay) => {
-                    const { id, name, uploadTime } = template;
+        this.setState({ isLoading: true }, () =>
+            this._templateService
+                .getTemplates()
+                .then(response => {
+                    const templates = response.map((template: ITemplateDisplay) => {
+                        const { templateId, templateName, uploadTime } = template;
 
-                    const dateStr =
-                        // Plus one because month is returned from 0-11
-                        String(uploadTime.getMonth() + 1).padStart(2, '0') +
-                        '-' +
-                        String(uploadTime.getDate()).padStart(2, '0') +
-                        '-' +
-                        uploadTime.getFullYear() +
-                        ' ' +
-                        String(uploadTime.getHours()).padStart(2, '0') +
-                        ':' +
-                        String(uploadTime.getMinutes()).padStart(2, '0');
+                        const dateStr =
+                            // Plus one because month is returned from 0-11
+                            String(uploadTime.getMonth() + 1).padStart(2, '0') +
+                            '-' +
+                            String(uploadTime.getDate()).padStart(2, '0') +
+                            '-' +
+                            uploadTime.getFullYear() +
+                            ' ' +
+                            String(uploadTime.getHours()).padStart(2, '0') +
+                            ':' +
+                            String(uploadTime.getMinutes()).padStart(2, '0');
 
-                    return (
-                        <tr key={id}>
-                            <td className={'name'}>{name}</td>
-                            <td className={'upload-time'}>{dateStr}</td>
-                        </tr>
-                    );
-                });
+                        return (
+                            <tr key={templateId}>
+                                <td className={'name'}>{templateName}</td>
+                                <td className={'upload-time'}>{dateStr}</td>
+                                <td className={'view-details'}>
+                                    <ViewTemplateModalComponent
+                                        addToast={this._addToast.bind(this)}
+                                        templateName={templateName}
+                                        timeCreated={dateStr}
+                                    />
+                                </td>
+                            </tr>
+                        );
+                    });
 
-                this.setState({ templates: templates });
-            })
-            .catch(() => {
-                const toast = {
-                    id: 'getTemplatesError',
-                    body: 'Could not load template list.',
-                    type: ToastType.ERROR,
-                    open: true,
-                };
-                this._addToast(toast);
-            });
+                    this.setState({ templates: templates });
+                })
+                .catch(() => {
+                    const toast = {
+                        id: 'getTemplatesError',
+                        body: 'Could not load template list.',
+                        type: ToastType.ERROR,
+                        open: true,
+                    };
+                    this._addToast(toast);
+                })
+                .finally(() => this.setState({ isLoading: false })),
+        );
     }
 
     componentDidMount(): void {
+        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates());
         this.renderTemplates();
     }
 
@@ -68,6 +87,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             <tr>
                 <th className={'name'}>Name</th>
                 <th className={'upload-time'}>Upload Time</th>
+                <th className={'view-details'} />
             </tr>
         );
     }
@@ -79,6 +99,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                     <thead>{this.renderHeader()}</thead>
                     <tbody>{this.state.templates}</tbody>
                 </Table>
+                {this.state.isLoading && <SpinnerComponent />}
             </div>
         );
     }

@@ -1,6 +1,6 @@
 export interface IUploadTemplateReqBody {
-    name: string;
-    html: string;
+    templateName: string;
+    fieldNames: string[];
 }
 
 export interface IUploadTemplateResBody {

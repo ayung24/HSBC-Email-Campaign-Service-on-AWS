@@ -12,7 +12,6 @@ export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
-
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
@@ -35,8 +34,7 @@ export class TemplateService {
             },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
-                HTML_TABLE_NAME: database.htmlTable().tableName,
-                S3_BUCKET_NAME: database.imageBucket().bucketName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
                 ENCRYPTION_KEY_SECRET: config.secretsManager.SECRET_NAME,
@@ -44,9 +42,8 @@ export class TemplateService {
             },
         });
         // configure upload template lambda permissions
-        database.imageBucket().grantPut(this._upload); // PUT in image bucket
+        database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
-        database.htmlTable().grantReadWriteData(this._upload); // READ/WRITE on html table
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -80,14 +77,17 @@ export class TemplateService {
             schema: {
                 type: agw.JsonSchemaType.OBJECT,
                 properties: {
-                    name: {
+                    templateName: {
                         type: agw.JsonSchemaType.STRING,
                     },
-                    html: {
-                        type: agw.JsonSchemaType.STRING,
+                    fieldNames: {
+                        type: agw.JsonSchemaType.ARRAY,
+                        items: {
+                            type: agw.JsonSchemaType.STRING,
+                        },
                     },
                 },
-                required: ['name', 'html'],
+                required: ['templateName', 'fieldNames'],
             },
         });
 

@@ -1,22 +1,22 @@
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import { BlockPublicAccess, Bucket, BucketEncryption, HttpMethods } from '@aws-cdk/aws-s3';
+
 export class Database extends cdk.Construct {
     // TODO: #23
     private static readonly DEBUG: boolean = true;
     private static readonly REMOVAL_POLICY = Database.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
 
     private _metadata: dynamodb.Table;
-    private _html: dynamodb.Table;
-    private _imageBucket: Bucket;
+    private _htmlBucket: Bucket;
 
     constructor(scope: cdk.Construct, id: string) {
         super(scope, id);
-        this._initTables(scope);
+        this._initTable(scope);
         this._initBucket(scope);
     }
 
-    private _initTables(scope: cdk.Construct) {
+    private _initTable(scope: cdk.Construct) {
         // shared template key name
         const TEMPLATE_KEY = 'templateId';
         // sort key
@@ -51,33 +51,10 @@ export class Database extends cdk.Construct {
             sortKey: metaDataSortKey,
             projectionType: dynamodb.ProjectionType.ALL,
         });
-
-        // >> init html table
-        this._html = new dynamodb.Table(scope, 'HTMLTable', {
-            partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
-            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: Database.REMOVAL_POLICY,
-        });
-
-        // query (filter) by status
-        this._html.addGlobalSecondaryIndex({
-            indexName: 'status-index',
-            partitionKey: {
-                name: 'templateStatus',
-                type: dynamodb.AttributeType.STRING,
-            },
-            projectionType: dynamodb.ProjectionType.ALL,
-        });
-
-        // >> init csv table
-        // const csv = new dynamodb.Table(scope, 'metadataPartition', {
-        //     partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
-        //     billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
-        // });
     }
 
     private _initBucket(scope: cdk.Construct) {
-        this._imageBucket = new Bucket(scope, 'ImageBucket', {
+        this._htmlBucket = new Bucket(scope, 'HTMLBucket', {
             versioned: false,
             encryption: BucketEncryption.UNENCRYPTED,
             publicReadAccess: false,
@@ -96,15 +73,11 @@ export class Database extends cdk.Construct {
         });
     }
 
-    public imageBucket(): Bucket {
-        return this._imageBucket;
+    public htmlBucket(): Bucket {
+        return this._htmlBucket;
     }
 
     public metadataTable(): dynamodb.Table {
         return this._metadata;
-    }
-
-    public htmlTable(): dynamodb.Table {
-        return this._html;
     }
 }
