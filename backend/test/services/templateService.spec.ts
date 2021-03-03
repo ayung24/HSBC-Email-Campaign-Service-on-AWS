@@ -182,7 +182,7 @@ describe('template service tests', () => {
                             }),
                         ),
                     }),
-                    PolicyName: stringLike('GetTemplateMetaDataHandler*'),
+                    PolicyName: stringLike('GetTemplateMetadataHandler*'),
                 }),
             );
         });
