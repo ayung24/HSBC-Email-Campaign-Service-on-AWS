@@ -19,5 +19,9 @@ td {
 }
 
 .upload-time {
+    width: 40%
+}
+
+.view-details {
     width: 20%
 }
