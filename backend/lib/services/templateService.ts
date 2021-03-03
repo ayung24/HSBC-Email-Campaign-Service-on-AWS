@@ -45,7 +45,7 @@ export class TemplateService {
         // configure upload template lambda permissions
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
-        
+
         this._templateMetaData = new NodejsFunction(scope, 'GetTemplateMetaDataHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/getTemplateMetaData/index.ts`,
@@ -59,9 +59,6 @@ export class TemplateService {
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/listTemplates/index.ts`,
-            bundling: {
-                nodeModules: ['uuid'],
-            },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
@@ -69,8 +66,6 @@ export class TemplateService {
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
-
-
     }
 
     /**
@@ -117,6 +112,6 @@ export class TemplateService {
 
         const templateResource = templatesResource.addResource('{id}');
         const getMetaDataIntegration = new agw.LambdaIntegration(this._templateMetaData);
-        templateResource.addMethod('GET', getMetaDataIntegration, {authorizer: this._authorizer });
+        templateResource.addMethod('GET', getMetaDataIntegration, { authorizer: this._authorizer });
     }
 }
