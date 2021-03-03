@@ -10,10 +10,9 @@ import { SESEmailVerifier } from '../constructs/emailVerifier';
 export class EmailService {
     private _authorizer: agw.Authorizer;
     private _send: lambda.Function;
-    private _verifyEmail: SESEmailVerifier;
 
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
-        this._verifyEmail = new SESEmailVerifier(scope, 'SESEmailVerify', {
+        new SESEmailVerifier(scope, 'SESEmailVerify', {
             email: config.ses.VERIFIED_EMAIL_ADDRESS,
         });
         this._initFunctions(scope, database);
