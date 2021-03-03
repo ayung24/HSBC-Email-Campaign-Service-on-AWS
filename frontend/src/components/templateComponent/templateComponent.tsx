@@ -1,7 +1,6 @@
 import React from 'react';
 import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
 import { TemplateService } from '../../services/templateService';
-import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
 import { ToastComponentProperties, ToastInterface } from '../../models/toastInterfaces';
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';

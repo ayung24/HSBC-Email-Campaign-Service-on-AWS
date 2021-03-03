@@ -75,6 +75,10 @@ export class TemplateService {
         });
     }
 
+    // public getTemplateMetaData(): {
+    //
+    // }
+
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
         let fieldNames: Array<string> = [];
         return new Promise((resolve, reject) => {

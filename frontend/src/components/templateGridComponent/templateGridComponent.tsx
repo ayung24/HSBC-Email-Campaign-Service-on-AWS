@@ -1,6 +1,7 @@
 import React from 'react';
 import Table from 'react-bootstrap/Table';
 import './templateGridComponent.css';
+import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
 import { TemplateService } from '../../services/templateService';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { ITemplateDisplay } from '../../models/templateInterfaces';
@@ -50,6 +51,13 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                             <tr key={templateId}>
                                 <td className={'name'}>{templateName}</td>
                                 <td className={'upload-time'}>{dateStr}</td>
+                                <td className={'view-details'}>
+                                    <ViewTemplateModalComponent
+                                        addToast={this._addToast.bind(this)}
+                                        templateName={templateName}
+                                        timeCreated={dateStr}
+                                    />
+                                </td>
                             </tr>
                         );
                     });
@@ -79,6 +87,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             <tr>
                 <th className={'name'}>Name</th>
                 <th className={'upload-time'}>Upload Time</th>
+                <th className={'view-details'} />
             </tr>
         );
     }

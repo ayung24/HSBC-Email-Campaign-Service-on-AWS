@@ -14,8 +14,9 @@ To be updated with every push to main
 - User can view list of all uploaded templates
 - User can upload a template
 - Error and success toast messages
-#### ***March 1, 2020***
+#### ***March 2, 2020***
 - Spinner shows when loading templates
 - Templates list automatically refreshed upon successful upload
 - CI/CD for frontend and backend
 - Template API key encryption (with hardcoded key)
+- View template detail side panel

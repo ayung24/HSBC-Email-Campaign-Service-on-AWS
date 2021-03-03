@@ -1,0 +1,127 @@
+.modal-dialog.modal-dialog-scrollable{
+    height:100%;
+    width:100%;
+    margin-top: 0;
+    margin-bottom: 0;
+    float: right;
+}
+
+.modal-title {
+    margin-top: 0px;
+}
+
+#body {
+    padding: 1rem 1.5rem 1rem 1.5rem;
+}
+
+.modal-content {
+    height: 100vh;
+}
+
+.modal-dialog-scrollable .modal-footer {
+    justify-content: flex-start;  
+}
+
+#single, #batch {
+    color: black;
+}
+
+.nav-tabs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 10px;
+}
+
+.nav-link {
+    width: 50%;
+    text-align: center;
+}
+
+.nav-tabs .nav-item.show .nav-link, .nav-tabs #single.nav-link.active, #batch.nav-link.active {
+    font-weight: bold;
+    border-bottom: 5px solid black;
+}
+
+.nav-tabs #single.nav-link, #batch.nav-link {
+    border: none;
+    border-bottom: 1px solid black;
+}
+
+.headerDiv {
+    width:100%;
+    height:100%;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.form-label {
+    margin-bottom: 0;
+}
+
+.input-group>.form-control {
+    height: auto;
+}
+
+#footer>* {
+    margin: 0;
+}
+
+#footer {
+    padding: .75rem 1.5rem .75rem 1.5rem;
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+#tools {
+    margin-top: -9px;
+}
+
+#arrow {
+    padding-left: 0;
+}
+
+#arrow, #tools, #updateBtn {
+    border: none;
+}
+
+#arrow:hover, #tools:hover {
+    border: none;
+    background: none;
+}
+
+#arrow:focus, #copyBtn:focus, #updateBtn:focus, #tools:focus {
+    box-shadow: none;
+}
+
+#copyBtn:hover {
+    background: none;
+}
+
+#updateBtn:hover {
+    border: none;
+    color: black;
+    background: none;
+}
+
+.updateBtnDiv {
+    width:100%;
+    margin:0;
+}
+
+#updateBtn {
+    float:right;
+    margin:0;
+    padding:0;
+}
+
+@media (min-width: 576px) {
+    .modal-dialog.modal-dialog-scrollable .modal-content {
+        max-height: 100vh;
+    }
+}
+
+.modal-dialog.modal-dialog-scrollable .modal-content {
+    max-height: 100vh;
+}
