@@ -14,7 +14,7 @@ export class EmailService {
 
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._verifyEmail = new SESEmailVerifier(scope, 'SESEmailVerify', {
-            email: config.ses.VERIFIED_EMAIL_ADDRESS
+            email: config.ses.VERIFIED_EMAIL_ADDRESS,
         });
         this._initFunctions(scope, database);
         this._initAuth(scope);
@@ -41,15 +41,18 @@ export class EmailService {
             environment: {
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
-                VERSION: config.ses.VERSION
+                VERSION: config.ses.VERSION,
             },
         });
-        database.htmlBucket().grantRead(this._send);    // READ access to HTML bucket
-        this._send.addToRolePolicy(new iam.PolicyStatement({    // SEND permission using SES
-            actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-            resources: ['*'],
-            effect: iam.Effect.ALLOW
-        }))
+        database.htmlBucket().grantRead(this._send); // READ access to HTML bucket
+        this._send.addToRolePolicy(
+            new iam.PolicyStatement({
+                // SEND permission using SES
+                actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+                resources: ['*'],
+                effect: iam.Effect.ALLOW,
+            }),
+        );
     }
 
     /**

@@ -15,7 +15,7 @@ beforeAll(() => {
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase');
     emailService = new EmailService(stack, api, database);
-})
+});
 
 describe('email service tests', () => {
     it('creates send, authorizer, identity verifier lambdas', () => {
@@ -77,12 +77,12 @@ describe('email service tests', () => {
                             objectLike({
                                 Action: arrayWith('ses:SendEmail', 'ses:SendRawEmail'),
                                 Effect: 'Allow',
-                            })
-                        )
+                            }),
+                        ),
                     }),
                     PolicyName: stringLike('SendEmailHandler*'),
-                })
-            )
-        })
-    })
-})
+                }),
+            );
+        });
+    });
+});

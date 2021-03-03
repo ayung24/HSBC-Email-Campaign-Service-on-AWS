@@ -21,7 +21,7 @@ export const config = {
         PRESIGNED_URL_EXPIRY: '600',
     },
     ses: {
-        VERSION: "2010-12-01",
-        VERIFIED_EMAIL_ADDRESS: 'shizuko@student.ubc.ca'
-    }
+        VERSION: '2010-12-01',
+        VERIFIED_EMAIL_ADDRESS: 'shizuko@student.ubc.ca',
+    },
 };

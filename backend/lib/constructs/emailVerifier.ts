@@ -23,17 +23,17 @@ export class SESEmailVerifier extends cdk.Construct {
                 parameters: {
                     EmailAddress: email,
                 },
-                physicalResourceId: PhysicalResourceId.of(`verify-${email}`)
+                physicalResourceId: PhysicalResourceId.of(`verify-${email}`),
             },
             onDelete: {
                 service: 'SES',
                 action: 'deleteIdentity',
                 parameters: {
-                    Identity: email
+                    Identity: email,
                 },
             },
             policy: this._createSESPolicy(['ses:VerifyEmailIdentity', 'ses:DeleteIdentity']),
-        })
+        });
     }
 
     private _createSESPolicy(methods: string[]): AwsCustomResourcePolicy {
@@ -41,8 +41,8 @@ export class SESEmailVerifier extends cdk.Construct {
             new PolicyStatement({
                 actions: methods,
                 effect: Effect.ALLOW,
-                resources: ['*']
-            })
-        ])
+                resources: ['*'],
+            }),
+        ]);
     }
 }
