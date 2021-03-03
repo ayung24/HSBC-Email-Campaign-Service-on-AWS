@@ -17,7 +17,7 @@ beforeAll(() => {
 });
 
 describe('template service tests', () => {
-    it('creates upload and list lambda functions', () => {
+    it('creates upload, list, get lambda functions', () => {
         expect(stack).to(countResources('AWS::Lambda::Function', 3));
     });
 
