@@ -44,34 +44,40 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalOpen(): void {
-        this.getTemplateParameters();
+        this.getTemplateFieldNames();
         this.setState({ isViewOpen: true });
     }
 
-    private getTemplateParameters(): void {
+    private getTemplateFieldNames(): void {
         const id = this.props.templateId;
         const name = this.props.templateName;
         this._templateService
             .getTemplateMetaData(id)
             .then(response => {
-                const toast = {
-                    id: 'getTemplateMetadataSuccess',
-                    body: 'Successfully got template metadata for: ' + name,
-                    type: ToastType.SUCCESS,
-                    open: true,
-                };
-                this._addToast(toast);
+                this._addToast(this._getTemplateFieldNamesSuccessToast(name));
                 this.setState({ fieldNames: response.fieldNames });
             })
-            .catch(() => {
-                const toast = {
-                    id: 'getTemplateMetadataError',
-                    body: 'Could not get template metadata for: ' + name,
-                    type: ToastType.ERROR,
-                    open: true,
-                };
-                this._addToast(toast);
+            .catch((err: any) => {
+                this._addToast(this.__getTemplateFieldNamesErrorToast(err, name));
             });
+    }
+
+    private __getTemplateFieldNamesErrorToast(err: any, name: string): ToastInterface {
+        return {
+            id: `getTemplateFieldNamesError-${err.response}`,
+            body: `An error occured when getting field names for template [${name}]. Error: ${err.response}`,
+            type: ToastType.ERROR,
+            open: true,
+        };
+    }
+
+    private _getTemplateFieldNamesSuccessToast(name: string): ToastInterface {
+        return {
+            id: `getTemplateFieldNamesSuccess-${name}`,
+            body: `Template [${name}] field names retrieved successfully!`,
+            type: ToastType.SUCCESS,
+            open: true,
+        };
     }
 
     private _copyText(text: string, event: any): any {
@@ -84,13 +90,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.removeChild(textArea);
     }
 
-    private _renderParameters(): any {
-        const parameters = this.state.fieldNames;
-        return parameters.map((parameter, index) => (
-            <div key={parameter + index}>
-                <Form.Label key={parameter + index}>Parameter {index + 1}</Form.Label>
+    private _renderFieldNames(): any {
+        const fieldNames = this.state.fieldNames;
+        return fieldNames.map((fieldName, index) => (
+            <div key={fieldName + index}>
+                <Form.Label key={fieldName + index}>{fieldName}</Form.Label>
                 <InputGroup className='mb-3'>
-                    <FormControl key={parameter + index} placeholder={'Parameter ' + (index + 1)} defaultValue={parameter} />
+                    <FormControl key={fieldName + index} placeholder={'Field Name ' + (index + 1)} />
                 </InputGroup>
             </div>
         ));
@@ -122,33 +128,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <InputGroup id='recipient' className='mb-3'>
                                     <FormControl placeholder='Recipient' />
                                 </InputGroup>
-                                {this._renderParameters()}
+                                {this._renderFieldNames()}
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <Form.Label>Recipient</Form.Label>
                                 <InputGroup className='mb-3'>
                                     <FormControl placeholder='Recipient' />
                                 </InputGroup>
-                                <Form.Label>Parameter 1</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 1' />
-                                </InputGroup>
-                                <Form.Label>Parameter 2</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 2' />
-                                </InputGroup>
-                                <Form.Label>Parameter 3</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 3' />
-                                </InputGroup>
-                                <Form.Label>Parameter 4</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                                <Form.Label>Parameter 5</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
-                                </InputGroup>
+                                {this._renderFieldNames()}
                             </Tab>
                         </Tabs>
                     </Modal.Body>
