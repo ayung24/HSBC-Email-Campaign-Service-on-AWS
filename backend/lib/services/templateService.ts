@@ -7,6 +7,7 @@ import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 import { Database } from '../constructs/database';
+import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 
 export class TemplateService {
     private _upload: lambda.Function;
@@ -31,20 +32,27 @@ export class TemplateService {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/uploadTemplate/index.ts`,
             bundling: {
-                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post', 'uuid', 'uuid-apikey', 'cryptr'],
+                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post', 'uuid', 'uuid-apikey'],
             },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
-                ENCRYPTION_KEY_SECRET: config.secretsManager.SECRET_NAME,
-                SECRET_MANAGER_REGION: config.secretsManager.REGION,
+                KMS_REGION: config.KMS.REGION,
+                KMS_KEY_KD: config.KMS.KEY_ID,
             },
         });
         // configure upload template lambda permissions
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
+        this._upload.addToRolePolicy(
+            new PolicyStatement({
+                actions: ['kms:Encrypt'],
+                resources: [config.KMS.KEY_ID],
+                effect: Effect.ALLOW,
+            }),
+        );
 
         this._templateMetadata = new NodejsFunction(scope, 'GetTemplateMetadataHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
