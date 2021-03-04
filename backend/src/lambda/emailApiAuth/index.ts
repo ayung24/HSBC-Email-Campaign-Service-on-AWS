@@ -4,6 +4,7 @@ import { ITemplateFullEntry } from '../../database/dbInterfaces';
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
     const Cryptr = require('cryptr');
+    const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
 
     // TODO 1: How to extract the API key from email POST request body
     const apiKeyFromPOSTReq = 'test123';
@@ -11,7 +12,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
     // TODO 2: Where to get template ID?
     db.GetTemplateById('1234').then((entry: ITemplateFullEntry) => {
-        const decryptKey: string = Cryptr.decrypt(entry.apiKey);
+        const decryptKey: string = cryptr.decrypt(entry.apiKey);
         if (decryptKey === apiKeyFromPOSTReq) {
             callback(null); // TODO 3: Do we need callback?
         } else {
