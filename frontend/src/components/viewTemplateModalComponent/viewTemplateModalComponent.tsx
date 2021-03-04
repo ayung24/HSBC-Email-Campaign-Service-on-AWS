@@ -56,7 +56,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             .then(response => {
                 const toast = {
                     id: 'getTemplateMetadataSuccess',
-                    body: 'Successfully got template metadata: ' + name,
+                    body: 'Successfully got template metadata for: ' + name,
                     type: ToastType.SUCCESS,
                     open: true,
                 };
@@ -66,7 +66,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             .catch(() => {
                 const toast = {
                     id: 'getTemplateMetadataError',
-                    body: 'Could not get template metadata: ' + name,
+                    body: 'Could not get template metadata for: ' + name,
                     type: ToastType.ERROR,
                     open: true,
                 };
@@ -74,7 +74,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             });
     }
 
-    private _copyText(text: string, event: any): void {
+    private _copyText(text: string, event: any): any {
         const textArea = document.createElement('textarea');
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -84,9 +84,17 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.removeChild(textArea);
     }
 
-    // private _renderParameters(): void {
-
-    // }
+    private _renderParameters(): any {
+        const parameters = this.state.fieldNames;
+        return parameters.map((parameter, index) => (
+            <div key={parameter + index}>
+                <Form.Label key={parameter + index}>Parameter {index + 1}</Form.Label>
+                <InputGroup className='mb-3'>
+                    <FormControl key={parameter + index} placeholder={'Parameter ' + (index + 1)} defaultValue={parameter} />
+                </InputGroup>
+            </div>
+        ));
+    }
 
     render(): JSX.Element {
         return (
@@ -101,7 +109,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
                             <Button variant='outline-dark' className='float-right' style={{ marginTop: '12px' }}>
-                                Delete
+                                See Logs
                             </Button>
                             <Modal.Title>{this.props.templateName}</Modal.Title>
                             <span>Created at {this.props.timeCreated}</span>
@@ -114,6 +122,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <InputGroup id='recipient' className='mb-3'>
                                     <FormControl placeholder='Recipient' />
                                 </InputGroup>
+                                {this._renderParameters()}
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <Form.Label>Recipient</Form.Label>
