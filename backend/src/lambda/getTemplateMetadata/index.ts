@@ -21,21 +21,23 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
     const id: string = event.pathParameters.id;
-    return db.GetTemplateById(id).then((res: ITemplateFullEntry) => {
-        return {
-            headers: headers,
-            statusCode: 200,
-            body: JSON.stringify(res),
-        };
-    })
-    .catch(err => {
-        return {
-            headers: headers,
-            statusCode: 500,
-            body: JSON.stringify({
-                message: err.message,
-                code: ErrorCode.TS5,
-            }),
-        };
-    });
+    return db
+        .GetTemplateById(id)
+        .then((res: ITemplateFullEntry) => {
+            return {
+                headers: headers,
+                statusCode: 200,
+                body: JSON.stringify(res),
+            };
+        })
+        .catch(err => {
+            return {
+                headers: headers,
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: err.message,
+                    code: ErrorCode.TS5,
+                }),
+            };
+        });
 };
