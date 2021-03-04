@@ -4,23 +4,27 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { ToastFunctionProperties, ToastInterface } from '../../models/toastInterfaces';
+import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+import { TemplateService } from '../../services/templateService';
 
 interface ViewModalState {
     isViewOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: string;
+    fieldNames: any[];
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
+    templateId: string;
     templateName: string;
     timeCreated: string;
 }
 
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
+    private _templateService: TemplateService;
 
     constructor(props: ViewTemplateModalProperties) {
         super(props);
@@ -30,7 +34,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             url: '',
             apiKey: '',
             jsonBody: '',
+            fieldNames: [],
         };
+        this._templateService = new TemplateService();
     }
 
     private _handleModalClose(): void {
@@ -38,12 +44,35 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalOpen(): void {
+        this.getTemplateParameters();
         this.setState({ isViewOpen: true });
     }
 
-    // private getTemplateParameters() {
-    //
-    // }
+    private getTemplateParameters(): void {
+        const id = this.props.templateId;
+        const name = this.props.templateName;
+        this._templateService
+            .getTemplateMetaData(id)
+            .then(response => {
+                const toast = {
+                    id: 'getTemplateMetadataSuccess',
+                    body: 'Successfully got template metadata: ' + name,
+                    type: ToastType.SUCCESS,
+                    open: true,
+                };
+                this._addToast(toast);
+                this.setState({ fieldNames: response.fieldNames });
+            })
+            .catch(() => {
+                const toast = {
+                    id: 'getTemplateMetadataError',
+                    body: 'Could not get template metadata: ' + name,
+                    type: ToastType.ERROR,
+                    open: true,
+                };
+                this._addToast(toast);
+            });
+    }
 
     private _copyText(text: string, event: any): void {
         const textArea = document.createElement('textarea');
@@ -54,6 +83,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         event.target.src = copiedImage;
         document.body.removeChild(textArea);
     }
+
+    // private _renderParameters(): void {
+
+    // }
 
     render(): JSX.Element {
         return (
@@ -78,28 +111,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         <Tabs defaultActiveKey='single'>
                             <Tab id='single' eventKey='single' title='Single'>
                                 <Form.Label>Recipient</Form.Label>
-                                <InputGroup className='mb-3'>
+                                <InputGroup id='recipient' className='mb-3'>
                                     <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                <Form.Label>Parameter 1</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 1' />
-                                </InputGroup>
-                                <Form.Label>Parameter 2</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 2' />
-                                </InputGroup>
-                                <Form.Label>Parameter 3</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 3' />
-                                </InputGroup>
-                                <Form.Label>Parameter 4</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                                <Form.Label>Parameter 5</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
                                 </InputGroup>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>

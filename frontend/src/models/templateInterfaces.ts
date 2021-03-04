@@ -43,3 +43,8 @@ export interface IGetTemplatesResponseItem {
     templateName: string;
     timeCreated: string;
 }
+
+export interface IViewTemplateResponse {
+    templateId: string;
+    fieldNames: Array<string>;
+}
