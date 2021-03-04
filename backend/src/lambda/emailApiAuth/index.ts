@@ -1,7 +1,23 @@
 import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
+import * as db from '../../database/dbOperations';
+import { ITemplateFullEntry } from '../../database/dbInterfaces';
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
-    // TODO
+    const Cryptr = require('cryptr');
+
+    // TODO 1: How to extract the API key from email POST request body
+    const apiKeyFromPOSTReq = 'test123';
+
+    // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
+    // TODO 2: Where to get template ID?
+    db.GetTemplateById('1234').then((entry: ITemplateFullEntry) => {
+        const decryptKey: string = Cryptr.decrypt(entry.apiKey);
+        if (decryptKey === apiKeyFromPOSTReq) {
+            callback(null); // TODO 3: Do we need callback?
+        } else {
+            callback(Error('Unmatched API key!'));
+        }
+    });
 };
 
 /**
