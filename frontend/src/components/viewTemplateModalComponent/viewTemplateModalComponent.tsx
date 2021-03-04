@@ -61,7 +61,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 <Button id='tools' variant='outline-dark' onClick={() => this._handleModalOpen()}>
                     <Image src={toolsIcon} alt='tools icon' />
                 </Button>
-                <Modal show={this.state.isViewOpen} scrollable onHide={() => this._handleModalClose()}>
+                <Modal id='viewModal' show={this.state.isViewOpen} scrollable onHide={() => this._handleModalClose()}>
                     <Modal.Header>
                         <div className='headerDiv'>
                             <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
