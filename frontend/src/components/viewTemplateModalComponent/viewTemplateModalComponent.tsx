@@ -29,6 +29,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     constructor(props: ViewTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
+        this._templateService = new TemplateService();
         this.state = {
             isViewOpen: false,
             url: '',
@@ -36,7 +37,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             jsonBody: '',
             fieldNames: [],
         };
-        this._templateService = new TemplateService();
     }
 
     private _handleModalClose(): void {
@@ -49,32 +49,33 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private getTemplateFieldNames(): void {
-        const id = this.props.templateId;
-        const name = this.props.templateName;
+        const templateId = this.props.templateId;
+        const templateName = this.props.templateName;
         this._templateService
-            .getTemplateMetaData(id)
+            .getTemplateMetaData(templateId)
             .then(response => {
-                this._addToast(this._getTemplateFieldNamesSuccessToast(name));
+                this._addToast(this._getTemplateFieldNamesSuccessToast(templateName));
                 this.setState({ fieldNames: response.fieldNames });
+                this.setState({ isViewOpen: true });
             })
             .catch((err: any) => {
-                this._addToast(this.__getTemplateFieldNamesErrorToast(err, name));
+                this._addToast(this.__getTemplateFieldNamesErrorToast(err, templateName));
             });
     }
 
-    private __getTemplateFieldNamesErrorToast(err: any, name: string): ToastInterface {
+    private __getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
         return {
             id: `getTemplateFieldNamesError-${err.response}`,
-            body: `An error occured when getting field names for template [${name}]. Error: ${err.response}`,
+            body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
             open: true,
         };
     }
 
-    private _getTemplateFieldNamesSuccessToast(name: string): ToastInterface {
+    private _getTemplateFieldNamesSuccessToast(templateName: string): ToastInterface {
         return {
-            id: `getTemplateFieldNamesSuccess-${name}`,
-            body: `Template [${name}] field names retrieved successfully!`,
+            id: `getTemplateFieldNamesSuccess-${templateName}`,
+            body: `Template [${templateName}] field names retrieved successfully!`,
             type: ToastType.SUCCESS,
             open: true,
         };
