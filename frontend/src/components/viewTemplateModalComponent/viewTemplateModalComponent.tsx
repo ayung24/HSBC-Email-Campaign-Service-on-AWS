@@ -125,18 +125,30 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     <Modal.Body id='body'>
                         <Tabs defaultActiveKey='single'>
                             <Tab id='single' eventKey='single' title='Single'>
-                                <Form.Label>Recipient</Form.Label>
-                                <InputGroup id='recipient' className='mb-3'>
-                                    <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                {this._renderFieldNames()}
+                                <div className='sendParameters'>
+                                    <Form.Label>Recipient</Form.Label>
+                                    <InputGroup id='recipient' className='mb-3'>
+                                        <FormControl placeholder='Recipient' />
+                                    </InputGroup>
+                                    <Form.Label>Subject</Form.Label>
+                                    <InputGroup id='subject' className='mb-3'>
+                                        <FormControl placeholder='Subject' />
+                                    </InputGroup>
+                                </div>
+                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
-                                <Form.Label>Recipient</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                {this._renderFieldNames()}
+                                <div className='sendParameters'>
+                                    <Form.Label>Recipient</Form.Label>
+                                    <InputGroup id='recipient' className='mb-3'>
+                                        <FormControl placeholder='Recipient' />
+                                    </InputGroup>
+                                    <Form.Label>Subject</Form.Label>
+                                    <InputGroup id='subject' className='mb-3'>
+                                        <FormControl placeholder='Subject' />
+                                    </InputGroup>
+                                </div>
+                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
                             </Tab>
                         </Tabs>
                     </Modal.Body>
