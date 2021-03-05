@@ -40,7 +40,8 @@ export class TemplateService {
                 PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
                 KMS_REGION: config.KMS.REGION,
-                KMS_KEY_KD: config.KMS.KEY_ID,
+                KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
+                KMS_KEY_ID: config.KMS.KEY_ID,
             },
         });
         // configure upload template lambda permissions
@@ -49,7 +50,7 @@ export class TemplateService {
         this._upload.addToRolePolicy(
             new PolicyStatement({
                 actions: ['kms:Encrypt'],
-                resources: [config.KMS.KEY_ID],
+                resources: [`arn:aws:kms:${config.KMS.REGION}:${config.KMS.ACCOUNT_ID}:key/${config.KMS.KEY_ID}`],
                 effect: Effect.ALLOW,
             }),
         );

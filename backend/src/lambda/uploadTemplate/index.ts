@@ -12,7 +12,8 @@ const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
 const KMS_REGION = process.env.KMS_REGION;
-const KMS_KEY_ID = process.env.KMS_KEY_KD;
+const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;
+const KMS_KEY_ID = process.env.KMS_KEY_ID;
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -29,7 +30,7 @@ const kmsClient: AWS.KMS = new AWS.KMS({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!KMS_KEY_ID && !!KMS_REGION;
+    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
 /**
@@ -62,7 +63,7 @@ async function generateEncryptedApiKey(): Promise<string> {
     const { _, apiKey } = uuidAPIKey.create();
 
     const params = {
-        KeyId: KMS_KEY_ID,
+        KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
         Plaintext: Buffer.from(apiKey),
     };
 

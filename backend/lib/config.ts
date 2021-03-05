@@ -10,7 +10,8 @@ export const config = {
     },
     KMS: {
         REGION: 'ca-central-1',
-        KEY_ID: 'arn:aws:kms:ca-central-1:353747297524:key/b2c01359-6245-4303-abfb-ee8b49f65e1e',
+        ACCOUNT_ID: '353747297524',
+        KEY_ID: 'b2c01359-6245-4303-abfb-ee8b49f65e1e',
     },
     dynamo: {
         apiVersion: '2019.11. 21',
