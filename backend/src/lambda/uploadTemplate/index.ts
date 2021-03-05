@@ -6,12 +6,14 @@ import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import * as AWS from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
+import { AWSError, KMS } from 'aws-sdk';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
-const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
-const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
+const KMS_REGION = process.env.KMS_REGION;
+const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;
+const KMS_KEY_ID = process.env.KMS_KEY_ID;
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -19,15 +21,16 @@ const headers = {
     'Content-Type': 'application/json',
 };
 const s3 = new S3Client({});
-const secretManager: AWS.SecretsManager = new AWS.SecretsManager({
-    region: SECRET_MANAGER_REGION,
+
+const kmsClient: AWS.KMS = new AWS.KMS({
+    region: KMS_REGION,
 });
 
 /**
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
+    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
 /**
@@ -54,40 +57,26 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     });
 };
 
-async function retrieveEncryptKey(): Promise<string> {
-    return new Promise((resolve, reject) => {
-        secretManager.getSecretValue(
-            { SecretId: ENCRYPTION_KEY_SECRET! },
-            (err: AWS.AWSError, data: AWS.SecretsManager.GetSecretValueResponse) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    if (data.SecretString) {
-                        resolve(data.SecretString);
-                    } else {
-                        reject(new Error('Encryption key was not found'));
-                    }
-                }
-            },
-        );
-    });
-}
-
 async function generateEncryptedApiKey(): Promise<string> {
     console.info('Generating encrypted API key');
     const uuidAPIKey = require('uuid-apikey');
-    const Cryptr = require('cryptr');
     const { _, apiKey } = uuidAPIKey.create();
 
-    // return retrieveEncryptKey().then(key => {
-    //     console.info("Retrieved encryption key")
-    //     const cryptr = new Cryptr(key);
-    //     return cryptr.encrypt(apiKey);
-    // })
+    const params = {
+        KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
+        Plaintext: Buffer.from(apiKey),
+    };
 
-    // TODO: Support cross-account encryption key retrieval
-    const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
-    return cryptr.encrypt(apiKey);
+    return new Promise((resolve, reject) => {
+        kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
+            if (err) {
+                reject(err);
+            } else {
+                const encryptedBase64data = Buffer.from(data.CiphertextBlob).toString('base64');
+                resolve(encryptedBase64data);
+            }
+        });
+    });
 }
 
 export const handler = async function (event: APIGatewayProxyEvent) {

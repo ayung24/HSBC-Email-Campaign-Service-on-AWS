@@ -63,7 +63,6 @@ describe('template service tests', () => {
                     Environment: {
                         Variables: objectLike({
                             DYNAMO_API_VERSION: config.dynamo.apiVersion,
-                            ENCRYPTION_KEY_SECRET: config.secretsManager.SECRET_NAME,
                             HTML_BUCKET_NAME: objectLike({
                                 Ref: stringLike('HTMLBucket*'),
                             }),
@@ -71,7 +70,9 @@ describe('template service tests', () => {
                                 Ref: stringLike('MetadataTable*'),
                             }),
                             PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
-                            SECRET_MANAGER_REGION: config.secretsManager.REGION,
+                            KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
+                            KMS_KEY_ID: config.KMS.KEY_ID,
+                            KMS_REGION: config.KMS.REGION,
                         }),
                     },
                     Runtime: 'nodejs12.x',
