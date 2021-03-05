@@ -115,7 +115,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
                             <Button variant='outline-dark' className='float-right' style={{ marginTop: '12px' }}>
-                                See Logs
+                                Delete
                             </Button>
                             <Modal.Title>{this.props.templateName}</Modal.Title>
                             <span>Created at {this.props.timeCreated}</span>
