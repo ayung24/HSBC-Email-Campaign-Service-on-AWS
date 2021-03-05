@@ -14,3 +14,7 @@ export interface IListTemplatesBody {
     start: string;
     limit: string;
 }
+
+export interface IDeleteTemplateBody {
+    templateId: string;
+}

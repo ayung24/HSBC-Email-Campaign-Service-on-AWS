@@ -14,6 +14,8 @@ export class TemplateService {
     private _list: lambda.Function;
     private _templateMetadata: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
+    private _delete: lambda.Function;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
@@ -75,6 +77,19 @@ export class TemplateService {
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
+
+        this._delete = new NodejsFunction(scope, 'DeleteTemplateHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/deleteTemplate/index.ts`,
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            },
+        });
+        // configure delete templates lambda permissions
+        database.metadataTable().grantReadWriteData(this._delete);
+        database.htmlBucket().grantDelete(this._delete);
     }
 
     /**
@@ -121,6 +136,9 @@ export class TemplateService {
 
         const templateResource = templatesResource.addResource('{id}');
         const getMetadataIntegration = new agw.LambdaIntegration(this._templateMetadata);
+        const deleteIntegration = new agw.LambdaIntegration(this._delete);
+
         templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
+        templateResource.addMethod('DELETE', deleteIntegration, { authorizer: this._authorizer });
     }
 }

@@ -4,10 +4,13 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { ToastFunctionProperties, ToastInterface } from '../../models/toastInterfaces';
+import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+import { TemplateService } from '../../services/templateService';
+import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
+import { EventEmitter } from '../../services/eventEmitter';
 
-interface ViewModalState {
+interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
     url: string;
     apiKey: string;
@@ -15,12 +18,14 @@ interface ViewModalState {
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
+    templateId: string;
     templateName: string;
     timeCreated: string;
 }
 
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
+    private _templateService: TemplateService;
 
     constructor(props: ViewTemplateModalProperties) {
         super(props);
@@ -30,7 +35,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             url: '',
             apiKey: '',
             jsonBody: '',
+            isLoading: false,
         };
+        this._templateService = new TemplateService();
     }
 
     private _handleModalClose(): void {
@@ -55,6 +62,35 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.removeChild(textArea);
     }
 
+    private _deleteTemplate(): void {
+        const templateId = this.props.templateId;
+        this.setState({ isLoading: true }, () => {
+            this._templateService
+                .deleteTemplate(templateId)
+                .then(response => {
+                    EventEmitter.getInstance().dispatch('refreshGrid');
+                    const toast = {
+                        id: 'deleteTemplatesSuccess',
+                        body: 'Successfully deleted template: ' + response.templateId + '.',
+                        type: ToastType.SUCCESS,
+                        open: true,
+                    };
+                    this._addToast(toast);
+                    this._handleModalClose();
+                })
+                .catch(() => {
+                    const toast = {
+                        id: 'deleteTemplatesError',
+                        body: 'Could not delete template: ' + templateId + '.',
+                        type: ToastType.ERROR,
+                        open: true,
+                    };
+                    this._addToast(toast);
+                })
+                .finally(() => this.setState({ isLoading: false }));
+        });
+    }
+
     render(): JSX.Element {
         return (
             <div>
@@ -67,7 +103,12 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
-                            <Button variant='outline-dark' className='float-right' style={{ marginTop: '12px' }}>
+                            <Button
+                                variant='outline-dark'
+                                className='float-right'
+                                onClick={this._deleteTemplate.bind(this)}
+                                style={{ marginTop: '12px' }}
+                            >
                                 Delete
                             </Button>
                             <Modal.Title>{this.props.templateName}</Modal.Title>
@@ -181,6 +222,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                     </Modal.Footer>
                 </Modal>
+                {this.state.isLoading && <SpinnerComponent />}
             </div>
         );
     }

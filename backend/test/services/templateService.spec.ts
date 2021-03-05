@@ -17,8 +17,8 @@ beforeAll(() => {
 });
 
 describe('template service tests', () => {
-    it('creates upload, list, get lambda functions', () => {
-        expect(stack).to(countResources('AWS::Lambda::Function', 3));
+    it('creates upload, list, get, delete lambda functions', () => {
+        expect(stack).to(countResources('AWS::Lambda::Function', 4));
     });
 
     it('adds template endpoints to API gateway', () => {
@@ -35,6 +35,11 @@ describe('template service tests', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'GET',
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'DELETE',
             }),
         );
     });
@@ -184,6 +189,67 @@ describe('template service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('GetTemplateMetadataHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('delete template lambda tests', () => {
+        it('delete lambda has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            DYNAMO_API_VERSION: config.dynamo.apiVersion,
+                            METADATA_TABLE_NAME: objectLike({
+                                Ref: stringLike('MetadataTable*'),
+                            }),
+                            HTML_BUCKET_NAME: objectLike({
+                                Ref: stringLike('HTMLBucket*'),
+                            }),
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                }),
+            );
+        });
+
+        it('has READ/WRITE permission on Metadata table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith(
+                                    'dynamodb:Query',
+                                    'dynamodb:GetItem',
+                                    'dynamodb:Scan',
+                                    'dynamodb:ConditionCheckItem',
+                                    'dynamodb:PutItem',
+                                    'dynamodb:UpdateItem',
+                                    'dynamodb:DeleteItem',
+                                ),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('DeleteTemplateHandler*'),
+                }),
+            );
+        });
+
+        it('has DELETE permission on HTML bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: stringLike('s3:DeleteObject*'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('DeleteTemplateHandler*'),
                 }),
             );
         });
