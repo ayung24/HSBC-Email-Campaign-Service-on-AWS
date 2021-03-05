@@ -1,41 +1,68 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import * as AWS from 'aws-sdk';
+import { SESClient } from '@aws-sdk/client-ses';
+import {createTransport, SentMessageInfo} from 'nodemailer';
+import { ISendEmailReqBody } from '../lambdaInterfaces';
+import * as db from '../../database/dbOperations';
+import { ErrorCode } from '../../errorCode';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
 const VERSION = process.env.VERSION || '2010-12-01';
+const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 
-const ses = new AWS.SES({
+const ses = new SESClient({
     apiVersion: VERSION,
 });
+const transporter = createTransport({
+    SES: ses
+});
+
+const headers = {
+    'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+    'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+    'Content-Type': 'application/json',
+};
+
+/**
+ * Validates lambda's runtime env variables
+ */
+const validateEnv = function (): boolean {
+    return !!HTML_BUCKET_NAME && !!VERIFIED_EMAIL_ADDRESS;
+};
 
 export const handler = async function (event: APIGatewayProxyEvent) {
-    // TODO: replace with actual email html from S3
-    const params = {
-        Destination: {
-            ToAddresses: [VERIFIED_EMAIL_ADDRESS],
-        },
-        Message: {
-            Body: {
-                Html: {
-                    Charset: 'UTF-8',
-                    Data: '<div>This is my email</div>',
-                },
-                Text: {
-                    Charset: 'UTF-8',
-                    Data: 'This is test email',
-                },
-            },
-            Subject: {
-                Charset: 'UTF-8',
-                Data: 'Test email',
-            },
-        },
-        Source: VERIFIED_EMAIL_ADDRESS,
-    };
-    const sendEmail = ses.sendEmail(params).promise();
-    return sendEmail
-        .then((res: AWS.SES.SendEmailResponse) => {
-            console.info('Email sent to SES', res);
-        })
-        .catch(err => console.warn(err));
+    if (!validateEnv()) {
+        return {
+            headers: headers,
+            statusCode: 500,
+            body: JSON.stringify({
+                message: 'Internal server error',
+                code: ErrorCode.TS0,
+            }),
+        };
+    } else if (!event.body) {
+        return {
+            headers: headers,
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'Invalid request format',
+                code: ErrorCode.TS1,
+            }),
+        };
+    }
+
+    const req: ISendEmailReqBody = JSON.parse(event.body); 
+    return db.GetHTMLById(req.templateId).then((html: string) => {
+        const params = {
+            from: VERIFIED_EMAIL_ADDRESS,
+            to: VERIFIED_EMAIL_ADDRESS,
+            subject: "Email subject",
+            text: "replacement text",
+            html: html
+        };
+        return transporter.sendMail(params);
+    }).then((res: SentMessageInfo) => {
+        console.info(res);
+    }).catch(err => {
+        console.warn(err);
+    });
 };

@@ -42,6 +42,9 @@ export class EmailService {
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
                 VERSION: config.ses.VERSION,
             },
+            bundling: {
+                nodeModules: ['@aws-sdk/client-ses', 'nodemailer'],
+            },
         });
         database.htmlBucket().grantRead(this._send); // READ access to HTML bucket
         this._send.addToRolePolicy(
@@ -63,6 +66,6 @@ export class EmailService {
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
 
-        emailResource.addMethod('POST', sendIntegration);
+        emailResource.addMethod('POST', sendIntegration, { authorizer: this._authorizer });
     }
 }
