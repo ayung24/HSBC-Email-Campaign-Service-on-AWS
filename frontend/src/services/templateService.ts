@@ -8,7 +8,6 @@ import {
     ITemplateDisplay,
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
-    IViewTemplateResponse,
 } from '../models/templateInterfaces';
 
 const mammoth = require('mammoth');
@@ -76,9 +75,9 @@ export class TemplateService {
         });
     }
 
-    public getTemplateMetaData(id: string): Promise<IViewTemplateResponse> {
-        return this._requestService.GET<IViewTemplateResponse>('/templates/' + id, (viewResponse: IViewTemplateResponse) => {
-            return new Promise<IViewTemplateResponse>(resolve => {
+    public getTemplateMetaData(templateId: string): Promise<ITemplate> {
+        return this._requestService.GET<ITemplate>('/templates/' + templateId, (viewResponse: ITemplate) => {
+            return new Promise<ITemplate>(resolve => {
                 resolve(viewResponse);
             });
         });
