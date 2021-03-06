@@ -26,6 +26,7 @@ export class TemplateService {
         });
     }
 
+
     private _initFunctions(scope: cdk.Construct, database: Database) {
         this._upload = new NodejsFunction(scope, 'UploadTemplateHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,

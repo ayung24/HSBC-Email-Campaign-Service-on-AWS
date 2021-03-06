@@ -19,9 +19,15 @@ export interface ISendEmailReqBody {
     templateId: string;
     subject: string;
     recipient: string;
-    fields: SendEmailFields
+    fields: ISendEmailFields
 }
 
-export type SendEmailFields = {
+export interface ISendEmailFields {
     [key: string]: string;
 };
+
+export interface IImageContent {
+    contentType: string,
+    content: Buffer,
+    cid: string
+}

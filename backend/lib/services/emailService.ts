@@ -39,14 +39,16 @@ export class EmailService {
             entry: `${config.lambda.LAMBDA_ROOT}/sendEmail/index.ts`,
             environment: {
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
                 VERSION: config.ses.VERSION,
             },
             bundling: {
-                nodeModules: ['@aws-sdk/client-ses', 'nodemailer'],
+                nodeModules: ['nodemailer'],
             },
         });
         database.htmlBucket().grantRead(this._send); // READ access to HTML bucket
+        database.metadataTable().grantReadData(this._send); // READ template metadata table
         this._send.addToRolePolicy(
             new iam.PolicyStatement({
                 // SEND permission using SES
