@@ -8,6 +8,7 @@ import {
     ITemplateDisplay,
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
+    IDeleteTemplateResponseBody,
 } from '../models/templateInterfaces';
 
 const mammoth = require('mammoth');
@@ -113,5 +114,16 @@ export class TemplateService {
             matches = dynamicFieldRegex.exec(html);
         }
         return fields;
+    }
+
+    public deleteTemplate(templateId: string): Promise<IDeleteTemplateResponseBody> {
+        return this._requestService.DELETE<IDeleteTemplateResponseBody>(
+            '/templates/' + templateId,
+            (deleteResponse: IDeleteTemplateResponseBody) => {
+                return new Promise<IDeleteTemplateResponseBody>(resolve => {
+                    resolve(deleteResponse);
+                });
+            },
+        );
     }
 }

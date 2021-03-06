@@ -7,12 +7,15 @@ import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
 import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 import { Database } from '../constructs/database';
+import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 
 export class TemplateService {
     private _upload: lambda.Function;
     private _list: lambda.Function;
     private _templateMetadata: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
+    private _delete: lambda.Function;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
@@ -31,20 +34,28 @@ export class TemplateService {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/uploadTemplate/index.ts`,
             bundling: {
-                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post', 'uuid', 'uuid-apikey', 'cryptr'],
+                nodeModules: ['@aws-sdk/client-s3', '@aws-sdk/s3-presigned-post', 'uuid', 'uuid-apikey'],
             },
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
-                ENCRYPTION_KEY_SECRET: config.secretsManager.SECRET_NAME,
-                SECRET_MANAGER_REGION: config.secretsManager.REGION,
+                KMS_REGION: config.KMS.REGION,
+                KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
+                KMS_KEY_ID: config.KMS.KEY_ID,
             },
         });
         // configure upload template lambda permissions
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
+        this._upload.addToRolePolicy(
+            new PolicyStatement({
+                actions: ['kms:Encrypt'],
+                resources: [`arn:aws:kms:${config.KMS.REGION}:${config.KMS.ACCOUNT_ID}:key/${config.KMS.KEY_ID}`],
+                effect: Effect.ALLOW,
+            }),
+        );
 
         this._templateMetadata = new NodejsFunction(scope, 'GetTemplateMetadataHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -66,6 +77,19 @@ export class TemplateService {
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
+
+        this._delete = new NodejsFunction(scope, 'DeleteTemplateHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/deleteTemplate/index.ts`,
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                DYNAMO_API_VERSION: config.dynamo.apiVersion,
+            },
+        });
+        // configure delete templates lambda permissions
+        database.metadataTable().grantReadWriteData(this._delete);
+        database.htmlBucket().grantDelete(this._delete);
     }
 
     /**
@@ -112,6 +136,9 @@ export class TemplateService {
 
         const templateResource = templatesResource.addResource('{id}');
         const getMetadataIntegration = new agw.LambdaIntegration(this._templateMetadata);
+        const deleteIntegration = new agw.LambdaIntegration(this._delete);
+
         templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
+        templateResource.addMethod('DELETE', deleteIntegration, { authorizer: this._authorizer });
     }
 }

@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
-import { ITemplateFullEntry } from '../../database/dbInterfaces';
+import { ITemplateBase } from '../../database/dbInterfaces';
+import { IDeleteTemplateBody } from '../lambdaInterfaces';
 import { ErrorCode } from '../../errorCode';
 
 const headers = {
@@ -16,14 +17,13 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 400,
             body: JSON.stringify({
                 message: 'Invalid request format',
-                code: ErrorCode.TS4,
+                code: ErrorCode.TS6,
             }),
         };
     }
     const id: string = event.pathParameters.id;
-    return db
-        .GetTemplateById(id)
-        .then((res: ITemplateFullEntry) => {
+    return db.DeleteTemplateById(id)
+        .then((res: ITemplateBase) => {
             return {
                 headers: headers,
                 statusCode: 200,
@@ -36,7 +36,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 statusCode: 500,
                 body: JSON.stringify({
                     message: err.message,
-                    code: ErrorCode.TS5,
+                    code: ErrorCode.TS7,
                 }),
             };
         });

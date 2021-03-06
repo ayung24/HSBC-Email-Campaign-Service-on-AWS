@@ -124,10 +124,10 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         };
     }
 
-    private _createUploadErrorToast(err: any): ToastInterface {
+    private _createUploadErrorToast(err: IError, name: string): ToastInterface {
         return {
-            id: `uploadTemplateError-${err.response}`,
-            body: `An error occured when uploading template. Error: [${err.response}]`,
+            id: `uploadTemplateError-${name}`,
+            body: `An error occured when uploading template. Error: [${err.code}: ${err.message}]`,
             type: ToastType.ERROR,
             open: true,
         };
@@ -152,7 +152,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                 this._closeModal();
             })
             .catch((err: IError) => {
-                this._addToast(this._createUploadErrorToast(err));
+                this._addToast(this._createUploadErrorToast(err, this.state.templateName));
             })
             .finally(() => this.setState({ isLoading: false }));
     }
