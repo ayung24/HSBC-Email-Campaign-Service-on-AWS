@@ -40,7 +40,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             fieldNames: [],
             isLoading: false,
         };
-        this._templateService = new TemplateService();
     }
 
     private _handleModalClose(): void {
@@ -48,41 +47,34 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalOpen(): void {
-        this.getTemplateFieldNames();
+        this._getTemplateFieldNames().then(() => this.setState({ isViewOpen: true }));
     }
 
-    private getTemplateFieldNames(): void {
+    private _getTemplateFieldNames(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
-        this.setState({ isLoading: true }, () => {
-            this._templateService
-                .getTemplateMetaData(templateId)
-                .then(response => {
-                    this._addToast(this._getTemplateFieldNamesSuccessToast(templateName));
-                    this.setState({ fieldNames: response.fieldNames });
-                    this.setState({ isViewOpen: true });
-                })
-                .catch((err: any) => {
-                    this._addToast(this.__getTemplateFieldNamesErrorToast(err, templateName));
-                })
-                .finally(() => this.setState({ isLoading: false }));
+        return new Promise<void>((resolve, reject) => {
+            this.setState({ isLoading: true }, () => {
+                this._templateService
+                    .getTemplateMetaData(templateId)
+                    .then(response => {
+                        this.setState({ fieldNames: response.fieldNames });
+                        resolve();
+                    })
+                    .catch((err: any) => {
+                        this._addToast(this._getTemplateFieldNamesErrorToast(err, templateName));
+                        reject(err);
+                    })
+                    .finally(() => this.setState({ isLoading: false }));
+            });
         });
     }
 
-    private __getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
+    private _getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
         return {
             id: `getTemplateFieldNamesError-${err.response}`,
             body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
-            open: true,
-        };
-    }
-
-    private _getTemplateFieldNamesSuccessToast(templateName: string): ToastInterface {
-        return {
-            id: `getTemplateFieldNamesSuccess-${templateName}`,
-            body: `Template [${templateName}] field names retrieved successfully!`,
-            type: ToastType.SUCCESS,
             open: true,
         };
     }
