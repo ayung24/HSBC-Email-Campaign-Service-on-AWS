@@ -49,22 +49,24 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _handleModalOpen(): void {
         this.getTemplateFieldNames();
-        this.setState({ isViewOpen: true });
     }
 
     private getTemplateFieldNames(): void {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
-        this._templateService
-            .getTemplateMetaData(templateId)
-            .then(response => {
-                this._addToast(this._getTemplateFieldNamesSuccessToast(templateName));
-                this.setState({ fieldNames: response.fieldNames });
-                this.setState({ isViewOpen: true });
-            })
-            .catch((err: any) => {
-                this._addToast(this.__getTemplateFieldNamesErrorToast(err, templateName));
-            });
+        this.setState({ isLoading: true }, () => {
+            this._templateService
+                .getTemplateMetaData(templateId)
+                .then(response => {
+                    this._addToast(this._getTemplateFieldNamesSuccessToast(templateName));
+                    this.setState({ fieldNames: response.fieldNames });
+                    this.setState({ isViewOpen: true });
+                })
+                .catch((err: any) => {
+                    this._addToast(this.__getTemplateFieldNamesErrorToast(err, templateName));
+                })
+                .finally(() => this.setState({ isLoading: false }));
+        });
     }
 
     private __getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
