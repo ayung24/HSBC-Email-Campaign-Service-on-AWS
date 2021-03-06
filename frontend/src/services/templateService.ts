@@ -76,9 +76,13 @@ export class TemplateService {
         });
     }
 
-    // public getTemplateMetaData(): {
-    //
-    // }
+    public getTemplateMetaData(templateId: string): Promise<ITemplate> {
+        return this._requestService.GET<ITemplate>('/templates/' + templateId, (viewResponse: ITemplate) => {
+            return new Promise<ITemplate>(resolve => {
+                resolve(viewResponse);
+            });
+        });
+    }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
         let fieldNames: Array<string> = [];

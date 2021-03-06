@@ -15,6 +15,7 @@ interface ViewModalState extends SpinnerState {
     url: string;
     apiKey: string;
     jsonBody: string;
+    fieldNames: any[];
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
@@ -30,14 +31,15 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     constructor(props: ViewTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
+        this._templateService = new TemplateService();
         this.state = {
             isViewOpen: false,
             url: '',
             apiKey: '',
             jsonBody: '',
+            fieldNames: [],
             isLoading: false,
         };
-        this._templateService = new TemplateService();
     }
 
     private _handleModalClose(): void {
@@ -45,14 +47,39 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalOpen(): void {
-        this.setState({ isViewOpen: true });
+        this._getTemplateFieldNames().then(() => this.setState({ isViewOpen: true }));
     }
 
-    // private getTemplateParameters() {
-    //
-    // }
+    private _getTemplateFieldNames(): Promise<void> {
+        const templateId = this.props.templateId;
+        const templateName = this.props.templateName;
+        return new Promise<void>((resolve, reject) => {
+            this.setState({ isLoading: true }, () => {
+                this._templateService
+                    .getTemplateMetaData(templateId)
+                    .then(response => {
+                        this.setState({ fieldNames: response.fieldNames });
+                        resolve();
+                    })
+                    .catch((err: any) => {
+                        this._addToast(this._getTemplateFieldNamesErrorToast(err, templateName));
+                        reject(err);
+                    })
+                    .finally(() => this.setState({ isLoading: false }));
+            });
+        });
+    }
 
-    private _copyText(text: string, event: any): void {
+    private _getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
+        return {
+            id: `getTemplateFieldNamesError-${err.response}`,
+            body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
+            type: ToastType.ERROR,
+            open: true,
+        };
+    }
+
+    private _copyText(text: string, event: any): any {
         const textArea = document.createElement('textarea');
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -60,6 +87,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.execCommand('copy');
         event.target.src = copiedImage;
         document.body.removeChild(textArea);
+    }
+
+    private _renderFieldNames(): any {
+        const fieldNames = this.state.fieldNames;
+        return fieldNames.map((fieldName, index) => (
+            <div key={fieldName + index}>
+                <Form.Label key={fieldName + index}>{fieldName}</Form.Label>
+                <InputGroup className='mb-3'>
+                    <FormControl key={fieldName + index} placeholder={'Field Name ' + (index + 1)} />
+                </InputGroup>
+            </div>
+        ));
     }
 
     private _deleteTemplate(): void {
@@ -97,7 +136,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 <Button id='tools' variant='outline-dark' onClick={() => this._handleModalOpen()}>
                     <Image src={toolsIcon} alt='tools icon' />
                 </Button>
-                <Modal show={this.state.isViewOpen} scrollable onHide={() => this._handleModalClose()}>
+                <Modal id='viewModal' show={this.state.isViewOpen} scrollable onHide={() => this._handleModalClose()}>
                     <Modal.Header>
                         <div className='headerDiv'>
                             <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
@@ -118,56 +157,30 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     <Modal.Body id='body'>
                         <Tabs defaultActiveKey='single'>
                             <Tab id='single' eventKey='single' title='Single'>
-                                <Form.Label>Recipient</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                <Form.Label>Parameter 1</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 1' />
-                                </InputGroup>
-                                <Form.Label>Parameter 2</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 2' />
-                                </InputGroup>
-                                <Form.Label>Parameter 3</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 3' />
-                                </InputGroup>
-                                <Form.Label>Parameter 4</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                                <Form.Label>Parameter 5</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
-                                </InputGroup>
+                                <div className='sendParameters'>
+                                    <Form.Label>Recipient</Form.Label>
+                                    <InputGroup id='recipient' className='mb-3'>
+                                        <FormControl placeholder='Recipient' />
+                                    </InputGroup>
+                                    <Form.Label>Subject</Form.Label>
+                                    <InputGroup id='subject' className='mb-3'>
+                                        <FormControl placeholder='Subject' />
+                                    </InputGroup>
+                                </div>
+                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
-                                <Form.Label>Recipient</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Recipient' />
-                                </InputGroup>
-                                <Form.Label>Parameter 1</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 1' />
-                                </InputGroup>
-                                <Form.Label>Parameter 2</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 2' />
-                                </InputGroup>
-                                <Form.Label>Parameter 3</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 3' />
-                                </InputGroup>
-                                <Form.Label>Parameter 4</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 4' />
-                                </InputGroup>
-                                <Form.Label>Parameter 5</Form.Label>
-                                <InputGroup className='mb-3'>
-                                    <FormControl placeholder='Parameter 5' />
-                                </InputGroup>
+                                <div className='sendParameters'>
+                                    <Form.Label>Recipient</Form.Label>
+                                    <InputGroup id='recipient' className='mb-3'>
+                                        <FormControl placeholder='Recipient' />
+                                    </InputGroup>
+                                    <Form.Label>Subject</Form.Label>
+                                    <InputGroup id='subject' className='mb-3'>
+                                        <FormControl placeholder='Subject' />
+                                    </InputGroup>
+                                </div>
+                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
                             </Tab>
                         </Tabs>
                     </Modal.Body>
