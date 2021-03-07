@@ -89,7 +89,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             return `${productionEndpoint.endpoint}/email`;
         } else {
             const toast = {
-                id: 'deleteTemplatesError',
+                id: 'getUrlError',
                 body: `url config not set`,
                 type: ToastType.ERROR,
                 open: true,
@@ -111,18 +111,20 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         const decryptParam = {
                             CiphertextBlob: apiKeyBuffer,
                         };
-                        return new Promise<ITemplate>((resolve, reject) => {
-                            this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-                                if (err) {
-                                    reject(err);
-                                } else if (!data.Plaintext) {
-                                    reject();
-                                } else {
-                                    response.apiKey = data.Plaintext.toString('ascii');
-                                    resolve(response);
-                                }
-                            });
-                        });
+                        // return new Promise<ITemplate>((resolve, reject) => {
+                        //     this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                        //         if (err) {
+                        //             reject(err);
+                        //         } else if (!data.Plaintext) {
+                        //             reject();
+                        //         } else {
+                        //             response.apiKey = data.Plaintext.toString('ascii');
+                        //             resolve(response);
+                        //         }
+                        //     });
+                        // });
+                        // temp
+                        return response;
                     })
                     .then((response: ITemplate) => {
                         this.setState({
@@ -132,7 +134,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         resolve();
                     })
                     .catch((err: any) => {
-                        this._addToast(this._getTemplateFieldNamesErrorToast(err, templateName));
+                        this._addToast(this._getMetadataErrorToast(err, templateName));
                         reject(err);
                     })
                     .finally(() => this.setState({ isLoading: false }));
@@ -140,9 +142,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
-    private _getTemplateFieldNamesErrorToast(err: any, templateName: string): ToastInterface {
+    private _getMetadataErrorToast(err: any, templateName: string): ToastInterface {
         return {
-            id: `getTemplateFieldNamesError-${err.response}`,
+            id: `getMetadataError-${err.response}`,
             body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
             open: true,
@@ -197,13 +199,19 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         );
     }
 
-    private _renderFieldNames(): any {
+    private _renderFieldNames(tab: string): any {
         const fieldNames = this.state.fieldNames;
         return fieldNames.map((fieldName, index) => (
             <div key={fieldName + index}>
                 <Form.Label key={fieldName + index}>{fieldName}</Form.Label>
                 <InputGroup className='mb-3'>
-                    <FormControl key={fieldName + index} id={fieldName} onChange={this._onParamChange.bind(this)} />
+                    <FormControl
+                        key={fieldName + index}
+                        placeholder={'Field ' + (index + 1)}
+                        id={`${tab}-${fieldName}`}
+                        onChange={this._onParamChange.bind(this)}
+                        style={{ overflow: 'ellipsis' }}
+                    />
                 </InputGroup>
             </div>
         ));
@@ -249,8 +257,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     state.jsonBody.subject = formControl.value.trim();
                     break;
                 default:
-                    // formControl is for a dynamic field
-                    state.jsonBody.fields[formControl.id] = formControl.value.trim();
+                    // formControl is from a dynamic field
+                    state.jsonBody.fields[formControl.id.substring(formControl.id.indexOf('-') + 1)] = formControl.value.trim();
                     break;
             }
 
@@ -291,14 +299,22 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <div className='sendParameters'>
                                     <Form.Label>Recipient</Form.Label>
                                     <InputGroup id='recipient' className='mb-3'>
-                                        <FormControl id={this._inputFormNameRecipient} onChange={this._onParamChange.bind(this)} />
+                                        <FormControl
+                                            id={this._inputFormNameRecipient}
+                                            placeholder='Recipient'
+                                            onChange={this._onParamChange.bind(this)}
+                                        />
                                     </InputGroup>
                                     <Form.Label>Subject</Form.Label>
                                     <InputGroup id='subject' className='mb-3'>
-                                        <FormControl id={this._inputFormNameSubject} onChange={this._onParamChange.bind(this)} />
+                                        <FormControl
+                                            id={this._inputFormNameSubject}
+                                            placeholder='Subject'
+                                            onChange={this._onParamChange.bind(this)}
+                                        />
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
+                                <div className='dynamicParameters'> {this._renderFieldNames('single')}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='sendParameters'>
@@ -311,14 +327,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         <FormControl placeholder='Subject' />
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames()}</div>
+                                <div className='dynamicParameters'> {this._renderFieldNames('batch')}</div>
                             </Tab>
                         </Tabs>
                     </Modal.Body>
                     <Modal.Footer id='footer'>
                         <Form.Label>URL</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl disabled value={this.state.url} />
+                            <FormControl disabled placeholder='URL' value={this.state.url} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
@@ -327,7 +343,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                         <Form.Label>API Key</Form.Label>
                         <InputGroup className='mb-3'>
-                            <FormControl disabled value={this.state.apiKey} />
+                            <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary'>
                                     <Image
@@ -347,11 +363,15 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </div> */}
                         <InputGroup className='mb-5' style={{ flex: 1 }}>
                             <TextareaAutosize
-                                disabled
+                                readOnly
                                 value={JSON.stringify(this.state.jsonBody, null, '\t')}
                                 style={{
                                     resize: 'none',
                                     flex: 1,
+                                    backgroundColor: '#E9ECEF',
+                                    outline: 'none',
+                                    borderColor: '#CED4DA',
+                                    color: '#495057',
                                 }}
                             />
                             <InputGroup.Append>

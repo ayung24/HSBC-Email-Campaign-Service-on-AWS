@@ -10,7 +10,6 @@ import {
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
 } from '../models/templateInterfaces';
-import { isTemplateLiteral } from 'typescript';
 
 const mammoth = require('mammoth');
 
