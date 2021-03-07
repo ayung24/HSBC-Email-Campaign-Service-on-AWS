@@ -43,3 +43,7 @@ export interface IGetTemplatesResponseItem {
     templateName: string;
     timeCreated: string;
 }
+
+export interface IDeleteTemplateResponseBody {
+    templateId: string;
+}

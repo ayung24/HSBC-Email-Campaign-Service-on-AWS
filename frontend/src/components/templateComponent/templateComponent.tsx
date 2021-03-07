@@ -1,6 +1,5 @@
 import React from 'react';
 import { TemplateGridComponent } from '../templateGridComponent/templateGridComponent';
-import { TemplateService } from '../../services/templateService';
 import { ToastComponentProperties, ToastInterface } from '../../models/toastInterfaces';
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
@@ -8,7 +7,6 @@ import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/up
 import { Button } from 'react-bootstrap';
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
-    private _templateService: TemplateService;
     private _toastMessages: Array<ToastInterface> = [];
     private readonly _toastComponent: React.RefObject<ToastComponent>;
     private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
@@ -18,7 +16,6 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
         this._toastComponent = React.createRef();
         this._uploadModalComponent = React.createRef();
         this.state = { properties: this._toastMessages };
-        this._templateService = new TemplateService();
     }
 
     private _addToast(toast: ToastInterface): void {

@@ -8,6 +8,7 @@ import {
     ITemplateDisplay,
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
+    IDeleteTemplateResponseBody,
 } from '../models/templateInterfaces';
 import { isTemplateLiteral } from 'typescript';
 
@@ -77,8 +78,10 @@ export class TemplateService {
     }
 
     public getTemplateMetaData(templateId: string): Promise<ITemplate> {
-        return this._requestService.GET<ITemplate>(`/templates/${templateId}`, (template: ITemplate) => {
-            return new Promise<ITemplate>(resolve => resolve(template));
+        return this._requestService.GET<ITemplate>('/templates/' + templateId, (viewResponse: ITemplate) => {
+            return new Promise<ITemplate>(resolve => {
+                resolve(viewResponse);
+            });
         });
     }
 
@@ -112,5 +115,16 @@ export class TemplateService {
             matches = dynamicFieldRegex.exec(html);
         }
         return fields;
+    }
+
+    public deleteTemplate(templateId: string): Promise<IDeleteTemplateResponseBody> {
+        return this._requestService.DELETE<IDeleteTemplateResponseBody>(
+            '/templates/' + templateId,
+            (deleteResponse: IDeleteTemplateResponseBody) => {
+                return new Promise<IDeleteTemplateResponseBody>(resolve => {
+                    resolve(deleteResponse);
+                });
+            },
+        );
     }
 }
