@@ -1,4 +1,5 @@
 import React from 'react';
+import TextareaAutosize from 'react-textarea-autosize';
 import './viewTemplateModalComponent.css';
 import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
@@ -7,38 +8,45 @@ import toolsIcon from '../../images/tools.png';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
 import { awsEndpoints } from '../../awsEndpoints';
-import { ITemplate } from '../../models/templateInterfaces';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
+import { nonEmpty } from '../../commonFunctions';
+
+interface ISendEmailReqBody {
+    templateId: string;
+    subject: string;
+    recipient: string;
+    fields: SendEmailFields;
+}
+
+type SendEmailFields = {
+    [key: string]: string;
+};
 
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
     url: string;
     apiKey: string;
-    jsonBody: {
-        templateId: string;
-        recipient: string;
-        fields: any;
-    };
-    fieldNames: any[];
+    jsonBody: ISendEmailReqBody;
+    fieldNames: string[];
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
     templateId: string;
     templateName: string;
     timeCreated: string;
-    templateService: TemplateService;
 }
 
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
     private _templateService: TemplateService;
-    private _onModalOpen: () => void;
+
+    private readonly _inputFormNameRecipient: string;
+    private readonly _inputFormNameSubject: string;
 
     constructor(props: ViewTemplateModalProperties) {
         super(props);
-        // console.log(props.templateService);
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
         this.state = {
@@ -47,28 +55,16 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             apiKey: '',
             jsonBody: {
                 templateId: props.templateId,
+                subject: '',
                 recipient: '',
                 fields: {},
             },
             fieldNames: [],
             isLoading: false,
         };
-        this._templateService = props.templateService;
-        this._onModalOpen = () => {
-            // set myself to do nothing on first run
-            this._onModalOpen = () => {
-                return;
-            };
-            // this.setState({ apiKey: 'asdf' });
-            this._templateService
-                .getTemplateMetaData(props.templateId)
-                .then((template: ITemplate) => {
-                    this.setState({ apiKey: template.apiKey });
-                })
-                .catch(err => {
-                    this.setState({ apiKey: err });
-                });
-        };
+
+        this._inputFormNameRecipient = 'form-control-recipient';
+        this._inputFormNameSubject = 'form-control-subject';
     }
 
     private _handleModalClose(): void {
@@ -76,17 +72,26 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalOpen(): void {
-        this.setState({ isViewOpen: true });
-        this._onModalOpen(); // load details on first open
+        this._getTemplateMetadata().then(() => this.setState({ isViewOpen: true }));
     }
 
     private _getUrl(): string {
         const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
-        return productionEndpoint ? `${productionEndpoint.endpoint}/email` : 'url config not set';
-        this._getTemplateFieldNames().then(() => this.setState({ isViewOpen: true }));
+        if (productionEndpoint) {
+            return `${productionEndpoint.endpoint}/email`;
+        } else {
+            const toast = {
+                id: 'deleteTemplatesError',
+                body: `url config not set`,
+                type: ToastType.ERROR,
+                open: true,
+            };
+            this._addToast(toast);
+            return 'url config not set';
+        }
     }
 
-    private _getTemplateFieldNames(): Promise<void> {
+    private _getTemplateMetadata(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
         return new Promise<void>((resolve, reject) => {
@@ -94,7 +99,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
-                        this.setState({ fieldNames: response.fieldNames });
+                        this.setState({
+                            fieldNames: response.fieldNames,
+                            apiKey: response.apiKey,
+                        });
                         resolve();
                     })
                     .catch((err: any) => {
@@ -125,13 +133,51 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.removeChild(textArea);
     }
 
+    private _copyJson(event: any): any {
+        // https://regexr.com/3e48o
+        const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+        if (!this._isCompleteJson(this.state.jsonBody)) {
+            const TOAST_INCOMPLETE = {
+                id: 'copyJsonFailed',
+                body: 'Incomplete paramaters for JSON\nPlease fill in all fields',
+                type: ToastType.ERROR,
+                open: true,
+            };
+            this._addToast(TOAST_INCOMPLETE);
+        } else if (!REGEX.test(this.state.jsonBody.recipient)) {
+            const TOAST_INVALID_EMAIL = {
+                id: 'copyJsonFailed',
+                body: `"${this.state.jsonBody.recipient}" is not a valid email`,
+                type: ToastType.ERROR,
+                open: true,
+            };
+            this._addToast(TOAST_INVALID_EMAIL);
+        } else {
+            this._copyText(JSON.stringify(this.state.jsonBody), event);
+        }
+    }
+
+    private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
+        return (
+            nonEmpty(jsonBody.templateId) &&
+            nonEmpty(jsonBody.recipient) &&
+            nonEmpty(jsonBody.subject) &&
+            // all fields are present
+            Object.values(jsonBody.fields).length == this.state.fieldNames.length &&
+            // and all fields are filled
+            Object.values(jsonBody.fields).reduce((restIsFilled: boolean, field: string): boolean => {
+                return restIsFilled && nonEmpty(field);
+            }, true)
+        );
+    }
+
     private _renderFieldNames(): any {
         const fieldNames = this.state.fieldNames;
         return fieldNames.map((fieldName, index) => (
             <div key={fieldName + index}>
                 <Form.Label key={fieldName + index}>{fieldName}</Form.Label>
                 <InputGroup className='mb-3'>
-                    <FormControl key={fieldName + index} placeholder={'Field Name ' + (index + 1)} />
+                    <FormControl key={fieldName + index} id={fieldName} onChange={this._onParamChange.bind(this)} />
                 </InputGroup>
             </div>
         ));
@@ -166,6 +212,30 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _onParamChange(event: React.SyntheticEvent): void {
+        // console.log(event.target);
+        this.setState((state: ViewModalState) => {
+            const formControl: HTMLInputElement = event.target as HTMLInputElement;
+            switch (formControl.id) {
+                case this._inputFormNameRecipient:
+                    state.jsonBody.recipient = formControl.value.trim();
+                    break;
+                case this._inputFormNameSubject:
+                    state.jsonBody.subject = formControl.value.trim();
+                    break;
+                default:
+                    // formControl is for a dynamic field
+                    state.jsonBody.fields[formControl.id] = formControl.value.trim();
+                    break;
+            }
+
+            const newJsonBody = state.jsonBody;
+            return {
+                jsonBody: newJsonBody,
+            };
+        });
+    }
+
     render(): JSX.Element {
         return (
             <div>
@@ -196,11 +266,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 <div className='sendParameters'>
                                     <Form.Label>Recipient</Form.Label>
                                     <InputGroup id='recipient' className='mb-3'>
-                                        <FormControl placeholder='Recipient' />
+                                        <FormControl id={this._inputFormNameRecipient} onChange={this._onParamChange.bind(this)} />
                                     </InputGroup>
                                     <Form.Label>Subject</Form.Label>
                                     <InputGroup id='subject' className='mb-3'>
-                                        <FormControl placeholder='Subject' />
+                                        <FormControl id={this._inputFormNameSubject} onChange={this._onParamChange.bind(this)} />
                                     </InputGroup>
                                 </div>
                                 <div className='dynamicParameters'> {this._renderFieldNames()}</div>
@@ -244,31 +314,24 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <div className='updateBtnDiv'>
+                        {/* <div className='updateBtnDiv'>
                             <Form.Label>Body</Form.Label>
                             <Button id='updateBtn' variant='outline-secondary'>
                                 Update Preview
                             </Button>
-                        </div>
-                        <InputGroup className='mb-5'>
-                            <FormControl
+                        </div> */}
+                        <InputGroup className='mb-5' style={{ flex: 1 }}>
+                            <TextareaAutosize
                                 disabled
-                                as='textarea'
-                                aria-label='With textarea'
+                                value={JSON.stringify(this.state.jsonBody, null, '\t')}
                                 style={{
-                                    minHeight: '46px',
                                     resize: 'none',
+                                    flex: 1,
                                 }}
-                                value={JSON.stringify(this.state.jsonBody, null, 1)}
                             />
                             <InputGroup.Append>
-                                <Button id='copyBtn' variant='outline-secondary'>
-                                    <Image
-                                        src={copyImage}
-                                        alt='copy icon'
-                                        onClick={event => this._copyText(JSON.stringify(this.state.jsonBody), event)}
-                                        fluid
-                                    />
+                                <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
+                                    <Image src={copyImage} alt='copy icon' fluid />
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>

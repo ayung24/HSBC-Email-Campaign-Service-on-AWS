@@ -57,8 +57,6 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                                         templateId={templateId}
                                         templateName={templateName}
                                         timeCreated={dateStr}
-                                        templateService={this._templateService}
-                                        templateId={templateId}
                                     />
                                 </td>
                             </tr>
