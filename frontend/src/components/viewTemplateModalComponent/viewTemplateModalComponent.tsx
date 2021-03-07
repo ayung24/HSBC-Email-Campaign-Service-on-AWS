@@ -5,13 +5,16 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
+import { KMS, AWSError } from 'aws-sdk';
+import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
-import { awsEndpoints } from '../../awsEndpoints';
+import { awsAuthConfiguration } from '../../awsAuthConfiguration';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
+import { ITemplate } from '../../models/templateInterfaces';
 
 interface ISendEmailReqBody {
     templateId: string;
@@ -41,6 +44,7 @@ interface ViewTemplateModalProperties extends ToastFunctionProperties {
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
     private _templateService: TemplateService;
+    private _keyManagementService: KMS;
 
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
@@ -65,6 +69,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
         this._inputFormNameRecipient = 'form-control-recipient';
         this._inputFormNameSubject = 'form-control-subject';
+
+        this._keyManagementService = new KMS({
+            region: awsAuthConfiguration.Auth.region,
+        });
     }
 
     private _handleModalClose(): void {
@@ -99,6 +107,24 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
+                        const apiKeyBuffer = Buffer.from(response.fieldNames);
+                        const decryptParam = {
+                            CiphertextBlob: apiKeyBuffer,
+                        };
+                        return new Promise<ITemplate>((resolve, reject) => {
+                            this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                                if (err) {
+                                    reject(err);
+                                } else if (!data.Plaintext) {
+                                    reject();
+                                } else {
+                                    response.apiKey = data.Plaintext.toString('ascii');
+                                    resolve(response);
+                                }
+                            });
+                        });
+                    })
+                    .then((response: ITemplate) => {
                         this.setState({
                             fieldNames: response.fieldNames,
                             apiKey: response.apiKey,
@@ -213,7 +239,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _onParamChange(event: React.SyntheticEvent): void {
-        // console.log(event.target);
         this.setState((state: ViewModalState) => {
             const formControl: HTMLInputElement = event.target as HTMLInputElement;
             switch (formControl.id) {
