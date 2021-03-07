@@ -6,11 +6,11 @@ import { ISendEmailFields, IImageContent } from '../lambdaInterfaces';
  * @param fieldNames required dynamic fields
  * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
  */
-export const replaceFields = function (srcHTML: string, fields: ISendEmailFields, fieldNames: string[]): string | null {
+export const replaceFields = function (srcHTML: string, fields: ISendEmailFields, fieldNames: string[]): string | undefined {
     const keys = Object.keys(fields);
     const isValid = fieldNames.every(field => keys.includes(field));
     if (!isValid) {
-        return null;
+        return undefined;
     } else {
         const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
         const html = srcHTML.replace(regex, (_, field) => {

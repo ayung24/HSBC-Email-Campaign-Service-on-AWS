@@ -57,8 +57,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const req: ISendEmailReqBody = JSON.parse(event.body);
     return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
-            const html: string | null = replaceFields(srcHTML, req.fields, metadata.fieldNames);
-            if (html == null) {
+            const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
+            if (!html) {
                 return Promise.reject(new Error('Missing required dynamic fields'));
             }
             const processed = processImages(html);
