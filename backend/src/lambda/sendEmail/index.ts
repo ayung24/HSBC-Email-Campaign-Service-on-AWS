@@ -17,7 +17,7 @@ const ses = new AWS.SES({
 });
 
 const transporter = createTransport({
-    SES: ses
+    SES: ses,
 });
 
 const headers = {
@@ -54,42 +54,43 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
 
-    const req: ISendEmailReqBody = JSON.parse(event.body); 
-    const id = req.templateId;
+    const req: ISendEmailReqBody = JSON.parse(event.body);
     return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId)])
-    .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
-        let html: string | null = replaceFields(srcHTML, req.fields, metadata.fieldNames);
-        if (html == null) {
-            return Promise.reject(new Error('Missing required dynamic fields'));
-        }
-        const processed = processImages(html);
-        const params = {
-            from: VERIFIED_EMAIL_ADDRESS,
-            to: VERIFIED_EMAIL_ADDRESS,
-            subject: req.subject,
-            html: processed.html,
-            attachments: processed.attachments
-        };
-        return transporter.sendMail(params);
-    }).then((res: SentMessageInfo) => {
-        return {
-            headers: headers,
-            statusCode: 200,
-            body: JSON.stringify({
-                tempalteId: req.templateId,
-                sender: res.envelope.from,
-                recipient: req.recipient,
-                messageId: res.messageId,
-            })
-        }
-    }).catch(err => {
-        return {
-            headers: headers,
-            statusCode: 500,
-            body: JSON.stringify({
-                message: err.message,
-                code: ErrorCode.ES2
-            })
-        }
-    });
+        .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
+            const html: string | null = replaceFields(srcHTML, req.fields, metadata.fieldNames);
+            if (html == null) {
+                return Promise.reject(new Error('Missing required dynamic fields'));
+            }
+            const processed = processImages(html);
+            const params = {
+                from: VERIFIED_EMAIL_ADDRESS,
+                to: VERIFIED_EMAIL_ADDRESS,
+                subject: req.subject,
+                html: processed.html,
+                attachments: processed.attachments,
+            };
+            return transporter.sendMail(params);
+        })
+        .then((res: SentMessageInfo) => {
+            return {
+                headers: headers,
+                statusCode: 200,
+                body: JSON.stringify({
+                    tempalteId: req.templateId,
+                    sender: res.envelope.from,
+                    recipient: req.recipient,
+                    messageId: res.messageId,
+                }),
+            };
+        })
+        .catch(err => {
+            return {
+                headers: headers,
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: err.message,
+                    code: ErrorCode.ES2,
+                }),
+            };
+        });
 };

@@ -21,14 +21,14 @@ export interface ISendEmailReqBody {
     templateId: string;
     subject: string;
     recipient: string;
-    fields: ISendEmailFields
+    fields: ISendEmailFields;
 }
 export interface ISendEmailFields {
     [key: string]: string;
-};
+}
 
 export interface IImageContent {
-    contentType: string,
-    content: Buffer,
-    cid: string
-};
+    contentType: string;
+    content: Buffer;
+    cid: string;
+}
