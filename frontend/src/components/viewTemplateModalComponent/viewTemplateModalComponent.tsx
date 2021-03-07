@@ -355,12 +355,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        {/* <div className='updateBtnDiv'>
-                            <Form.Label>Body</Form.Label>
-                            <Button id='updateBtn' variant='outline-secondary'>
-                                Update Preview
-                            </Button>
-                        </div> */}
                         <InputGroup className='mb-5' style={{ flex: 1 }}>
                             <TextareaAutosize
                                 readOnly
