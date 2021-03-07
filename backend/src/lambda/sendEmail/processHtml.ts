@@ -27,10 +27,7 @@ export const replaceFields = function (srcHTML: string, fields: ISendEmailFields
  */
 export const processImages = function (srcHTML: string): { html: string; attachments: IImageContent[] } {
     // data uri syntax is data:[<mimetype>][;base64],<data>
-    const regex = new RegExp(
-        /\s*data:(?<mime>[a-z\-]+\/[a-z\-\+]+);(?<encoding>base64)?,(?<data>[a-z0-9\!\$\&\'\,\(\)\*\+\,\;\=\-\.\_\~\:\@\/\?\%\s]*\s*)/,
-        'gi',
-    );
+    const regex = new RegExp(/\s*data:(?<mime>[a-z-]+\/[a-z\-+]+);(?<encoding>base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@/?%\s]*\s*)/, 'gi');
     const images: IImageContent[] = [];
     let imageId = 0;
     const html = srcHTML.replace(regex, (_, mime: string, encoding: string, data: string) => {
