@@ -22,7 +22,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
     const id: string = event.pathParameters.id;
-    return db.DeleteTemplateById(id)
+    return db
+        .DeleteTemplateById(id)
         .then((res: ITemplateBase) => {
             return {
                 headers: headers,
