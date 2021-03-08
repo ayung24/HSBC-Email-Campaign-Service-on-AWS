@@ -1,13 +1,15 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
+import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 
 import { UserPool } from '@aws-cdk/aws-cognito';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
-import { CognitoUserPoolsAuthorizer } from '@aws-cdk/aws-apigateway';
 import { Database } from '../constructs/database';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
+import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
+import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
 
 export class TemplateService {
     private _upload: lambda.Function;
@@ -16,10 +18,16 @@ export class TemplateService {
     private _authorizer: CognitoUserPoolsAuthorizer;
     private _delete: lambda.Function;
 
+    private _uploadTemplateLambdaName = `UploadTemplateHandler-${process.env.BUILD_ENV}`;
+    private _getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${process.env.BUILD_ENV}`;
+    private _listTemplatesLambdaName = `ListTemplatesHandler-${process.env.BUILD_ENV}`;
+    private _deleteTemplateLambdaName = `DeleteTemplateHandler-${process.env.BUILD_ENV}`;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api);
+        this._initLogGroups(scope);
     }
 
     private _initAuth(scope: cdk.Construct) {
@@ -45,6 +53,7 @@ export class TemplateService {
                 KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
                 KMS_KEY_ID: config.KMS.KEY_ID,
             },
+            functionName: this._uploadTemplateLambdaName,
         });
         // configure upload template lambda permissions
         database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
@@ -64,6 +73,7 @@ export class TemplateService {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
+            functionName: this._getTemplateMetadataLambdaName,
         });
         database.metadataTable().grantReadData(this._templateMetadata);
 
@@ -74,6 +84,7 @@ export class TemplateService {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
+            functionName: this._listTemplatesLambdaName,
         });
         // configure list templates lambda permissions
         database.metadataTable().grantReadData(this._list); // READ on metadata table
@@ -86,6 +97,7 @@ export class TemplateService {
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
+            functionName: this._deleteTemplateLambdaName,
         });
         // configure delete templates lambda permissions
         database.metadataTable().grantReadWriteData(this._delete);
@@ -140,5 +152,28 @@ export class TemplateService {
 
         templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
         templateResource.addMethod('DELETE', deleteIntegration, { authorizer: this._authorizer });
+    }
+
+    /**
+     * Initialize lambda log groups to control log retention period
+     * Create one log group per lambda handler
+     */
+    private _initLogGroups(scope: cdk.Construct): void {
+        new LogGroup(scope, this._uploadTemplateLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._uploadTemplateLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
+        new LogGroup(scope, this._getTemplateMetadataLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateMetadataLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
+        new LogGroup(scope, this._listTemplatesLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._listTemplatesLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
+        new LogGroup(scope, this._deleteTemplateLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._deleteTemplateLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
     }
 }

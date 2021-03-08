@@ -6,10 +6,15 @@ import { config } from '../config';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { Database } from '../constructs/database';
 import { SESEmailVerifier } from '../constructs/emailVerifier';
+import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
+import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
 
 export class EmailService {
     private _authorizer: agw.Authorizer;
     private _send: lambda.Function;
+
+    private _emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${process.env.BUILD_ENV}`;
+    private _emailSendLambdaName = `SendEmailHandler-${process.env.BUILD_ENV}`;
 
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
         new SESEmailVerifier(scope, 'SESEmailVerify', {
@@ -18,12 +23,14 @@ export class EmailService {
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(api);
+        this._initLogGroups(scope);
     }
 
     private _initAuth(scope: cdk.Construct) {
         const apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/emailApiAuth/index.ts`,
+            functionName: this._emailApiAuthorizerLambdaName,
         });
 
         // TODO: Uncomment when implementing send
@@ -46,6 +53,7 @@ export class EmailService {
             bundling: {
                 nodeModules: ['nodemailer'],
             },
+            functionName: this._emailSendLambdaName,
         });
         database.htmlBucket().grantRead(this._send); // READ access to HTML bucket
         database.metadataTable().grantReadData(this._send); // READ template metadata table
@@ -69,5 +77,20 @@ export class EmailService {
         const sendIntegration = new agw.LambdaIntegration(this._send);
 
         emailResource.addMethod('POST', sendIntegration, { authorizer: this._authorizer });
+    }
+
+    /**
+     * Initialize lambda log groups to control log retention period
+     * Create one log group per lambda handler
+     */
+    private _initLogGroups(scope: cdk.Construct): void {
+        new LogGroup(scope, this._emailApiAuthorizerLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailApiAuthorizerLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
+        new LogGroup(scope, this._emailSendLambdaName, {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailSendLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
     }
 }

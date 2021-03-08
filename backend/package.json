@@ -39,12 +39,13 @@
     "@aws-cdk/aws-iam": "1.88.0",
     "@aws-cdk/aws-lambda": "1.88.0",
     "@aws-cdk/aws-lambda-nodejs": "1.88.0",
+    "@aws-cdk/aws-logs": "1.88.0",
     "@aws-cdk/aws-s3": "1.88.0",
     "@aws-cdk/aws-secretsmanager": "1.88.0",
     "@aws-cdk/aws-sns": "1.88.0",
     "@aws-cdk/aws-sns-subscriptions": "1.88.0",
     "@aws-cdk/aws-sqs": "1.88.0",
     "@aws-cdk/core": "1.88.0",
-    "aws-sdk": "^2.853.0"
+    "dotenv": "^8.2.0"
   }
 }

@@ -6,6 +6,7 @@ import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
 import { replaceFields, processImages } from './processHtml';
+import * as Logger from '../../../logger';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
 const VERSION = process.env.VERSION || '2010-12-01';
@@ -34,6 +35,7 @@ const validateEnv = function (): boolean {
 };
 
 export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!validateEnv()) {
         return {
             headers: headers,
