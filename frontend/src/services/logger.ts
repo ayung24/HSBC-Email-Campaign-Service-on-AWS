@@ -38,7 +38,7 @@ export abstract class AbstractLogger {
 }
 
 let region: string;
-if (process.env.NODE_ENV && process.env.NODE_ENV === 'production') {
+if (process.env.REACT_APP_BUILD_ENV && process.env.REACT_APP_BUILD_ENV === 'prod') {
     region = config.cloudWatch.REGION_PROD;
 } else {
     region = config.cloudWatch.REGION_DEV;

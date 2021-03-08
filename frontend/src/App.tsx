@@ -8,7 +8,7 @@ import { HeaderComponent } from './components/headerComponent/headerComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Amplify, Auth } from 'aws-amplify';
 import { Button } from 'react-bootstrap';
-import { LoginLogger, LogoutLogger } from './services/Logger';
+import { LoginLogger, LogoutLogger } from './services/logger';
 
 Amplify.configure(awsAuthConfiguration);
 
