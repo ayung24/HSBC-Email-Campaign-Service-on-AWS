@@ -13,10 +13,12 @@ export class EmailService {
     private _authorizer: agw.Authorizer;
     private _send: lambda.Function;
 
-    private _emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${process.env.BUILD_ENV}`;
-    private _emailSendLambdaName = `SendEmailHandler-${process.env.BUILD_ENV}`;
+    private readonly _emailApiAuthorizerLambdaName: string;
+    private readonly _emailSendLambdaName: string;
 
-    constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
+    constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
+        this._emailSendLambdaName = `SendEmailHandler-${buildEnv}`;
         new SESEmailVerifier(scope, 'SESEmailVerify', {
             email: config.ses.VERIFIED_EMAIL_ADDRESS,
         });
@@ -84,11 +86,11 @@ export class EmailService {
      * Create one log group per lambda handler
      */
     private _initLogGroups(scope: cdk.Construct): void {
-        new LogGroup(scope, this._emailApiAuthorizerLambdaName, {
+        new LogGroup(scope, 'EmailAPIAuthorizerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailApiAuthorizerLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
-        new LogGroup(scope, this._emailSendLambdaName, {
+        new LogGroup(scope, 'SendEmailHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });

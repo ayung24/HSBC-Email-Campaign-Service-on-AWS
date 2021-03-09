@@ -5,7 +5,7 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { KMS, AWSError } from 'aws-sdk';
+import { KMS } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
@@ -107,10 +107,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
-                        const apiKeyBuffer = Buffer.from(response.fieldNames);
-                        const decryptParam = {
-                            CiphertextBlob: apiKeyBuffer,
-                        };
+                        // const apiKeyBuffer = Buffer.from(response.fieldNames);
+                        // const decryptParam = {
+                        //     CiphertextBlob: apiKeyBuffer,
+                        // };
                         // return new Promise<ITemplate>((resolve, reject) => {
                         //     this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
                         //         if (err) {
@@ -191,7 +191,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             nonEmpty(jsonBody.recipient) &&
             nonEmpty(jsonBody.subject) &&
             // all fields are present
-            Object.values(jsonBody.fields).length == this.state.fieldNames.length &&
+            Object.values(jsonBody.fields).length === this.state.fieldNames.length &&
             // and all fields are filled
             Object.values(jsonBody.fields).reduce((restIsFilled: boolean, field: string): boolean => {
                 return restIsFilled && nonEmpty(field);

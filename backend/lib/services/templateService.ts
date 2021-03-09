@@ -18,12 +18,16 @@ export class TemplateService {
     private _authorizer: CognitoUserPoolsAuthorizer;
     private _delete: lambda.Function;
 
-    private _uploadTemplateLambdaName = `UploadTemplateHandler-${process.env.BUILD_ENV}`;
-    private _getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${process.env.BUILD_ENV}`;
-    private _listTemplatesLambdaName = `ListTemplatesHandler-${process.env.BUILD_ENV}`;
-    private _deleteTemplateLambdaName = `DeleteTemplateHandler-${process.env.BUILD_ENV}`;
+    private readonly _uploadTemplateLambdaName: string;
+    private readonly _getTemplateMetadataLambdaName: string;
+    private readonly _listTemplatesLambdaName: string;
+    private readonly _deleteTemplateLambdaName: string;
 
-    constructor(scope: cdk.Construct, api: agw.RestApi, database: Database) {
+    constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this._uploadTemplateLambdaName = `UploadTemplateHandler-${buildEnv}`;
+        this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
+        this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
+        this._deleteTemplateLambdaName = `DeleteTemplateHandler-${buildEnv}`;
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api);
@@ -159,19 +163,19 @@ export class TemplateService {
      * Create one log group per lambda handler
      */
     private _initLogGroups(scope: cdk.Construct): void {
-        new LogGroup(scope, this._uploadTemplateLambdaName, {
+        new LogGroup(scope, 'UploadTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._uploadTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
-        new LogGroup(scope, this._getTemplateMetadataLambdaName, {
+        new LogGroup(scope, 'GetTemplateMetadataHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateMetadataLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
-        new LogGroup(scope, this._listTemplatesLambdaName, {
+        new LogGroup(scope, 'ListTemplatesHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._listTemplatesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
-        new LogGroup(scope, this._deleteTemplateLambdaName, {
+        new LogGroup(scope, 'DeleteTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._deleteTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
