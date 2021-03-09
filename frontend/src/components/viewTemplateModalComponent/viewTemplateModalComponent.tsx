@@ -71,7 +71,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._inputFormNameSubject = 'form-control-subject';
 
         this._keyManagementService = new KMS({
-            region: awsAuthConfiguration.Auth.region,
+            region: awsAuthConfiguration.KMS.REGION,
+            // accessKeyId: 'AKIAVEXH3MT2OPECZLF7',
+            // secretAccessKey: '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',
         });
     }
 
@@ -102,13 +104,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getTemplateMetadata(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
+        const kmsRegion = awsAuthConfiguration.KMS.REGION;
+        const kmsAccountID = awsAuthConfiguration.KMS.ACCOUNT_ID;
+        const kmsKeyId = awsAuthConfiguration.KMS.KEY_ID;
+
         return new Promise<void>((resolve, reject) => {
             this.setState({ isLoading: true }, () => {
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
-                        const apiKeyBuffer = Buffer.from(response.fieldNames);
+                        const apiKeyBuffer = Buffer.from(response.apiKey, 'base64');
                         const decryptParam = {
+                            KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountID}:key/${kmsKeyId}`,
                             CiphertextBlob: apiKeyBuffer,
                         };
                         return new Promise<ITemplate>((resolve, reject) => {
