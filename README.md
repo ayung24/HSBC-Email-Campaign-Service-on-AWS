@@ -30,4 +30,6 @@ To be updated with every push to main
 - Centralized CloudWatch logging when a user:
     - Logs in or logs out
     - Hits any of our API endpoints (CRD template or sends an email)
-- User can send an email with a POST request to the email endpoint
+- User can send an email with a POST request to the email endpoint (experimental)
+    - Sends to and from using a single email currently (Shizuko's email)
+    - Authentication is not fully implemented yet
