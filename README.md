@@ -3,8 +3,8 @@
 ### Website URL
 https://main.d8zlt2xxyx88t.amplifyapp.com/
 
-### API URL
-// TODO
+### Email API URL
+https://zexg32svee.execute-api.ca-central-1.amazonaws.com/prod/email
 
 ### Login credential
 Username: admin\
