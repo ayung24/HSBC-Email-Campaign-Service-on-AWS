@@ -14,7 +14,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
     db.GetTemplateById('1234').then((entry: ITemplateFullEntry) => {
         const decryptKey: string = cryptr.decrypt(entry.apiKey);
         if (decryptKey === apiKeyFromPOSTReq) {
-            callback(null, generateResponse());
+            callback(null, generateResponse(event.methodArn));
         } else {
             callback('Unmatched API key.');
         }
@@ -25,9 +25,18 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
  * Documentation for response:
  * https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html
  * */
-const generateResponse = function () {
+const generateResponse = function (methodArn: string) {
     const authResponse: any = {};
-    authResponse.isAuthorized = true;
+    authResponse.principalId = 'randomID';
+    const policyDocument: any = {};
+    policyDocument.Version = '2012-10-17'; // default version
+    policyDocument.Statement = [];
+    const statementOne: any = {};
+    statementOne.Action = 'execute-api:Invoke'; // default action
+    statementOne.Effect = 'Allow';
+    statementOne.Resource = methodArn;
+    policyDocument.Statement[0] = statementOne;
+    authResponse.policyDocument = policyDocument;
     return authResponse;
 };
 
