@@ -10,14 +10,15 @@
     "test": "jest",
     "cdk": "cdk",
     "cdk:diff": "cdk diff || true",
-    "cdk:deploy": "cdk deploy --require-approval never",
+    "cdk:deploy": "cdk deploy --require-approval never --parameters BUILDENV=dev",
+    "cdk:deploy:prod": "cdk deploy --require-approval never --parameters BUILDENV=prod",
     "lint": "eslint */**/*.ts --fix"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.88.0",
     "@types/aws-lambda": "^8.10.72",
     "@types/jest": "^26.0.20",
-    "@types/node": "10.17.27",
+    "@types/node": "^10.17.27",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.15.0",
     "@typescript-eslint/parser": "^4.15.0",
@@ -39,12 +40,12 @@
     "@aws-cdk/aws-iam": "1.88.0",
     "@aws-cdk/aws-lambda": "1.88.0",
     "@aws-cdk/aws-lambda-nodejs": "1.88.0",
+    "@aws-cdk/aws-logs": "1.88.0",
     "@aws-cdk/aws-s3": "1.88.0",
     "@aws-cdk/aws-secretsmanager": "1.88.0",
     "@aws-cdk/aws-sns": "1.88.0",
     "@aws-cdk/aws-sns-subscriptions": "1.88.0",
     "@aws-cdk/aws-sqs": "1.88.0",
-    "@aws-cdk/core": "1.88.0",
-    "aws-sdk": "^2.853.0"
+    "@aws-cdk/core": "1.88.0"
   }
 }

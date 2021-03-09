@@ -17,10 +17,6 @@ type PresentationalProps = {
 export class FileUploaderComponent extends React.Component<PresentationalProps> {
     private _fileUploaderInput: HTMLElement | null = null;
 
-    constructor(props: PresentationalProps) {
-        super(props);
-    }
-
     private _onSelectFileClick(): void {
         this._fileUploaderInput && this._fileUploaderInput.click();
     }

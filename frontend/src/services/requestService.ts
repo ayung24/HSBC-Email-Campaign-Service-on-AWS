@@ -32,6 +32,19 @@ export class RequestService {
             .then(response => handler(response));
     }
 
+    public DELETE<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
+        return RequestService._getToken()
+            .then((token: string) => {
+                const request = {
+                    headers: {
+                        Authorization: token,
+                    },
+                };
+                return API.del(this._apiName, path, request);
+            })
+            .then(response => handler(response));
+    }
+
     private static _getToken(): Promise<string> {
         return Auth.currentAuthenticatedUser().then(user => user.signInUserSession.idToken.jwtToken);
     }
