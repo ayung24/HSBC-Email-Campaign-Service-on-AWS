@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateBase } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
+import * as Logger from '../../../logger';
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -21,11 +22,12 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     //     };
     // }
     // get items from start to start + limit
-    // const req: IListTemplatesBody = JSON.parse(event.body);
+
+    Logger.logRequestInfo(event);
 
     // TODO: Implement pagination (Requesting whole range of dates temporarily)
-    const listTemplates = db.ListTemplatesByDate('0', new Date().getTime().toString());
-    return listTemplates
+    return db
+        .ListTemplatesByDate('0', new Date().getTime().toString())
         .then((res: ITemplateBase[]) => {
             return {
                 headers: headers,

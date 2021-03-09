@@ -5,6 +5,7 @@ import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
 import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
+import * as Logger from '../../logger';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -23,10 +24,18 @@ function fromSS(ss?: DynamoDB.StringSetAttributeValue): string[] {
 
 export function AddTemplate(name: string, fieldNames: string[], apiKey: string): Promise<ITemplateFullEntry> {
     const ddb: DynamoDB = getDynamo();
-    console.info(`Adding template with name: ${name}, fieldNames: ${fieldNames}, key: ${apiKey}`);
+    Logger.info({
+        message: 'Adding template',
+        additionalInfo: {
+            templateName: name,
+            fieldNames: fieldNames.join(', '),
+            apiKey: apiKey,
+        },
+    });
     return new Promise((resolve, reject) => {
         if (isEmpty(name) || isEmpty(apiKey)) {
             const fieldsEmptyError = new Error('Template name or api key is empty');
+            Logger.logError(fieldsEmptyError);
             reject(fieldsEmptyError);
         } else {
             // check name uniqueness
@@ -40,14 +49,13 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             };
             ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
                 if (err) {
-                    console.warn(`Name validation failure`);
+                    Logger.logError(err, 'Name validation failure');
                     reject(err);
                 } else if (data.Count && data.Count > 0) {
-                    console.warn(`Name not unique`);
                     const nameNotUniqueError = new Error(`Template name not unique: ${JSON.stringify(data)}`);
+                    Logger.logError(nameNotUniqueError);
                     reject(nameNotUniqueError);
                 } else {
-                    console.info(`Name validation success`);
                     resolve(data);
                 }
             });
@@ -66,14 +74,20 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                     fieldNames: { SS: toSS(fieldNames) }, // dynamoDB disallows empty Set
                 },
             };
+            Logger.info({
+                message: 'Adding template to DynamoDB',
+                additionalInfo: {
+                    templateId: proposedMetadataEntry.Item.templateId.S,
+                    templateName: name,
+                    timeCreated: proposedMetadataEntry.Item.timeCreated.N,
+                },
+            });
             return new Promise<any>((resolve, reject) => {
-                console.info('Adding template to dynamo');
                 ddb.putItem(proposedMetadataEntry, (err: AWSError, data: DynamoDB.PutItemOutput) => {
                     if (err) {
-                        console.warn('Add template failed');
+                        Logger.logError(err);
                         reject(err);
                     } else {
-                        console.info(`Add template success: ${proposedMetadataEntry.Item}`);
                         resolve(proposedMetadataEntry.Item);
                     }
                 });
@@ -93,34 +107,33 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
 
 export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
     const ddb: DynamoDB = getDynamo();
-    console.info(`Deleting template with id [${templateId}]`);
+    Logger.info({ message: 'Deleting template', additionalInfo: { templateId: templateId } });
     if (isEmpty(templateId)) {
         const templateIdEmptyError = new Error('Template id is empty');
+        Logger.logError(templateIdEmptyError);
         return Promise.reject(templateIdEmptyError);
     }
     return GetTemplateById(templateId)
         .then((entry: ITemplateFullEntry) => {
-            console.info(`Deleting S3 HTML for template [${templateId}]`);
+            Logger.info({ message: 'Deleting S3 HTML', additionalInfo: { templateId: templateId } });
             const s3 = new S3();
             const queryParams = {
                 Bucket: HTML_BUCKET_NAME!,
                 Key: templateId,
             };
             return new Promise<ITemplateFullEntry>((resolve, reject) => {
-                console.info(queryParams);
                 s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
                     if (err) {
-                        console.warn(`Delete S3 object failed: template id: [${templateId}]`);
+                        Logger.logError(err);
                         reject(err);
                     } else {
-                        console.info(`Delete S3 object success: template id: [${templateId}]`);
                         resolve(entry);
                     }
                 });
             });
         })
         .then((entry: ITemplateFullEntry) => {
-            console.info(`Setting status to deleted for template [${templateId}]`);
+            Logger.info({ message: 'Setting metadata status to Deleted', additionalInfo: { templateId: templateId } });
             return new Promise<any>((resolve, reject) => {
                 const deleteEntry: DynamoDB.UpdateItemInput = {
                     TableName: METADATA_TABLE_NAME!,
@@ -140,10 +153,9 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 };
                 ddb.updateItem(deleteEntry, (err: AWSError, data: UpdateItemOutput) => {
                     if (err) {
-                        console.warn('Delete template failed');
+                        Logger.logError(err);
                         reject(err);
                     } else {
-                        console.info(`Delete template success: [${templateId}]`);
                         resolve(data.Attributes);
                     }
                 });
@@ -161,7 +173,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {
     const ddb = getDynamo();
-    console.info(`Getting all templates`);
+    Logger.info({ message: 'Retrieving all templates', additionalInfo: undefined });
     return new Promise((resolve, reject) => {
         const queryParams = {
             IndexName: 'status-index',
@@ -175,12 +187,13 @@ export function ListTemplatesByDate(start: string, end: string): Promise<ITempla
         };
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
-                console.warn('DynamoDB query failed to get templates from database');
+                Logger.logError(err);
                 reject(err);
             } else {
                 const items = data.Items;
                 if (!items || items.length < 0) {
                     const undefinedItemsError = new Error('Retrieved undefined items from database');
+                    Logger.logError(undefinedItemsError);
                     reject(undefinedItemsError);
                 } else {
                     const results: ITemplateBase[] = items.map((item: DynamoDB.AttributeMap) => {
@@ -200,23 +213,22 @@ export function ListTemplatesByDate(start: string, end: string): Promise<ITempla
 
 export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry> {
     const ddb = getDynamo();
+    Logger.info({ message: 'Getting template metadata', additionalInfo: { templateId: templateId } });
     const queryParams = {
         ExpressionAttributeValues: { ':id': { S: templateId } },
         KeyConditionExpression: `templateId = :id`,
         TableName: METADATA_TABLE_NAME!,
     };
-    console.info(`Getting template with id [${templateId}]`);
     return new Promise<ITemplateFullEntry>((resolve, reject) => {
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
-                console.warn(`Failed to get template ${templateId} from database`);
+                Logger.logError(err);
                 reject(err);
             } else {
-                console.info(`Got template ${templateId} from database: ${data}`);
                 const dynamoResult = data.Items;
                 if (!dynamoResult || dynamoResult.length < 1) {
-                    console.warn(`No template with id ${templateId} found`);
                     const noTemplateError = new Error(`No template with id ${templateId} found`);
+                    Logger.logError(noTemplateError);
                     reject(noTemplateError);
                 } else {
                     const item: DynamoDB.AttributeMap = dynamoResult[0]; // assuming only one, since id is unique
@@ -236,6 +248,7 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
 
 export function GetHTMLById(templateId: string): Promise<string> {
     const s3 = new S3();
+    Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
         Key: templateId,
@@ -243,12 +256,13 @@ export function GetHTMLById(templateId: string): Promise<string> {
     return new Promise((resolve, reject) => {
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
             if (err) {
-                console.warn(`Failed to get HTML with template id ${templateId} from bucket`);
+                Logger.logError(err);
                 reject(err);
             } else {
                 const result = data.Body?.toString('utf-8');
                 if (!result || isEmpty(result)) {
                     const noItemError = new Error(`No HTML with template id ${templateId} found`);
+                    Logger.logError(noItemError);
                     reject(noItemError);
                 } else {
                     resolve(result);

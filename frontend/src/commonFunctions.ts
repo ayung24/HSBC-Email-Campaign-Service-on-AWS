@@ -5,7 +5,3 @@ export function isEmpty(str: string): boolean {
 export function nonEmpty(str: string): boolean {
     return !isEmpty(str);
 }
-
-export function isEmptyArray(obj: any): boolean {
-    return Array.isArray(obj) && obj.length === 0;
-}

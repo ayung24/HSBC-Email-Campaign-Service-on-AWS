@@ -14,7 +14,7 @@ beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase');
-    emailService = new EmailService(stack, api, database);
+    emailService = new EmailService(stack, api, database, 'test');
 });
 
 describe('email service tests', () => {

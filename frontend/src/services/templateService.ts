@@ -10,7 +10,6 @@ import {
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
 } from '../models/templateInterfaces';
-import { isTemplateLiteral } from 'typescript';
 
 const mammoth = require('mammoth');
 
@@ -59,10 +58,10 @@ export class TemplateService {
 
     public getTemplates(): Promise<Array<ITemplateDisplay>> {
         // TODO: Get request with start and limit? Maybe have to switch to POST
-        const requestBody: IGetTemplatesReqBody = {
-            start: new Date(0).getTime().toString(),
-            limit: 10,
-        };
+        // const requestBody: IGetTemplatesReqBody = {
+        //     start: new Date(0).getTime().toString(),
+        //     limit: 10,
+        // };
         return this._requestService.GET<ITemplateDisplay[]>('/templates', (templateResponse: IGetTemplatesResponse) => {
             return new Promise<Array<ITemplateDisplay>>(resolve => {
                 const templates = templateResponse.templates.map((template: IGetTemplatesResponseItem) => {

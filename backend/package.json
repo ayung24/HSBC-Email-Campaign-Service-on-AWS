@@ -10,7 +10,8 @@
     "test": "jest",
     "cdk": "cdk",
     "cdk:diff": "cdk diff || true",
-    "cdk:deploy": "cdk deploy --require-approval never",
+    "cdk:deploy": "cdk deploy --require-approval never --parameters BUILDENV=dev",
+    "cdk:deploy:prod": "cdk deploy --require-approval never --parameters BUILDENV=prod",
     "lint": "eslint */**/*.ts --fix"
   },
   "devDependencies": {
@@ -39,12 +40,12 @@
     "@aws-cdk/aws-iam": "1.88.0",
     "@aws-cdk/aws-lambda": "1.88.0",
     "@aws-cdk/aws-lambda-nodejs": "1.88.0",
+    "@aws-cdk/aws-logs": "1.88.0",
     "@aws-cdk/aws-s3": "1.88.0",
     "@aws-cdk/aws-secretsmanager": "1.88.0",
     "@aws-cdk/aws-sns": "1.88.0",
     "@aws-cdk/aws-sns-subscriptions": "1.88.0",
     "@aws-cdk/aws-sqs": "1.88.0",
-    "@aws-cdk/core": "1.88.0",
-    "aws-sdk": "^2.853.0"
+    "@aws-cdk/core": "1.88.0"
   }
 }

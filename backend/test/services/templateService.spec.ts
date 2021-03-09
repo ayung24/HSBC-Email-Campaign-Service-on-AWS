@@ -13,7 +13,7 @@ beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase');
-    templateService = new TemplateService(stack, api, database);
+    templateService = new TemplateService(stack, api, database, 'test');
 });
 
 describe('template service tests', () => {

@@ -66,6 +66,9 @@
 
 .input-group>.form-control {
     height: auto;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow:ellipsis;
 }
 
 #footer>* {
