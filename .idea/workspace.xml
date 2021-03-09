@@ -20,7 +20,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/services/emailService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/emailService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.eslintcache" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.vscode/settings.json" beforeDir="false" />
@@ -103,6 +106,7 @@
       <workItem from="1614270154111" duration="1258000" />
       <workItem from="1614370541798" duration="48000" />
       <workItem from="1614815453365" duration="7113000" />
+      <workItem from="1615321957585" duration="4412000" />
     </task>
     <servers />
   </component>
