@@ -114,17 +114,14 @@ export class EmailService {
         emailApiAuthResource.addMethod('POST', emailApiAuthIntegration, {
             authorizer: this._authorizer,
             requestValidator: emailApiAuthReqValidator,
-            requestModels: {'application/json': emailApiAuthReqModel},
+            requestModels: { 'application/json': emailApiAuthReqModel },
         });
 
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
 
-        emailResource.addMethod('POST', sendIntegration, {
-            authorizer: this._authorizer
-        });
+        emailResource.addMethod('POST', sendIntegration, { authorizer: this._authorizer });
     }
-
 
     /**
      * Initialize lambda log groups to control log retention period
