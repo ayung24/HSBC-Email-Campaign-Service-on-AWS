@@ -16,9 +16,4 @@ export const awsAuthConfiguration = {
     API: {
         endpoints: awsEndpoints,
     },
-    KMS: {
-        REGION: 'ca-central-1',
-        ACCOUNT_ID: '353747297524',
-        KEY_ID: 'b2c01359-6245-4303-abfb-ee8b49f65e1e',
-    },
 };

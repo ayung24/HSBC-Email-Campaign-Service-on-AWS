@@ -32,4 +32,11 @@ export const config = {
         REGION_DEV: 'us-west-2',
         REGION_PROD: 'ca-central-1',
     },
+    kms: {
+        REGION: 'ca-central-1',
+        ACCOUNT_ID: '353747297524',
+        KEY_ID: 'b2c01359-6245-4303-abfb-ee8b49f65e1e',
+        ACCESS_KEY: 'AKIAVEXH3MT2OPECZLF7',
+        SECRET_KEY: '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',
+    },
 };

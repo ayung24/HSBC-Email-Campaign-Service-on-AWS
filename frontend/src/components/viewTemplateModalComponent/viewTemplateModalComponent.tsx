@@ -5,7 +5,8 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { KMS } from 'aws-sdk';
+import { config } from '../../config';
+import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
@@ -71,9 +72,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._inputFormNameSubject = 'form-control-subject';
 
         this._keyManagementService = new KMS({
-            region: awsAuthConfiguration.KMS.REGION,
-            // accessKeyId: 'AKIAVEXH3MT2OPECZLF7',
-            // secretAccessKey: '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',
+            region: config.kms.REGION,
+            accessKeyId: config.kms.ACCESS_KEY,
+            secretAccessKey: config.kms.SECRET_KEY,
         });
     }
 
@@ -104,9 +105,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getTemplateMetadata(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
-        const kmsRegion = awsAuthConfiguration.KMS.REGION;
-        const kmsAccountID = awsAuthConfiguration.KMS.ACCOUNT_ID;
-        const kmsKeyId = awsAuthConfiguration.KMS.KEY_ID;
+        const kmsRegion = config.kms.REGION;
+        const kmsAccountID = config.kms.ACCOUNT_ID;
+        const kmsKeyId = config.kms.KEY_ID;
 
         return new Promise<void>((resolve, reject) => {
             this.setState({ isLoading: true }, () => {
