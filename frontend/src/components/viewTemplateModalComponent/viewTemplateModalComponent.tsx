@@ -10,7 +10,6 @@ import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
-import { awsAuthConfiguration } from '../../awsAuthConfiguration';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
