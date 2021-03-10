@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
-import { Authorizer, IdentitySource, RestApi } from '@aws-cdk/aws-apigateway';
+import { Authorizer, IdentitySource } from '@aws-cdk/aws-apigateway';
 import { config } from '../config';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 

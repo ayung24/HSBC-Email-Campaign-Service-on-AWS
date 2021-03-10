@@ -7,8 +7,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
     const Cryptr = require('cryptr');
     const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
 
-    const reqContext: IEmailAPIAuthReq = JSON.parse(event.requestContext.body);
-
+    const reqContext: IEmailAPIAuthReq = JSON.parse(context.clientContext.Custom);
     const apiKeyFromPOSTReq = reqContext.apiKey;
 
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
