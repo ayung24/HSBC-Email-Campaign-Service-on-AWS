@@ -15,6 +15,7 @@ import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerCompo
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplate } from '../../models/templateInterfaces';
+import { IError } from '../../models/iError';
 
 interface ISendEmailReqBody {
     templateId: string;
@@ -160,7 +161,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getMetadataErrorToast(err: any, templateName: string): ToastInterface {
         return {
             id: `getMetadataError-${err.response}`,
-            body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
+            body: `An error occurred when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
             open: true,
         };
@@ -182,7 +183,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (!this._isCompleteJson(this.state.jsonBody)) {
             const TOAST_INCOMPLETE = {
                 id: 'copyJsonFailed',
-                body: 'Incomplete paramaters for JSON\nPlease fill in all fields',
+                body: 'Incomplete parameters for JSON\nPlease fill in all fields',
                 type: ToastType.ERROR,
                 open: true,
             };
@@ -248,10 +249,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     this._addToast(toast);
                     this._handleModalClose();
                 })
-                .catch(() => {
+                .catch((err: IError) => {
                     const toast = {
                         id: 'deleteTemplatesError',
-                        body: 'Could not delete template: ' + templateName + '.',
+                        body: `An error occurred while deleting template [${templateName}]. Error: [${err.code}: ${err.message}]`,
                         type: ToastType.ERROR,
                         open: true,
                     };
