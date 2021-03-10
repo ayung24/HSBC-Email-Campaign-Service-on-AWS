@@ -5,11 +5,11 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { KMS } from 'aws-sdk';
+import { config } from '../../config';
+import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
-import { awsAuthConfiguration } from '../../awsAuthConfiguration';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
@@ -71,7 +71,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._inputFormNameSubject = 'form-control-subject';
 
         this._keyManagementService = new KMS({
-            region: awsAuthConfiguration.Auth.region,
+            region: config.kms.REGION,
+            accessKeyId: config.kms.ACCESS_KEY,
+            secretAccessKey: config.kms.SECRET_KEY,
         });
     }
 
@@ -102,29 +104,32 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getTemplateMetadata(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
+        const kmsRegion = config.kms.REGION;
+        const kmsAccountID = config.kms.ACCOUNT_ID;
+        const kmsKeyId = config.kms.KEY_ID;
+
         return new Promise<void>((resolve, reject) => {
             this.setState({ isLoading: true }, () => {
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
-                        // const apiKeyBuffer = Buffer.from(response.fieldNames);
-                        // const decryptParam = {
-                        //     CiphertextBlob: apiKeyBuffer,
-                        // };
-                        // return new Promise<ITemplate>((resolve, reject) => {
-                        //     this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-                        //         if (err) {
-                        //             reject(err);
-                        //         } else if (!data.Plaintext) {
-                        //             reject();
-                        //         } else {
-                        //             response.apiKey = data.Plaintext.toString('ascii');
-                        //             resolve(response);
-                        //         }
-                        //     });
-                        // });
-                        // temp
-                        return response;
+                        const apiKeyBuffer = Buffer.from(response.apiKey, 'base64');
+                        const decryptParam = {
+                            KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountID}:key/${kmsKeyId}`,
+                            CiphertextBlob: apiKeyBuffer,
+                        };
+                        return new Promise<ITemplate>((resolve, reject) => {
+                            this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                                if (err) {
+                                    reject(err);
+                                } else if (!data.Plaintext) {
+                                    reject();
+                                } else {
+                                    response.apiKey = data.Plaintext.toString('ascii');
+                                    resolve(response);
+                                }
+                            });
+                        });
                     })
                     .then((response: ITemplate) => {
                         this.setState({
