@@ -15,6 +15,7 @@ import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerCompo
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplate } from '../../models/templateInterfaces';
+import { IError } from '../../models/iError';
 
 interface ISendEmailReqBody {
     templateId: string;
@@ -29,6 +30,7 @@ type SendEmailFields = {
 
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
+    isDeletePromptOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: ISendEmailReqBody;
@@ -55,6 +57,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._templateService = new TemplateService();
         this.state = {
             isViewOpen: false,
+            isDeletePromptOpen: false,
             url: this._getUrl(),
             apiKey: '',
             jsonBody: {
@@ -83,6 +86,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _handleModalOpen(): void {
         this._getTemplateMetadata().then(() => this.setState({ isViewOpen: true }));
+    }
+
+    private _handleDeletePromptClose(): void {
+        this.setState({ isDeletePromptOpen: false });
+    }
+
+    private _handleDeletePromptOpen(): void {
+        this.setState({ isDeletePromptOpen: true });
     }
 
     private _getUrl(): string {
@@ -150,7 +161,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getMetadataErrorToast(err: any, templateName: string): ToastInterface {
         return {
             id: `getMetadataError-${err.response}`,
-            body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
+            body: `An error occurred when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
             open: true,
         };
@@ -172,7 +183,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (!this._isCompleteJson(this.state.jsonBody)) {
             const TOAST_INCOMPLETE = {
                 id: 'copyJsonFailed',
-                body: 'Incomplete paramaters for JSON\nPlease fill in all fields',
+                body: 'Incomplete parameters for JSON\nPlease fill in all fields',
                 type: ToastType.ERROR,
                 open: true,
             };
@@ -223,25 +234,25 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _deleteTemplate(): void {
-        const templateId = this.props.templateId;
-        this.setState({ isLoading: true }, () => {
+        const templateName = this.props.templateName;
+        this.setState({ isDeletePromptOpen: false, isLoading: true }, () => {
             this._templateService
-                .deleteTemplate(templateId)
+                .deleteTemplate(this.props.templateId)
                 .then(response => {
                     EventEmitter.getInstance().dispatch('refreshGrid');
                     const toast = {
                         id: 'deleteTemplatesSuccess',
-                        body: 'Successfully deleted template: ' + response.templateId + '.',
+                        body: 'Successfully deleted template: ' + templateName + '.',
                         type: ToastType.SUCCESS,
                         open: true,
                     };
                     this._addToast(toast);
                     this._handleModalClose();
                 })
-                .catch(() => {
+                .catch((err: IError) => {
                     const toast = {
                         id: 'deleteTemplatesError',
-                        body: 'Could not delete template: ' + templateId + '.',
+                        body: `An error occurred while deleting template [${templateName}]. Error: [${err.code}: ${err.message}]`,
                         type: ToastType.ERROR,
                         open: true,
                     };
@@ -289,7 +300,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button
                                 variant='outline-dark'
                                 className='float-right'
-                                onClick={this._deleteTemplate.bind(this)}
+                                onClick={this._handleDeletePromptOpen.bind(this)}
                                 style={{ marginTop: '12px' }}
                             >
                                 Delete
@@ -379,6 +390,17 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
+                    </Modal.Footer>
+                </Modal>
+                <Modal show={this.state.isDeletePromptOpen} onHide={() => this._handleDeletePromptClose()}>
+                    <Modal.Body>Are you sure you want to delete this template?</Modal.Body>
+                    <Modal.Footer>
+                        <Button variant='danger' onClick={this._deleteTemplate.bind(this)}>
+                            Delete
+                        </Button>
+                        <Button variant='secondary' onClick={this._handleDeletePromptClose.bind(this)}>
+                            Cancel
+                        </Button>
                     </Modal.Footer>
                 </Modal>
                 {this.state.isLoading && <SpinnerComponent />}
