@@ -19,3 +19,24 @@ export interface IEmailAPIAuthReq {
     templateID: string;
     apiKey: string;
 }
+
+export interface IDeleteTemplateBody {
+    templateId: string;
+}
+
+export interface ISendEmailReqBody {
+    templateId: string;
+    subject: string;
+    recipient: string;
+    fields: ISendEmailFields;
+}
+
+export interface ISendEmailFields {
+    [key: string]: string;
+}
+
+export interface IImageContent {
+    contentType: string;
+    content: Buffer;
+    cid: string;
+}

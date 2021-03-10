@@ -20,9 +20,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/.env" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/lib/constructs/emailVerifier.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/logger.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/deleteTemplate/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/getTemplateMetadata/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/sendEmail/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/sendEmail/processHtml.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test/constructs/emailVerifier.spec.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/test/services/emailService.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/cdkDevCI.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/cdkDevCI.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/cdkProdCI.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/cdkProdCI.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/frontendCI.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/frontendCI.yml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/emailCampaignServiceStack.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/emailCampaignServiceStack.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/lib/services/emailService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/emailService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/services/templateService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/templateService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/database/dbOperations.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/database/dbOperations.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/database/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/database/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/database/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/database/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/errorCode.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/errorCode.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/listTemplates/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/listTemplates/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/uploadTemplate/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/uploadTemplate/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test/mocks/dbOperations.mock.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test/mocks/dbOperations.mock.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test/services/templateService.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test/services/templateService.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/tsconfig.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.eslintcache" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.vscode/settings.json" beforeDir="false" />
@@ -105,7 +134,7 @@
       <workItem from="1614270154111" duration="1258000" />
       <workItem from="1614370541798" duration="48000" />
       <workItem from="1614815453365" duration="7113000" />
-      <workItem from="1615321957585" duration="6895000" />
+      <workItem from="1615321957585" duration="9629000" />
     </task>
     <servers />
   </component>

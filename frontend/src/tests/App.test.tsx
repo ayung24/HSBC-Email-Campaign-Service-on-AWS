@@ -1,6 +1,6 @@
 import React from 'react';
 import { cleanup } from '@testing-library/react';
-import App from '../App';
+import { App } from '../App';
 import ReactDOM from 'react-dom';
 
 afterEach(cleanup);

@@ -6,12 +6,15 @@ import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import * as AWS from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
+import { AWSError, KMS } from 'aws-sdk';
+import * as Logger from '../../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
-const ENCRYPTION_KEY_SECRET = process.env.ENCRYPTION_KEY_SECRET;
-const SECRET_MANAGER_REGION = process.env.SECRET_MANAGER_REGION;
+const KMS_REGION = process.env.KMS_REGION;
+const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;
+const KMS_KEY_ID = process.env.KMS_KEY_ID;
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -19,15 +22,16 @@ const headers = {
     'Content-Type': 'application/json',
 };
 const s3 = new S3Client({});
-const secretManager: AWS.SecretsManager = new AWS.SecretsManager({
-    region: SECRET_MANAGER_REGION,
+
+const kmsClient: AWS.KMS = new AWS.KMS({
+    region: KMS_REGION,
 });
 
 /**
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!ENCRYPTION_KEY_SECRET && !!SECRET_MANAGER_REGION;
+    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
 /**
@@ -35,6 +39,7 @@ const validateEnv = function (): boolean {
  * @param key bucket key to put object in
  */
 const getPresignedPost = async function (key: string): Promise<PresignedPost> {
+    Logger.info({ message: 'Creating presigned POST', additionalInfo: undefined });
     return createPresignedPost(s3, {
         Bucket: HTML_BUCKET_NAME!,
         Key: key,
@@ -54,43 +59,30 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     });
 };
 
-async function retrieveEncryptKey(): Promise<string> {
+async function generateEncryptedApiKey(): Promise<string> {
+    Logger.info({ message: 'Generating encrypted API key', additionalInfo: undefined });
+    const uuidAPIKey = require('uuid-apikey');
+    const { _, apiKey } = uuidAPIKey.create();
+
+    const params = {
+        KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
+        Plaintext: Buffer.from(apiKey),
+    };
+
     return new Promise((resolve, reject) => {
-        secretManager.getSecretValue(
-            { SecretId: ENCRYPTION_KEY_SECRET! },
-            (err: AWS.AWSError, data: AWS.SecretsManager.GetSecretValueResponse) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    if (data.SecretString) {
-                        resolve(data.SecretString);
-                    } else {
-                        reject(new Error('Encryption key was not found'));
-                    }
-                }
-            },
-        );
+        kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
+            if (err) {
+                reject(err);
+            } else {
+                const encryptedBase64data = Buffer.from(data.CiphertextBlob).toString('base64');
+                resolve(encryptedBase64data);
+            }
+        });
     });
 }
 
-async function generateEncryptedApiKey(): Promise<string> {
-    console.info('Generating encrypted API key');
-    const uuidAPIKey = require('uuid-apikey');
-    const Cryptr = require('cryptr');
-    const { _, apiKey } = uuidAPIKey.create();
-
-    // return retrieveEncryptKey().then(key => {
-    //     console.info("Retrieved encryption key")
-    //     const cryptr = new Cryptr(key);
-    //     return cryptr.encrypt(apiKey);
-    // })
-
-    // TODO: Support cross-account encryption key retrieval
-    const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
-    return cryptr.encrypt(apiKey);
-}
-
 export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!validateEnv()) {
         return {
             headers: headers,
@@ -119,6 +111,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const createPostUrl = addTemplate.then((entry: ITemplateFullEntry) => getPresignedPost(entry.templateId));
     return Promise.all([addTemplate, createPostUrl])
         .then(([entry, postUrl]: [ITemplateFullEntry, PresignedPost]) => {
+            Logger.info({ message: 'Upload template SUCCESS', additionalInfo: entry });
             return {
                 headers: headers,
                 statusCode: 200,
@@ -134,7 +127,6 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
-            console.log(`Error: ${err.message}`);
             return {
                 headers: headers,
                 statusCode: 500,
