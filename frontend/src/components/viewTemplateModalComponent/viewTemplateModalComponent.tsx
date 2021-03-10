@@ -30,7 +30,7 @@ type SendEmailFields = {
 
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
-    isDeletePrompt: boolean;
+    isDeletePromptOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: ISendEmailReqBody;
@@ -57,7 +57,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._templateService = new TemplateService();
         this.state = {
             isViewOpen: false,
-            isDeletePrompt: false,
+            isDeletePromptOpen: false,
             url: this._getUrl(),
             apiKey: '',
             jsonBody: {
@@ -88,12 +88,12 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._getTemplateMetadata().then(() => this.setState({ isViewOpen: true }));
     }
 
-    private _handlePromptClose(): void {
-        this.setState({ isDeletePrompt: false });
+    private _handleDeletePromptClose(): void {
+        this.setState({ isDeletePromptOpen: false });
     }
 
-    private _handlePromptOpen(): void {
-        this.setState({ isDeletePrompt: true });
+    private _handleDeletePromptOpen(): void {
+        this.setState({ isDeletePromptOpen: true });
     }
 
     private _getUrl(): string {
@@ -235,7 +235,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _deleteTemplate(): void {
         const templateName = this.props.templateName;
-        this.setState({ isDeletePrompt: false, isLoading: true }, () => {
+        this.setState({ isDeletePromptOpen: false, isLoading: true }, () => {
             this._templateService
                 .deleteTemplate(this.props.templateId)
                 .then(response => {
@@ -300,7 +300,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button
                                 variant='outline-dark'
                                 className='float-right'
-                                onClick={this._handlePromptOpen.bind(this)}
+                                onClick={this._handleDeletePromptOpen.bind(this)}
                                 style={{ marginTop: '12px' }}
                             >
                                 Delete
@@ -392,13 +392,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                     </Modal.Footer>
                 </Modal>
-                <Modal show={this.state.isDeletePrompt} onHide={() => this._handlePromptClose()}>
+                <Modal show={this.state.isDeletePromptOpen} onHide={() => this._handleDeletePromptClose()}>
                     <Modal.Body>Are you sure you want to delete this template?</Modal.Body>
                     <Modal.Footer>
                         <Button variant='danger' onClick={this._deleteTemplate.bind(this)}>
                             Delete
                         </Button>
-                        <Button variant='secondary' onClick={this._handlePromptClose.bind(this)}>
+                        <Button variant='secondary' onClick={this._handleDeletePromptClose.bind(this)}>
                             Cancel
                         </Button>
                     </Modal.Footer>
