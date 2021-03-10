@@ -2,9 +2,9 @@ import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { IEmailAPIAuthReq } from '../lambdaInterfaces';
+const Cryptr = require('cryptr');
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
-    const Cryptr = require('cryptr');
     const cryptr = new Cryptr('my-secret-key-that-is-not-too-secret');
 
     const reqContext: IEmailAPIAuthReq = JSON.parse(context.clientContext.Custom);
