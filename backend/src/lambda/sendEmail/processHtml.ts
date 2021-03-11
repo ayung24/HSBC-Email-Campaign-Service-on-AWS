@@ -1,4 +1,4 @@
-import { ISendEmailFields, IImageContent } from '../lambdaInterfaces';
+import { ISendEmailFields, ITemplateImage } from '../lambdaInterfaces';
 
 /**
  * @param srcHTML HTML with dynamic fields
@@ -25,17 +25,17 @@ export const replaceFields = function (srcHTML: string, fields: ISendEmailFields
  * @param srcHTML HTML with inline embedded image
  * @returns HTML with cid embedded image
  */
-export const processImages = function (srcHTML: string): { html: string; attachments: IImageContent[] } {
+export const processImages = function (srcHTML: string): { html: string; attachments: ITemplateImage[] } {
     // data uri syntax is data:[<mimetype>][;base64],<data>
     const regex = new RegExp(/\s*data:(?<mime>[a-z-]+\/[a-z\-+]+);(?<encoding>base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@/?%\s]*\s*)/, 'gi');
-    const images: IImageContent[] = [];
+    const images: ITemplateImage[] = [];
     let imageId = 0;
     const html = srcHTML.replace(regex, (_, mime: string, encoding: string, data: string) => {
         const cid = 'image' + imageId++;
         images.push({
             contentType: mime,
             content: Buffer.from(data, encoding),
-            cid: cid,
+            key: cid,
         });
         return `cid:${cid}`;
     });

@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry } from './dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
@@ -8,6 +8,7 @@ import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME
 
 function getDynamo(): DynamoDB {
     return new DynamoDB({ apiVersion: process.env.DYNAMO_API_VERSION });
@@ -256,4 +257,45 @@ export function GetHTMLById(templateId: string): Promise<string> {
             }
         });
     });
+}
+
+export function UploadHTML(templateId: string, html: string): Promise<string> {
+    const s3 = new S3();
+    const queryParams = {
+        Bucket: HTML_BUCKET_NAME,
+        Key: templateId,
+        Object: html
+    };
+    return new Promise((resolve, reject) => {
+        s3.upload(queryParams, (err: Error, data: S3.ManagedUpload.SendData) => {
+            if (err) {
+                console.warn(`Failed to upload HTML with template id ${templateId}`);
+                reject(err);
+            } else {
+                resolve(data.Location);
+            }
+        })
+    })
+}
+
+export function UploadImages(images: ITemplateImage[]): Promise<string[]> {
+    const s3 = new S3();
+    const uploadPromises: Array<Promise<string>> = images.map((image: ITemplateImage) => {
+        const params = {
+            Bucket: IMAGE_BUCKET_NAME,
+            Key: image.key,
+            Body: image.content
+        }
+        return new Promise<string>((resolve, reject) => {
+            s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
+                if (err) {
+                    console.warn(`Failed to upload image with key ${image.key}`);
+                    reject(err);
+                } else {
+                    resolve(data.Location);
+                }
+            })
+        })
+    });
+    return Promise.all(uploadPromises);
 }
