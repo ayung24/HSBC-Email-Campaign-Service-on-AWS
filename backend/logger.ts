@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 
 interface ILogItem {
     message: string;
-    additionalInfo: any;
+    additionalInfo?: any;
 }
 
 type ErrorType = { message: string };

@@ -135,6 +135,7 @@ export class Database extends cdk.Construct {
             events: [ s3.EventType.OBJECT_CREATED ],
             filters: [ {prefix: config.s3.SRC_HTML_PATH}]
         }));
+        // TODO: #100 Create EventType.OBJECT_REMOVED trigger for cleaning up images after html delete
         this._htmlBucket.grantRead(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantDelete(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantPut(this._processHtml, `${config.s3.PROCESSED_HTML_PATH}*`);

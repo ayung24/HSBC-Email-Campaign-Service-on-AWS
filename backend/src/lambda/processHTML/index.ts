@@ -5,6 +5,7 @@ import * as db from '../../database/dbOperations'
 import cheerio from 'cheerio'
 import { ITemplateImage } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode'
+import * as Logger from '../../../logger';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -34,14 +35,16 @@ export const handler = async function (event: S3CreateEvent) {
         const templateId = decodeURIComponent(uploadEvent.s3.object.key
             .replace(/\+/g, ' '))
             .replace(SRC_HTML_PATH, "");
-        console.info(`Received S3 create event: ${JSON.stringify(uploadEvent)}`)
+        Logger.info({
+            message: `Post-processing HTML for template with id ${templateId}`,
+            additionalInfo: uploadEvent
+        })
 
         return db.GetHTMLById(templateId, SRC_HTML_PATH).then((html: string) => {
             const images: ITemplateImage[] = [];
             const $ = cheerio.load(html)
             $('img').each((index, element) => {
                 const dataURI = $(element).attr('src')
-                dataURI.slice(0, 100)
                 const groups = dataURIRegex.exec(dataURI).groups
                 const image: ITemplateImage = {
                     contentType: groups.mime,
@@ -56,19 +59,19 @@ export const handler = async function (event: S3CreateEvent) {
                 db.UploadImages(templateId, images)
             ])
         }).then(([tmpHTML, imageLocs] : [string, {key: string, location: string}[]]) => {
-            console.info(`Uploaded ${imageLocs.length} images for template ${templateId}`);
+            Logger.info({message: `Uploaded ${imageLocs.length} images for template ${templateId}`});
             const $ = cheerio.load(tmpHTML)
             imageLocs.forEach((image: {key: string, location: string}) => {
                 $(`img[src=${image.key}]`).attr('src', image.location);
             });
             return db.UploadProcessedHTML(templateId, $.html())
         }).then(() => {
-            console.info(`Updated html for template ${templateId}`);
+            Logger.info({message: `Updated html for template ${templateId}`});
             return {
                 statusCode: 400,
             }
         }).catch(err => {
-            console.log(`Error: ${err.message}`);
+            Logger.logError(err);
             return {
                 statusCode: 500,
                 body: JSON.stringify({

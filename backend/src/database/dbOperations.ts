@@ -279,25 +279,27 @@ export function GetHTMLById(templateId: string, prefix: string): Promise<string>
 
 export function UploadProcessedHTML(templateId: string, html: string): Promise<string> {
     const s3 = new S3();
-    const queryParams = {
+    Logger.info({ message: 'Uploading processed template HTML', additionalInfo: { templateId: templateId } });
+    const uploadParams = {
         Bucket: HTML_BUCKET_NAME,
         Key: PROCESSED_HTML_PATH + templateId,
         ContentType: 'text/html',
         Body: html
     };
     return new Promise((resolve, reject) => {
-        s3.upload(queryParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
+        s3.upload(uploadParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
             if (err) {
-                console.warn(`Failed to upload HTML with template id ${templateId}`);
+                Logger.logError(err);
                 reject(err);
             } else {
+                Logger.info({ message: 'Deleting source template HTML', additionalInfo: { templateId: templateId } });
                 const deleteParams = {
                     Bucket: HTML_BUCKET_NAME,
                     Key: SRC_HTML_PATH + templateId,
                 }
                 s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
                     if (err) {
-                        console.warn(`Failed to delete srouce HTML with template id ${templateId}`);
+                        Logger.logError(err);
                         reject(err);
                     } else {
                         resolve(uploadRes.Location);
@@ -311,6 +313,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
 export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<{key: string, location: string}[]> {
     const s3 = new S3();
     const uploadPromises: Array<Promise<{key: string, location: string}>> = images.map((image: ITemplateImage) => {
+        Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
             Bucket: IMAGE_BUCKET_NAME,
             Key: `${templateId}/${image.key}`,
@@ -320,7 +323,7 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
         return new Promise<{key: string, location: string}>((resolve, reject) => {
             s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
                 if (err) {
-                    console.warn(`Failed to upload image with key ${image.key}`);
+                    Logger.logError(err);
                     reject(err);
                 } else {
                     resolve({
