@@ -5,6 +5,8 @@ import { S3EventSource } from '@aws-cdk/aws-lambda-event-sources';
 import * as s3 from '@aws-cdk/aws-s3';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
+import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
+import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
 
 export class Database extends cdk.Construct {
     // TODO: #23
@@ -14,14 +16,17 @@ export class Database extends cdk.Construct {
     private _metadata: dynamodb.Table;
     private _htmlBucket: s3.Bucket;
     private _imageBucket: s3.Bucket;
-    private _processHtml: lambda.Function;
+    private _processHTML: lambda.Function;
 
-    constructor(scope: cdk.Construct, id: string) {
+    private _processHTMLLambdaName: string;
+
+    constructor(scope: cdk.Construct, id: string, buildEnv: string) {
         super(scope, id);
+        this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
         this._initTable(scope);
-        this._initHtmlBucket(scope);
-        this._initImageBucket(scope);
+        this._initBuckets(scope);
         this._initFunctions(scope);
+        this._initLogGroups(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -78,7 +83,7 @@ export class Database extends cdk.Construct {
         });
     }
 
-    private _initHtmlBucket(scope: cdk.Construct) {
+    private _initBuckets(scope: cdk.Construct) {
         this._htmlBucket = new s3.Bucket(scope, 'HTMLBucket', {
             versioned: false,
             encryption: s3.BucketEncryption.UNENCRYPTED,
@@ -96,9 +101,7 @@ export class Database extends cdk.Construct {
                 },
             ],
         });
-    }
 
-    private _initImageBucket(scope: cdk.Construct) {
         this._imageBucket = new s3.Bucket(scope, 'ImageBucket', {
             versioned: false,
             encryption: s3.BucketEncryption.UNENCRYPTED,
@@ -117,7 +120,7 @@ export class Database extends cdk.Construct {
     }
 
     private _initFunctions(scope: cdk.Construct) {
-        this._processHtml = new NodejsFunction(scope, 'ProcessHTMLHandler', {
+        this._processHTML = new NodejsFunction(scope, 'ProcessHTMLHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
             bundling: {
@@ -130,18 +133,26 @@ export class Database extends cdk.Construct {
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
             },
+            functionName: this._processHTMLLambdaName,
         });
-        this._processHtml.addEventSource(
+        this._processHTML.addEventSource(
             new S3EventSource(this._htmlBucket, {
                 events: [s3.EventType.OBJECT_CREATED],
                 filters: [{ prefix: config.s3.SRC_HTML_PATH }],
             }),
         );
         // TODO: #100 Create EventType.OBJECT_REMOVED trigger for cleaning up images after html delete
-        this._htmlBucket.grantRead(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);
-        this._htmlBucket.grantDelete(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);
-        this._htmlBucket.grantPut(this._processHtml, `${config.s3.PROCESSED_HTML_PATH}*`);
-        this._imageBucket.grantPut(this._processHtml);
+        this._htmlBucket.grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
+        this._htmlBucket.grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
+        this._htmlBucket.grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
+        this._imageBucket.grantPut(this._processHTML);
+    }
+
+    private _initLogGroups(scope: cdk.Construct) {
+        new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
     }
 
     public htmlBucket(): s3.Bucket {

@@ -1,5 +1,5 @@
 import { S3CreateEvent } from 'aws-lambda';
-import { nonEmptyArray } from '../../commonFunctions';
+import { isEmptyArray, nonEmptyArray } from '../../commonFunctions';
 import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
@@ -29,57 +29,7 @@ export const handler = async function (event: S3CreateEvent) {
                 code: ErrorCode.TS10,
             }),
         };
-    } else if (nonEmptyArray(event.Records)) {
-        const uploadEvent = event.Records[0];
-        const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH, '');
-        Logger.info({
-            message: `Post-processing HTML for template with id ${templateId}`,
-            additionalInfo: uploadEvent,
-        });
-
-        return db
-            .GetHTMLById(templateId, SRC_HTML_PATH)
-            .then((html: string) => {
-                const images: ITemplateImage[] = [];
-                const $ = cheerio.load(html);
-                $('img').each((index, element) => {
-                    const dataURI = $(element).attr('src');
-                    const groups = dataURIRegex.exec(dataURI).groups;
-                    const image: ITemplateImage = {
-                        contentType: groups.mime,
-                        content: Buffer.from(groups.data, groups.encoding),
-                        key: `image${index}`,
-                    };
-                    $(element).attr('src', image.key);
-                    images.push(image);
-                });
-                return Promise.all([Promise.resolve($.html()), db.UploadImages(templateId, images)]);
-            })
-            .then(([tmpHTML, imageLocs]: [string, { key: string; location: string }[]]) => {
-                Logger.info({ message: `Uploaded ${imageLocs.length} images for template ${templateId}` });
-                const $ = cheerio.load(tmpHTML);
-                imageLocs.forEach((image: { key: string; location: string }) => {
-                    $(`img[src=${image.key}]`).attr('src', image.location);
-                });
-                return db.UploadProcessedHTML(templateId, $.html());
-            })
-            .then(() => {
-                Logger.info({ message: `Updated html for template ${templateId}` });
-                return {
-                    statusCode: 400,
-                };
-            })
-            .catch(err => {
-                Logger.logError(err);
-                return {
-                    statusCode: 500,
-                    body: JSON.stringify({
-                        message: err.message,
-                        code: ErrorCode.TS8,
-                    }),
-                };
-            });
-    } else {
+    } else if (!Array.isArray(event.Records) || isEmptyArray(event.Records)) {
         return {
             statusCode: 500,
             body: JSON.stringify({
@@ -88,4 +38,53 @@ export const handler = async function (event: S3CreateEvent) {
             }),
         };
     }
+    const uploadEvent = event.Records[0];
+    const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH, '');
+    Logger.info({
+        message: `Post-processing HTML for template with id ${templateId}`,
+        additionalInfo: uploadEvent,
+    });
+
+    return db
+        .GetHTMLById(templateId, SRC_HTML_PATH)
+        .then((html: string) => {
+            const images: ITemplateImage[] = [];
+            const $ = cheerio.load(html);
+            $('img').each((index, element) => {
+                const dataURI = $(element).attr('src');
+                const groups = dataURIRegex.exec(dataURI).groups;
+                const image: ITemplateImage = {
+                    contentType: groups.mime,
+                    content: Buffer.from(groups.data, groups.encoding),
+                    key: `image${index}`,
+                };
+                $(element).attr('src', image.key);
+                images.push(image);
+            });
+            return Promise.all([Promise.resolve($.html()), db.UploadImages(templateId, images)]);
+        })
+        .then(([tmpHTML, imageLocs]: [string, { key: string; location: string }[]]) => {
+            Logger.info({ message: `Uploaded ${imageLocs.length} images for template ${templateId}` });
+            const $ = cheerio.load(tmpHTML);
+            imageLocs.forEach((image: { key: string; location: string }) => {
+                $(`img[src=${image.key}]`).attr('src', image.location);
+            });
+            return db.UploadProcessedHTML(templateId, $.html());
+        })
+        .then(() => {
+            Logger.info({ message: `Updated html for template ${templateId}` });
+            return {
+                statusCode: 400,
+            };
+        })
+        .catch(err => {
+            Logger.logError(err);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({
+                    message: err.message,
+                    code: ErrorCode.TS8,
+                }),
+            };
+        });
 };
