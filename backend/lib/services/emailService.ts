@@ -29,7 +29,7 @@ export class EmailService {
     }
 
     private _initAuth(scope: cdk.Construct) {
-        const apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
+        new NodejsFunction(scope, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/emailApiAuth/index.ts`,
             functionName: this._emailApiAuthorizerLambdaName,

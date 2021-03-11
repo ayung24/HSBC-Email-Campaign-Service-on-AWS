@@ -25,5 +25,5 @@ export interface ITemplateImage {
 }
 
 export interface IImageLocations {
-    [key: string] : string
+    [key: string]: string;
 }

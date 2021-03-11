@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
 import * as lambda from '@aws-cdk/aws-lambda';
-import { S3EventSource } from '@aws-cdk/aws-lambda-event-sources'
+import { S3EventSource } from '@aws-cdk/aws-lambda-event-sources';
 import * as s3 from '@aws-cdk/aws-s3';
 import { NodejsFunction } from '@aws-cdk/aws-lambda-nodejs';
 import { config } from '../config';
@@ -122,7 +122,7 @@ export class Database extends cdk.Construct {
             entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
             bundling: {
                 nodeModules: ['cheerio'],
-                target: 'es2018'
+                target: 'es2018',
             },
             environment: {
                 HTML_BUCKET_NAME: this._htmlBucket.bucketName,
@@ -131,10 +131,12 @@ export class Database extends cdk.Construct {
                 IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
             },
         });
-        this._processHtml.addEventSource(new S3EventSource(this._htmlBucket, {
-            events: [ s3.EventType.OBJECT_CREATED ],
-            filters: [ {prefix: config.s3.SRC_HTML_PATH}]
-        }));
+        this._processHtml.addEventSource(
+            new S3EventSource(this._htmlBucket, {
+                events: [s3.EventType.OBJECT_CREATED],
+                filters: [{ prefix: config.s3.SRC_HTML_PATH }],
+            }),
+        );
         // TODO: #100 Create EventType.OBJECT_REMOVED trigger for cleaning up images after html delete
         this._htmlBucket.grantRead(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantDelete(this._processHtml, `${config.s3.SRC_HTML_PATH}*`);

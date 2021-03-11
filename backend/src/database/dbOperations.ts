@@ -11,7 +11,7 @@ const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
 const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
-const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME
+const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 
 function getDynamo(): DynamoDB {
     return new DynamoDB({ apiVersion: process.env.DYNAMO_API_VERSION });
@@ -284,7 +284,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
         Bucket: HTML_BUCKET_NAME,
         Key: PROCESSED_HTML_PATH + templateId,
         ContentType: 'text/html',
-        Body: html
+        Body: html,
     };
     return new Promise((resolve, reject) => {
         s3.upload(uploadParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
@@ -296,7 +296,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
                 const deleteParams = {
                     Bucket: HTML_BUCKET_NAME,
                     Key: SRC_HTML_PATH + templateId,
-                }
+                };
                 s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
                     if (err) {
                         Logger.logError(err);
@@ -304,23 +304,23 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
                     } else {
                         resolve(uploadRes.Location);
                     }
-                })
+                });
             }
-        })
-    })
+        });
+    });
 }
 
-export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<{key: string, location: string}[]> {
+export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<{ key: string; location: string }[]> {
     const s3 = new S3();
-    const uploadPromises: Array<Promise<{key: string, location: string}>> = images.map((image: ITemplateImage) => {
+    const uploadPromises: Array<Promise<{ key: string; location: string }>> = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
             Bucket: IMAGE_BUCKET_NAME,
             Key: `${templateId}/${image.key}`,
             Body: image.content,
             ContentType: image.contentType,
-        }
-        return new Promise<{key: string, location: string}>((resolve, reject) => {
+        };
+        return new Promise<{ key: string; location: string }>((resolve, reject) => {
             s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
                 if (err) {
                     Logger.logError(err);
@@ -328,11 +328,11 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
                 } else {
                     resolve({
                         key: image.key,
-                        location: data.Location
+                        location: data.Location,
                     });
                 }
-            })
-        })
+            });
+        });
     });
     return Promise.all(uploadPromises);
 }
