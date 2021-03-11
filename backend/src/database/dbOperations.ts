@@ -41,12 +41,11 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             // check name uniqueness
             const isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
-                IndexName: 'name-and-status-index',
+                IndexName: 'name-index',
                 ExpressionAttributeValues: {
                     ':proposedName': { S: name },
-                    ':inService': { S: EntryStatus.IN_SERVICE },
                 },
-                KeyConditionExpression: 'templateStatus = :inService AND templateName = :proposedName',
+                KeyConditionExpression: 'templateName = :proposedName',
             };
             ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
                 if (err) {
@@ -216,9 +215,8 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     const ddb = getDynamo();
     Logger.info({ message: 'Getting template metadata', additionalInfo: { templateId: templateId } });
     const queryParams = {
-        IndexName: 'id-and-status-index',
-        ExpressionAttributeValues: { ':id': { S: templateId }, ':inService': { S: EntryStatus.IN_SERVICE } },
-        KeyConditionExpression: `templateStatus = :inService AND templateId = :id`,
+        ExpressionAttributeValues: { ':id': { S: templateId } },
+        KeyConditionExpression: `templateId = :id`,
         TableName: METADATA_TABLE_NAME!,
     };
     return new Promise<ITemplateFullEntry>((resolve, reject) => {

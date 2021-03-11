@@ -1,6 +1,6 @@
 import React from 'react';
 import Toast from 'react-bootstrap/Toast';
-import { ToastComponentProperties, ToastComponentState, ToastInterface, ToastState, ToastType } from '../../models/toastInterfaces';
+import { ToastComponentProperties, ToastComponentState, ToastInterface, ToastState } from '../../models/toastInterfaces';
 import './toastComponent.css';
 
 interface ToastComponentPropsWithCloseFunction extends ToastComponentProperties {
@@ -59,9 +59,7 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
                         className={prop.type}
                         onClose={() => this._closeToast(prop.id)}
                         show={this._isOpen(prop.id)}
-                        animation={true}
-                        delay={4000}
-                        autohide={prop.type !== ToastType.ERROR}
+                        animation={false}
                     >
                         <Toast.Header className={prop.type}>
                             <strong className='header-text'>{prop.type.toString()}</strong>

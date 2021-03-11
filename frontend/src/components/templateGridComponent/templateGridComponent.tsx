@@ -98,15 +98,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
             <div className={'templates'}>
                 <Table hover>
                     <thead>{this.renderHeader()}</thead>
-                    <tbody>
-                        {!this.state.templates.length ? (
-                            <td>
-                                <tr>No templates found</tr>
-                            </td>
-                        ) : (
-                            this.state.templates
-                        )}
-                    </tbody>
+                    <tbody>{this.state.templates}</tbody>
                 </Table>
                 {this.state.isLoading && <SpinnerComponent />}
             </div>

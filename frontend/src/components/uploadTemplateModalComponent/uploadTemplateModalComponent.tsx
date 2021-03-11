@@ -127,7 +127,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     private _createUploadErrorToast(err: IError, name: string): ToastInterface {
         return {
             id: `uploadTemplateError-${name}`,
-            body: `An error occurred when uploading template. Error: [${err.code}: ${err.message}]`,
+            body: `An error occured when uploading template. Error: [${err.code}: ${err.message}]`,
             type: ToastType.ERROR,
             open: true,
         };

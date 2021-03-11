@@ -30,31 +30,14 @@ export class Database extends cdk.Construct {
             removalPolicy: Database.REMOVAL_POLICY,
         });
 
-        // query by name and status
+        // query by name
         this._metadata.addGlobalSecondaryIndex({
-            indexName: 'name-and-status-index',
+            indexName: 'name-index',
             partitionKey: {
-                name: 'templateStatus',
-                type: dynamodb.AttributeType.STRING,
-            },
-            sortKey: {
                 name: 'templateName',
                 type: dynamodb.AttributeType.STRING,
             },
-            projectionType: dynamodb.ProjectionType.ALL,
-        });
-
-        // query by template id and status
-        this._metadata.addGlobalSecondaryIndex({
-            indexName: 'id-and-status-index',
-            partitionKey: {
-                name: 'templateStatus',
-                type: dynamodb.AttributeType.STRING,
-            },
-            sortKey: {
-                name: TEMPLATE_KEY,
-                type: dynamodb.AttributeType.STRING,
-            },
+            sortKey: metaDataSortKey,
             projectionType: dynamodb.ProjectionType.ALL,
         });
 
