@@ -1,6 +1,6 @@
 import * as cdk from '@aws-cdk/core';
 import * as dynamodb from '@aws-cdk/aws-dynamodb';
-import { BlockPublicAccess, Bucket, BucketEncryption, HttpMethods } from '@aws-cdk/aws-s3';
+import { BlockPublicAccess, Bucket, BucketAccessControl, BucketEncryption, HttpMethods } from '@aws-cdk/aws-s3';
 
 export class Database extends cdk.Construct {
     // TODO: #23
@@ -9,11 +9,13 @@ export class Database extends cdk.Construct {
 
     private _metadata: dynamodb.Table;
     private _htmlBucket: Bucket;
+    private _imageBucket: Bucket;
 
     constructor(scope: cdk.Construct, id: string) {
         super(scope, id);
         this._initTable(scope);
-        this._initBucket(scope);
+        this._initHtmlBucket(scope);
+        this._initImageBucke(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -53,7 +55,7 @@ export class Database extends cdk.Construct {
         });
     }
 
-    private _initBucket(scope: cdk.Construct) {
+    private _initHtmlBucket(scope: cdk.Construct) {
         this._htmlBucket = new Bucket(scope, 'HTMLBucket', {
             versioned: false,
             encryption: BucketEncryption.UNENCRYPTED,
@@ -73,11 +75,33 @@ export class Database extends cdk.Construct {
         });
     }
 
+    private _initImageBucke(scope: cdk.Construct) {
+        this._imageBucket = new Bucket(scope, 'ImageBucket', {
+            versioned: false,
+            encryption: BucketEncryption.UNENCRYPTED,
+            accessControl: BucketAccessControl.PUBLIC_READ,
+            publicReadAccess: true,
+            removalPolicy: Database.REMOVAL_POLICY,
+            cors: [
+                {
+                    allowedOrigins: ['*'],
+                    allowedMethods: [HttpMethods.POST],
+                    maxAge: 3000,
+                    allowedHeaders: ['Authorization'],
+                },
+            ],
+        });
+    }
+
     public htmlBucket(): Bucket {
         return this._htmlBucket;
     }
 
     public metadataTable(): dynamodb.Table {
         return this._metadata;
+    }
+
+    public imageBucket(): Bucket {
+        return this._imageBucket;
     }
 }
