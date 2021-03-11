@@ -18,6 +18,8 @@ export const config = {
     },
     s3: {
         PRESIGNED_URL_EXPIRY: '600',
+        SRC_HTML_PATH: 'src/',
+        PROCESSED_HTML_PATH: 'processed/',
     },
     ses: {
         VERSION: '2010-12-01',

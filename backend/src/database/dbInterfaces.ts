@@ -23,3 +23,7 @@ export interface ITemplateImage {
     content: Buffer;
     key: string;
 }
+
+export interface IImageLocations {
+    [key: string] : string
+}

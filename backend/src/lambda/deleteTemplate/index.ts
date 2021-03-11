@@ -10,6 +10,7 @@ const headers = {
     'Content-Type': 'application/json',
 };
 
+
 export const handler = async function (event: APIGatewayProxyEvent) {
     Logger.logRequestInfo(event);
     if (!event.pathParameters.id) {

@@ -9,6 +9,8 @@ import * as Logger from '../../logger';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
+const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME
 
 function getDynamo(): DynamoDB {
@@ -121,7 +123,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
             const s3 = new S3();
             const queryParams = {
                 Bucket: HTML_BUCKET_NAME!,
-                Key: templateId,
+                Key: PROCESSED_HTML_PATH + templateId,
             };
             return new Promise<ITemplateFullEntry>((resolve, reject) => {
                 s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
@@ -249,12 +251,12 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     });
 }
 
-export function GetHTMLById(templateId: string): Promise<string> {
+export function GetHTMLById(templateId: string, prefix: string): Promise<string> {
     const s3 = new S3();
     Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
-        Key: templateId,
+        Key: prefix + templateId,
     };
     return new Promise((resolve, reject) => {
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
@@ -275,40 +277,56 @@ export function GetHTMLById(templateId: string): Promise<string> {
     });
 }
 
-export function UploadHTML(templateId: string, html: string): Promise<string> {
+export function UploadProcessedHTML(templateId: string, html: string): Promise<string> {
     const s3 = new S3();
     const queryParams = {
         Bucket: HTML_BUCKET_NAME,
-        Key: templateId,
-        Object: html
+        Key: PROCESSED_HTML_PATH + templateId,
+        ContentType: 'text/html',
+        Body: html
     };
     return new Promise((resolve, reject) => {
-        s3.upload(queryParams, (err: Error, data: S3.ManagedUpload.SendData) => {
+        s3.upload(queryParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
             if (err) {
                 console.warn(`Failed to upload HTML with template id ${templateId}`);
                 reject(err);
             } else {
-                resolve(data.Location);
+                const deleteParams = {
+                    Bucket: HTML_BUCKET_NAME,
+                    Key: SRC_HTML_PATH + templateId,
+                }
+                s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
+                    if (err) {
+                        console.warn(`Failed to delete srouce HTML with template id ${templateId}`);
+                        reject(err);
+                    } else {
+                        resolve(uploadRes.Location);
+                    }
+                })
             }
         })
     })
 }
 
-export function UploadImages(images: ITemplateImage[]): Promise<string[]> {
+export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<{key: string, location: string}[]> {
     const s3 = new S3();
-    const uploadPromises: Array<Promise<string>> = images.map((image: ITemplateImage) => {
+    const uploadPromises: Array<Promise<{key: string, location: string}>> = images.map((image: ITemplateImage) => {
         const params = {
             Bucket: IMAGE_BUCKET_NAME,
-            Key: image.key,
-            Body: image.content
+            Key: `${templateId}/${image.key}`,
+            Body: image.content,
+            ContentType: image.contentType,
         }
-        return new Promise<string>((resolve, reject) => {
+        return new Promise<{key: string, location: string}>((resolve, reject) => {
             s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
                 if (err) {
                     console.warn(`Failed to upload image with key ${image.key}`);
                     reject(err);
                 } else {
-                    resolve(data.Location);
+                    resolve({
+                        key: image.key,
+                        location: data.Location
+                    });
                 }
             })
         })
