@@ -35,7 +35,7 @@ const validateEnv = function (): boolean {
 };
 
 export const handler = async function (event: APIGatewayProxyEvent) {
-    Logger.logRequestInfo(event);
+    Logger.logCURLInfo(event);
     if (!validateEnv()) {
         return {
             headers: headers,

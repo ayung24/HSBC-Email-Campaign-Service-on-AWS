@@ -42,6 +42,17 @@ export function logRequestInfo(event: APIGatewayProxyEvent): void {
     });
 }
 
+export function logCURLInfo(event: APIGatewayProxyEvent): void {
+    info({
+        message: 'Request made',
+        additionalInfo: {
+            user: `${event.requestContext.identity.userAgent}`,
+            path: event.path,
+            httpMethod: event.httpMethod,
+        },
+    });
+}
+
 export function logError(error: ErrorType, message: string | undefined = undefined): void {
     err({ message: !message ? error.message : message, additionalInfo: error });
 }
