@@ -58,10 +58,10 @@ export class TemplateService {
 
     public getTemplates(): Promise<Array<ITemplateDisplay>> {
         // TODO: Get request with start and limit? Maybe have to switch to POST
-        const requestBody: IGetTemplatesReqBody = {
-            start: new Date(0).getTime().toString(),
-            limit: 10,
-        };
+        // const requestBody: IGetTemplatesReqBody = {
+        //     start: new Date(0).getTime().toString(),
+        //     limit: 10,
+        // };
         return this._requestService.GET<ITemplateDisplay[]>('/templates', (templateResponse: IGetTemplatesResponse) => {
             return new Promise<Array<ITemplateDisplay>>(resolve => {
                 const templates = templateResponse.templates.map((template: IGetTemplatesResponseItem) => {
@@ -76,9 +76,13 @@ export class TemplateService {
         });
     }
 
-    // public getTemplateMetaData(): {
-    //
-    // }
+    public getTemplateMetaData(templateId: string): Promise<ITemplate> {
+        return this._requestService.GET<ITemplate>('/templates/' + templateId, (viewResponse: ITemplate) => {
+            return new Promise<ITemplate>(resolve => {
+                resolve(viewResponse);
+            });
+        });
+    }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
         let fieldNames: Array<string> = [];

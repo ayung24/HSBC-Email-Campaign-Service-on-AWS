@@ -7,6 +7,7 @@ import * as AWS from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
 import { AWSError, KMS } from 'aws-sdk';
+import * as Logger from '../../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -38,6 +39,7 @@ const validateEnv = function (): boolean {
  * @param key bucket key to put object in
  */
 const getPresignedPost = async function (key: string): Promise<PresignedPost> {
+    Logger.info({ message: 'Creating presigned POST', additionalInfo: undefined });
     return createPresignedPost(s3, {
         Bucket: HTML_BUCKET_NAME!,
         Key: key,
@@ -58,7 +60,7 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
 };
 
 async function generateEncryptedApiKey(): Promise<string> {
-    console.info('Generating encrypted API key');
+    Logger.info({ message: 'Generating encrypted API key', additionalInfo: undefined });
     const uuidAPIKey = require('uuid-apikey');
     const { _, apiKey } = uuidAPIKey.create();
 
@@ -80,6 +82,7 @@ async function generateEncryptedApiKey(): Promise<string> {
 }
 
 export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!validateEnv()) {
         return {
             headers: headers,
@@ -108,6 +111,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const createPostUrl = addTemplate.then((entry: ITemplateFullEntry) => getPresignedPost(entry.templateId));
     return Promise.all([addTemplate, createPostUrl])
         .then(([entry, postUrl]: [ITemplateFullEntry, PresignedPost]) => {
+            Logger.info({ message: 'Upload template SUCCESS', additionalInfo: entry });
             return {
                 headers: headers,
                 statusCode: 200,
@@ -123,7 +127,6 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
-            console.log(`Error: ${err.message}`);
             return {
                 headers: headers,
                 statusCode: 500,

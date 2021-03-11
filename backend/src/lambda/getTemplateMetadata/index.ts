@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
+import * as Logger from '../../../logger';
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -10,6 +11,7 @@ const headers = {
 };
 
 export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!event.pathParameters.id) {
         return {
             headers: headers,
