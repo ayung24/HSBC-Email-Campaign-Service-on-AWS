@@ -312,7 +312,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
 
 export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
     const s3 = new S3();
-    const uploadPromises: Array<Promise<{ key: string; location: string }>> = images.map((image: ITemplateImage) => {
+    const uploadPromises: Promise<IImageUploadResult[]> = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
             Bucket: IMAGE_BUCKET_NAME,
