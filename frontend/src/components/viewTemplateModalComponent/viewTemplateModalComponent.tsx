@@ -373,27 +373,25 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                         <Form.Label>JSON Body</Form.Label>
                         <InputGroup className='mb-3'>
-                            <InputGroup className='mb-3' style={{ flex: 1 }}>
-                                <TextareaAutosize
-                                    readOnly
-                                    value={JSON.stringify(this.state.jsonBody, null, '\t')}
-                                    style={{
-                                        resize: 'none',
-                                        flex: 1,
-                                        backgroundColor: '#E9ECEF',
-                                        outline: 'none',
-                                        borderColor: '#CED4DA',
-                                        borderTopLeftRadius: '.25rem',
-                                        borderBottomLeftRadius: '.25rem',
-                                        color: '#495057',
-                                    }}
-                                />
-                                <InputGroup.Append>
-                                    <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
-                                        <Image src={copyImage} alt='copy icon' fluid />
-                                    </Button>
-                                </InputGroup.Append>
-                            </InputGroup>
+                            <TextareaAutosize
+                                readOnly
+                                value={JSON.stringify(this.state.jsonBody, null, '\t')}
+                                style={{
+                                    resize: 'none',
+                                    flex: 1,
+                                    backgroundColor: '#E9ECEF',
+                                    outline: 'none',
+                                    borderColor: '#CED4DA',
+                                    borderTopLeftRadius: '.25rem',
+                                    borderBottomLeftRadius: '.25rem',
+                                    color: '#495057',
+                                }}
+                            />
+                            <InputGroup.Append>
+                                <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
+                                    <Image src={copyImage} alt='copy icon' fluid />
+                                </Button>
+                            </InputGroup.Append>
                         </InputGroup>
                     </Modal.Footer>
                 </Modal>
