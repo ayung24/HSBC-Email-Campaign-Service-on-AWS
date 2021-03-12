@@ -13,13 +13,14 @@ let database: Database;
 beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
-    database = new Database(stack, 'mockDatabase');
+    database = new Database(stack, 'mockDatabase', 'test');
     emailService = new EmailService(stack, api, database, 'test');
 });
 
 describe('email service tests', () => {
     it('creates send, authorizer, identity verifier lambdas', () => {
-        expect(stack).to(countResources('AWS::Lambda::Function', 3));
+        // TODO: assert with actual functionNames of lambdas instead of counting
+        expect(stack).to(countResources('AWS::Lambda::Function', 5));
     });
 
     it('adds email endpoint to API gateway', () => {
@@ -44,6 +45,7 @@ describe('email service tests', () => {
                             HTML_BUCKET_NAME: objectLike({
                                 Ref: stringLike('HTMLBucket*'),
                             }),
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                             VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
                             VERSION: config.ses.VERSION,
                         }),

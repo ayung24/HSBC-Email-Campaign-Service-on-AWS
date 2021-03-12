@@ -9,3 +9,7 @@ export function nonEmpty(str: string): boolean {
 export function isEmptyArray(obj: any): boolean {
     return Array.isArray(obj) && obj.length === 0;
 }
+
+export function nonEmptyArray(obj: any): boolean {
+    return Array.isArray(obj) && obj.length > 0;
+}

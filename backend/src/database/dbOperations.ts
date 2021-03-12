@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry } from './dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
@@ -9,6 +9,9 @@ import * as Logger from '../../logger';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
+const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
+const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 
 function getDynamo(): DynamoDB {
     return new DynamoDB({ apiVersion: process.env.DYNAMO_API_VERSION });
@@ -120,7 +123,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
             const s3 = new S3();
             const queryParams = {
                 Bucket: HTML_BUCKET_NAME!,
-                Key: templateId,
+                Key: PROCESSED_HTML_PATH + templateId,
             };
             return new Promise<ITemplateFullEntry>((resolve, reject) => {
                 s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
@@ -248,12 +251,12 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     });
 }
 
-export function GetHTMLById(templateId: string): Promise<string> {
+export function GetHTMLById(templateId: string, pathPrefix: string): Promise<string> {
     const s3 = new S3();
     Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
-        Key: templateId,
+        Key: pathPrefix + templateId,
     };
     return new Promise((resolve, reject) => {
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
@@ -272,4 +275,64 @@ export function GetHTMLById(templateId: string): Promise<string> {
             }
         });
     });
+}
+
+export function UploadProcessedHTML(templateId: string, html: string): Promise<string> {
+    const s3 = new S3();
+    Logger.info({ message: 'Uploading processed template HTML', additionalInfo: { templateId: templateId } });
+    const uploadParams = {
+        Bucket: HTML_BUCKET_NAME,
+        Key: PROCESSED_HTML_PATH + templateId,
+        ContentType: 'text/html',
+        Body: html,
+    };
+    return new Promise((resolve, reject) => {
+        s3.upload(uploadParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
+            if (err) {
+                Logger.logError(err);
+                reject(err);
+            } else {
+                Logger.info({ message: 'Deleting source template HTML', additionalInfo: { templateId: templateId } });
+                const deleteParams = {
+                    Bucket: HTML_BUCKET_NAME,
+                    Key: SRC_HTML_PATH + templateId,
+                };
+                s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
+                    if (err) {
+                        Logger.logError(err);
+                        reject(err);
+                    } else {
+                        resolve(uploadRes.Location);
+                    }
+                });
+            }
+        });
+    });
+}
+
+export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
+    const s3 = new S3();
+    const uploadPromises: Promise<IImageUploadResult[]> = images.map((image: ITemplateImage) => {
+        Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
+        const params = {
+            Bucket: IMAGE_BUCKET_NAME,
+            Key: `${templateId}/${image.key}`,
+            Body: image.content,
+            ContentType: image.contentType,
+        };
+        return new Promise<IImageUploadResult>((resolve, reject) => {
+            s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
+                if (err) {
+                    Logger.logError(err);
+                    reject(err);
+                } else {
+                    resolve({
+                        key: image.key,
+                        location: data.Location,
+                    });
+                }
+            });
+        });
+    });
+    return Promise.all(uploadPromises);
 }

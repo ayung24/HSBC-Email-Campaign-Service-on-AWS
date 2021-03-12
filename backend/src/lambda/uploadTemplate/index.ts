@@ -10,6 +10,7 @@ import { AWSError, KMS } from 'aws-sdk';
 import * as Logger from '../../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const PRESIGNED_URL_EXPIRY = process.env.PRESIGNED_URL_EXPIRY ? Number.parseInt(process.env.PRESIGNED_URL_EXPIRY) : undefined; // OPTIONAL
 const KMS_REGION = process.env.KMS_REGION;
@@ -31,7 +32,7 @@ const kmsClient: AWS.KMS = new AWS.KMS({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
+    return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!SRC_HTML_PATH && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
 /**
@@ -42,11 +43,11 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
     Logger.info({ message: 'Creating presigned POST', additionalInfo: undefined });
     return createPresignedPost(s3, {
         Bucket: HTML_BUCKET_NAME!,
-        Key: key,
+        Key: SRC_HTML_PATH + key,
         Conditions: [
             { acl: 'bucket-owner-full-control' },
             { bucket: HTML_BUCKET_NAME! },
-            ['starts-with', '$key', key],
+            ['starts-with', '$key', SRC_HTML_PATH + key],
             ['starts-with', '$Content-Type', 'text/html'],
             ['content-length-range', 1, 4000000], // 1byte - 4MB
         ],
