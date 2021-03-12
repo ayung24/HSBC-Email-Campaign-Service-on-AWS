@@ -1,5 +1,5 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage } from './dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
@@ -251,12 +251,12 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     });
 }
 
-export function GetHTMLById(templateId: string, prefix: string): Promise<string> {
+export function GetHTMLById(templateId: string, pathPrefix: string): Promise<string> {
     const s3 = new S3();
     Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
-        Key: prefix + templateId,
+        Key: pathPrefix + templateId,
     };
     return new Promise((resolve, reject) => {
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
@@ -310,7 +310,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
     });
 }
 
-export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<{ key: string; location: string }[]> {
+export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
     const s3 = new S3();
     const uploadPromises: Array<Promise<{ key: string; location: string }>> = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
@@ -320,7 +320,7 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
             Body: image.content,
             ContentType: image.contentType,
         };
-        return new Promise<{ key: string; location: string }>((resolve, reject) => {
+        return new Promise<IImageUploadResult>((resolve, reject) => {
             s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
                 if (err) {
                     Logger.logError(err);

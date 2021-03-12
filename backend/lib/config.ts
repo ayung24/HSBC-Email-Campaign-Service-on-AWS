@@ -7,6 +7,7 @@ export const config = {
     },
     lambda: {
         LAMBDA_ROOT: 'src/lambda',
+        BUILD_TARGET: 'es2018',
     },
     KMS: {
         REGION: 'ca-central-1',

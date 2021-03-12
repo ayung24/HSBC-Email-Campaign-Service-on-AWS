@@ -24,6 +24,7 @@ export interface ITemplateImage {
     key: string;
 }
 
-export interface IImageLocations {
-    [key: string]: string;
+export interface IImageUploadResult {
+    key: string;
+    location: string;
 }

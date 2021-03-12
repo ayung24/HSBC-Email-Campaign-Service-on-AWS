@@ -125,7 +125,7 @@ export class Database extends cdk.Construct {
             entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
             bundling: {
                 nodeModules: ['cheerio'],
-                target: 'es2018',
+                target: config.lambda.BUILD_TARGET,
             },
             environment: {
                 HTML_BUCKET_NAME: this._htmlBucket.bucketName,
