@@ -309,7 +309,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <span>Created at {this.props.timeCreated}</span>
                         </div>
                     </Modal.Header>
-                    <Modal.Body id='body'>
+                    <Modal.Body id='body' style={{ flexGrow: 0, flexShrink: 1, flexBasis: 'auto' }}>
                         <Tabs defaultActiveKey='single'>
                             <Tab id='single' eventKey='single' title='Single'>
                                 <div className='sendParameters'>
@@ -330,7 +330,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         />
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('single')}</div>
+                                <div className='dynamicParameters'>{this._renderFieldNames('single')}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='sendParameters'>
