@@ -133,6 +133,7 @@ export class Database extends cdk.Construct {
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
             },
+            timeout: cdk.Duration.seconds(10),
             functionName: this._processHTMLLambdaName,
         });
         this._processHTML.addEventSource(

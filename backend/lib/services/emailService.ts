@@ -56,6 +56,7 @@ export class EmailService {
             bundling: {
                 nodeModules: ['nodemailer'],
             },
+            timeout: cdk.Duration.seconds(10),
             functionName: this._emailSendLambdaName,
         });
         database.htmlBucket().grantRead(this._send, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
