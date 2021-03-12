@@ -334,7 +334,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='sendParameters'>
-                                    <Form.Label>Recipient</Form.Label>
+                                    <Form.Label>Recipients</Form.Label>
                                     <InputGroup id='recipient' className='mb-3'>
                                         <FormControl placeholder='Recipient' />
                                     </InputGroup>

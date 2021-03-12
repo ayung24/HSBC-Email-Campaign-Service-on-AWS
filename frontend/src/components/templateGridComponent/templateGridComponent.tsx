@@ -100,9 +100,9 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                     <thead>{this.renderHeader()}</thead>
                     <tbody>
                         {!this.state.templates.length ? (
-                            <td>
-                                <tr>No templates found</tr>
-                            </td>
+                            <tr>
+                                <td>No templates found</td>
+                            </tr>
                         ) : (
                             this.state.templates
                         )}
