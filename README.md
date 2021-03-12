@@ -36,6 +36,7 @@ To be updated with every push to main
 #### ***March 12, 2020***
 - Delete template button now has confirmation popup before proceeding with deletion
 - UI fix for tall monitors on the view details modal
+- API key on view details modal is now unencrypted 
 - If there are no templates, instead of a blank grid we should have a single row that says `No templates`
 - Success and info toast messages now disappear after 4 seconds
     - Error toasts remain until dismissed
