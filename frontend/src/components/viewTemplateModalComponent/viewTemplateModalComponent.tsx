@@ -373,7 +373,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                         <Form.Label>JSON Body</Form.Label>
                         <InputGroup className='mb-3'>
-                            <InputGroup className='mb-5' style={{ flex: 1 }}>
+                            <InputGroup className='mb-3' style={{ flex: 1 }}>
                                 <TextareaAutosize
                                     readOnly
                                     value={JSON.stringify(this.state.jsonBody, null, '\t')}
