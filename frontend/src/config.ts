@@ -7,7 +7,7 @@ export const config = {
     },
     api: {
         REGION_DEV: 'us-west-2',
-        DEPLOYMENT_ID_DEV: '9efko4e2og',
+        DEPLOYMENT_ID_DEV: 'cvmtdo18w4',
         REGION_PROD: 'ca-central-1',
         DEPLOYMENT_ID_PROD: 'e3jwjhbiz1',
     },
