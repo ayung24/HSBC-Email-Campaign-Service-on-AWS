@@ -4,7 +4,7 @@
 https://main.d8zlt2xxyx88t.amplifyapp.com/
 
 ### Email API URL
-https://e3jwjhbiz1.execute-api.ca-central-1.amazonaws.com/prod/email
+https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email
 
 ### Login credential
 Username: admin\
