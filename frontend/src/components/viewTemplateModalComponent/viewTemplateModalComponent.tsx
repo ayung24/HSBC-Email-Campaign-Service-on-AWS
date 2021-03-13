@@ -5,16 +5,17 @@ import copyImage from '../../images/copyText.png';
 import copiedImage from '../../images/copiedText.png';
 import arrowIcon from '../../images/arrow.png';
 import toolsIcon from '../../images/tools.png';
-import { KMS } from 'aws-sdk';
+import { config } from '../../config';
+import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
-import { awsAuthConfiguration } from '../../awsAuthConfiguration';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplate } from '../../models/templateInterfaces';
+import { IError } from '../../models/iError';
 
 interface ISendEmailReqBody {
     templateId: string;
@@ -29,6 +30,7 @@ type SendEmailFields = {
 
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
+    isDeletePromptOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: ISendEmailReqBody;
@@ -55,6 +57,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._templateService = new TemplateService();
         this.state = {
             isViewOpen: false,
+            isDeletePromptOpen: false,
             url: this._getUrl(),
             apiKey: '',
             jsonBody: {
@@ -71,7 +74,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._inputFormNameSubject = 'form-control-subject';
 
         this._keyManagementService = new KMS({
-            region: awsAuthConfiguration.Auth.region,
+            region: config.kms.REGION,
+            accessKeyId: config.kms.ACCESS_KEY,
+            secretAccessKey: config.kms.SECRET_KEY,
         });
     }
 
@@ -81,6 +86,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _handleModalOpen(): void {
         this._getTemplateMetadata().then(() => this.setState({ isViewOpen: true }));
+    }
+
+    private _handleDeletePromptClose(): void {
+        this.setState({ isDeletePromptOpen: false });
+    }
+
+    private _handleDeletePromptOpen(): void {
+        this.setState({ isDeletePromptOpen: true });
     }
 
     private _getUrl(): string {
@@ -102,29 +115,32 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getTemplateMetadata(): Promise<void> {
         const templateId = this.props.templateId;
         const templateName = this.props.templateName;
+        const kmsRegion = config.kms.REGION;
+        const kmsAccountID = config.kms.ACCOUNT_ID;
+        const kmsKeyId = config.kms.KEY_ID;
+
         return new Promise<void>((resolve, reject) => {
             this.setState({ isLoading: true }, () => {
                 this._templateService
                     .getTemplateMetaData(templateId)
                     .then(response => {
-                        // const apiKeyBuffer = Buffer.from(response.fieldNames);
-                        // const decryptParam = {
-                        //     CiphertextBlob: apiKeyBuffer,
-                        // };
-                        // return new Promise<ITemplate>((resolve, reject) => {
-                        //     this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-                        //         if (err) {
-                        //             reject(err);
-                        //         } else if (!data.Plaintext) {
-                        //             reject();
-                        //         } else {
-                        //             response.apiKey = data.Plaintext.toString('ascii');
-                        //             resolve(response);
-                        //         }
-                        //     });
-                        // });
-                        // temp
-                        return response;
+                        const apiKeyBuffer = Buffer.from(response.apiKey, 'base64');
+                        const decryptParam = {
+                            KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountID}:key/${kmsKeyId}`,
+                            CiphertextBlob: apiKeyBuffer,
+                        };
+                        return new Promise<ITemplate>((resolve, reject) => {
+                            this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                                if (err) {
+                                    reject(err);
+                                } else if (!data.Plaintext) {
+                                    reject();
+                                } else {
+                                    response.apiKey = data.Plaintext.toString('ascii');
+                                    resolve(response);
+                                }
+                            });
+                        });
                     })
                     .then((response: ITemplate) => {
                         this.setState({
@@ -145,7 +161,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getMetadataErrorToast(err: any, templateName: string): ToastInterface {
         return {
             id: `getMetadataError-${err.response}`,
-            body: `An error occured when getting field names for template [${templateName}]. Error: ${err.response}`,
+            body: `An error occurred when getting field names for template [${templateName}]. Error: ${err.response}`,
             type: ToastType.ERROR,
             open: true,
         };
@@ -167,7 +183,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (!this._isCompleteJson(this.state.jsonBody)) {
             const TOAST_INCOMPLETE = {
                 id: 'copyJsonFailed',
-                body: 'Incomplete paramaters for JSON\nPlease fill in all fields',
+                body: 'Incomplete parameters for JSON\nPlease fill in all fields',
                 type: ToastType.ERROR,
                 open: true,
             };
@@ -218,25 +234,25 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _deleteTemplate(): void {
-        const templateId = this.props.templateId;
-        this.setState({ isLoading: true }, () => {
+        const templateName = this.props.templateName;
+        this.setState({ isDeletePromptOpen: false, isLoading: true }, () => {
             this._templateService
-                .deleteTemplate(templateId)
+                .deleteTemplate(this.props.templateId)
                 .then(response => {
                     EventEmitter.getInstance().dispatch('refreshGrid');
                     const toast = {
                         id: 'deleteTemplatesSuccess',
-                        body: 'Successfully deleted template: ' + response.templateId + '.',
+                        body: 'Successfully deleted template: ' + templateName + '.',
                         type: ToastType.SUCCESS,
                         open: true,
                     };
                     this._addToast(toast);
                     this._handleModalClose();
                 })
-                .catch(() => {
+                .catch((err: IError) => {
                     const toast = {
                         id: 'deleteTemplatesError',
-                        body: 'Could not delete template: ' + templateId + '.',
+                        body: `An error occurred while deleting template [${templateName}]. Error: [${err.code}: ${err.message}]`,
                         type: ToastType.ERROR,
                         open: true,
                     };
@@ -284,7 +300,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button
                                 variant='outline-dark'
                                 className='float-right'
-                                onClick={this._deleteTemplate.bind(this)}
+                                onClick={this._handleDeletePromptOpen.bind(this)}
                                 style={{ marginTop: '12px' }}
                             >
                                 Delete
@@ -314,11 +330,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         />
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('single')}</div>
+                                <div className='dynamicParameters'>{this._renderFieldNames('single')}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='sendParameters'>
-                                    <Form.Label>Recipient</Form.Label>
+                                    <Form.Label>Recipients</Form.Label>
                                     <InputGroup id='recipient' className='mb-3'>
                                         <FormControl placeholder='Recipient' />
                                     </InputGroup>
@@ -355,25 +371,26 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <InputGroup className='mb-5' style={{ flex: 1 }}>
-                            <TextareaAutosize
-                                readOnly
-                                value={JSON.stringify(this.state.jsonBody, null, '\t')}
-                                style={{
-                                    resize: 'none',
-                                    flex: 1,
-                                    backgroundColor: '#E9ECEF',
-                                    outline: 'none',
-                                    borderColor: '#CED4DA',
-                                    color: '#495057',
-                                }}
-                            />
+                        <Form.Label>JSON Body</Form.Label>
+                        <InputGroup className='mb-3'>
+                            <TextareaAutosize readOnly className='jsonBody' value={JSON.stringify(this.state.jsonBody, null, '\t')} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
                                     <Image src={copyImage} alt='copy icon' fluid />
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
+                    </Modal.Footer>
+                </Modal>
+                <Modal show={this.state.isDeletePromptOpen} onHide={() => this._handleDeletePromptClose()}>
+                    <Modal.Body>Are you sure you want to delete this template?</Modal.Body>
+                    <Modal.Footer>
+                        <Button variant='danger' onClick={this._deleteTemplate.bind(this)}>
+                            Delete
+                        </Button>
+                        <Button variant='secondary' onClick={this._handleDeletePromptClose.bind(this)}>
+                            Cancel
+                        </Button>
                     </Modal.Footer>
                 </Modal>
                 {this.state.isLoading && <SpinnerComponent />}

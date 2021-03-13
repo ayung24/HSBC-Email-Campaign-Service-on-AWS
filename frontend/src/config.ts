@@ -7,7 +7,7 @@ export const config = {
     },
     api: {
         REGION_DEV: 'us-west-2',
-        DEPLOYMENT_ID_DEV: '9efko4e2og',
+        DEPLOYMENT_ID_DEV: 'cvmtdo18w4',
         REGION_PROD: 'ca-central-1',
         DEPLOYMENT_ID_PROD: 'e3jwjhbiz1',
     },
@@ -31,5 +31,12 @@ export const config = {
         // SECRET_KEY: 'THfvHoX7AaDsPoTHO4VfhiT3fMB300j0fl271RUn',
         REGION_DEV: 'us-west-2',
         REGION_PROD: 'ca-central-1',
+    },
+    kms: {
+        REGION: 'ca-central-1',
+        ACCOUNT_ID: '353747297524',
+        KEY_ID: 'b2c01359-6245-4303-abfb-ee8b49f65e1e',
+        ACCESS_KEY: 'AKIAVEXH3MT2OPECZLF7',
+        SECRET_KEY: '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',
     },
 };
