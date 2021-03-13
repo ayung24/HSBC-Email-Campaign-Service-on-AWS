@@ -51,6 +51,7 @@ export class TemplateService {
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
                 PRESIGNED_URL_EXPIRY: config.s3.PRESIGNED_URL_EXPIRY,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
                 KMS_REGION: config.KMS.REGION,
@@ -60,7 +61,7 @@ export class TemplateService {
             functionName: this._uploadTemplateLambdaName,
         });
         // configure upload template lambda permissions
-        database.htmlBucket().grantPut(this._upload); // PUT in HTML bucket
+        database.htmlBucket().grantPut(this._upload, `${config.s3.SRC_HTML_PATH}*`); // PUT in HTML bucket
         database.metadataTable().grantReadWriteData(this._upload); // READ/WRITE on metadata table
         this._upload.addToRolePolicy(
             new PolicyStatement({
@@ -99,13 +100,14 @@ export class TemplateService {
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
             },
             functionName: this._deleteTemplateLambdaName,
         });
         // configure delete templates lambda permissions
         database.metadataTable().grantReadWriteData(this._delete);
-        database.htmlBucket().grantDelete(this._delete);
+        database.htmlBucket().grantDelete(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
     }
 
     /**

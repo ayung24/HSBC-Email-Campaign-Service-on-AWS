@@ -1,16 +1,16 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as AWS from 'aws-sdk';
 import { createTransport, SentMessageInfo } from 'nodemailer';
-import { ISendEmailReqBody } from '../lambdaInterfaces';
+import { ISendEmailReqBody, ISendEmailFields } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode } from '../../errorCode';
-import { replaceFields, processImages } from './processHtml';
 import * as Logger from '../../../logger';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
 const VERSION = process.env.VERSION || '2010-12-01';
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 
 const ses = new AWS.SES({
@@ -31,11 +31,31 @@ const headers = {
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS;
+    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS;
+};
+
+/**
+ * @param srcHTML HTML with dynamic fields
+ * @param fields dynamic field values
+ * @param fieldNames required dynamic fields
+ * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
+ */
+const replaceFields = function (srcHTML: string, fields: ISendEmailFields, fieldNames: string[]): string | undefined {
+    const keys = Object.keys(fields);
+    const isValid = fieldNames.every(field => keys.includes(field));
+    if (!isValid) {
+        return undefined;
+    } else {
+        const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
+        const html = srcHTML.replace(regex, (_, field) => {
+            return fields[field];
+        });
+        return html;
+    }
 };
 
 export const handler = async function (event: APIGatewayProxyEvent) {
-    Logger.logRequestInfo(event);
+    Logger.logCURLInfo(event);
     if (!validateEnv()) {
         return {
             headers: headers,
@@ -57,19 +77,17 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     }
 
     const req: ISendEmailReqBody = JSON.parse(event.body);
-    return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId)])
+    return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId, PROCESSED_HTML_PATH)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
             const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
             if (!html) {
                 return Promise.reject(new Error('Missing required dynamic fields'));
             }
-            const processed = processImages(html);
             const params = {
                 from: VERIFIED_EMAIL_ADDRESS,
-                to: VERIFIED_EMAIL_ADDRESS,
+                to: req.recipient,
                 subject: req.subject,
-                html: processed.html,
-                attachments: processed.attachments,
+                html: html,
             };
             return transporter.sendMail(params);
         })
