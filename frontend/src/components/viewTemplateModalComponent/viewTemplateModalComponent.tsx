@@ -330,11 +330,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         />
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('single')}</div>
+                                <div className='dynamicParameters'>{this._renderFieldNames('single')}</div>
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='sendParameters'>
-                                    <Form.Label>Recipient</Form.Label>
+                                    <Form.Label>Recipients</Form.Label>
                                     <InputGroup id='recipient' className='mb-3'>
                                         <FormControl placeholder='Recipient' />
                                     </InputGroup>
@@ -371,19 +371,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                 </Button>
                             </InputGroup.Append>
                         </InputGroup>
-                        <InputGroup className='mb-5' style={{ flex: 1 }}>
-                            <TextareaAutosize
-                                readOnly
-                                value={JSON.stringify(this.state.jsonBody, null, '\t')}
-                                style={{
-                                    resize: 'none',
-                                    flex: 1,
-                                    backgroundColor: '#E9ECEF',
-                                    outline: 'none',
-                                    borderColor: '#CED4DA',
-                                    color: '#495057',
-                                }}
-                            />
+                        <Form.Label>JSON Body</Form.Label>
+                        <InputGroup className='mb-3'>
+                            <TextareaAutosize readOnly className='jsonBody' value={JSON.stringify(this.state.jsonBody, null, '\t')} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
                                     <Image src={copyImage} alt='copy icon' fluid />
