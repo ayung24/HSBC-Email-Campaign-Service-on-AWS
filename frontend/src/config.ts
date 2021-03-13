@@ -9,7 +9,7 @@ export const config = {
         REGION_DEV: 'us-west-2',
         DEPLOYMENT_ID_DEV: '9efko4e2og',
         REGION_PROD: 'ca-central-1',
-        DEPLOYMENT_ID_PROD: 'e3jwjhbiz1',
+        DEPLOYMENT_ID_PROD: 'z2prvy0ul7',
     },
     cloudWatch: {
         // These keys allow frontend to log to CloudWatch directly
