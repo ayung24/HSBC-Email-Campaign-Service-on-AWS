@@ -309,7 +309,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <span>Created at {this.props.timeCreated}</span>
                         </div>
                     </Modal.Header>
-                    <Modal.Body id='body' style={{ flexGrow: 0, flexShrink: 1, flexBasis: 'auto' }}>
+                    <Modal.Body id='body'>
                         <Tabs defaultActiveKey='single'>
                             <Tab id='single' eventKey='single' title='Single'>
                                 <div className='sendParameters'>
@@ -373,20 +373,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         </InputGroup>
                         <Form.Label>JSON Body</Form.Label>
                         <InputGroup className='mb-3'>
-                            <TextareaAutosize
-                                readOnly
-                                value={JSON.stringify(this.state.jsonBody, null, '\t')}
-                                style={{
-                                    resize: 'none',
-                                    flex: 1,
-                                    backgroundColor: '#E9ECEF',
-                                    outline: 'none',
-                                    borderColor: '#CED4DA',
-                                    borderTopLeftRadius: '.25rem',
-                                    borderBottomLeftRadius: '.25rem',
-                                    color: '#495057',
-                                }}
-                            />
+                            <TextareaAutosize readOnly className='jsonBody' value={JSON.stringify(this.state.jsonBody, null, '\t')} />
                             <InputGroup.Append>
                                 <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
                                     <Image src={copyImage} alt='copy icon' fluid />

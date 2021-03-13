@@ -16,6 +16,9 @@
 
 #body {
     padding: 0 1.5rem 1rem 1.5rem;
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: 'auto';
 }
 
 #viewModal .modal-content {
@@ -148,4 +151,15 @@
     height: 250px;
     overflow-y: scroll;
     padding-top:10px;
+}
+
+.jsonBody {
+    resize: none;
+    flex: 1;
+    background-color: #E9ECEF;
+    outline: none;
+    border-color: #CED4DA;
+    border-top-left-radius: .25rem;
+    border-bottom-left-radius: .25rem;
+    color: #495057;
 }
