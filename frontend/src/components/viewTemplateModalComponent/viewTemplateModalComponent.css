@@ -10,8 +10,15 @@
     margin-top: 0px;
 }
 
+.modal-dialog-scrollable #body.modal-body {
+    overflow-y: visible;
+}
+
 #body {
-    padding: 1rem 1.5rem 1rem 1.5rem;
+    padding: 0 1.5rem 1rem 1.5rem;
+    flex-grow: 0;
+    flex-shrink: 1;
+    flex-basis: 'auto';
 }
 
 #viewModal .modal-content {
@@ -76,9 +83,10 @@
 }
 
 #footer {
-    padding: .75rem 1.5rem .75rem 1.5rem;
-    max-height: 350px;
-    overflow-y: auto;
+    padding: .75rem 1.5rem 0 1.5rem;
+    margin-bottom: 0;
+    overflow-y: scroll;
+    flex: 0 1 auto;
 }
 
 #tools {
@@ -139,6 +147,18 @@
 
 .dynamicParameters {
     width: 100%;
-    height: 200px;
+    height: 250px;
     overflow-y: scroll;
+    padding-top:10px;
+}
+
+.jsonBody {
+    resize: none;
+    flex: 1;
+    background-color: #E9ECEF;
+    outline: none;
+    border-color: #CED4DA;
+    border-top-left-radius: .25rem;
+    border-bottom-left-radius: .25rem;
+    color: #495057;
 }
