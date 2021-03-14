@@ -17,12 +17,15 @@ export class Database extends cdk.Construct {
     private _htmlBucket: s3.Bucket;
     private _imageBucket: s3.Bucket;
     private _processHTML: lambda.Function;
+    private _removeImages: lambda.Function;
 
     private _processHTMLLambdaName: string;
+    private _removeImagesLambdaName: string;
 
     constructor(scope: cdk.Construct, id: string, buildEnv: string) {
         super(scope, id);
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
+        this._removeImagesLambdaName = `RemoveImagesHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
         this._initFunctions(scope);
@@ -120,6 +123,7 @@ export class Database extends cdk.Construct {
     }
 
     private _initFunctions(scope: cdk.Construct) {
+        // HTML on create lambda
         this._processHTML = new NodejsFunction(scope, 'ProcessHTMLHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
@@ -142,16 +146,38 @@ export class Database extends cdk.Construct {
                 filters: [{ prefix: config.s3.SRC_HTML_PATH }],
             }),
         );
-        // TODO: #100 Create EventType.OBJECT_REMOVED trigger for cleaning up images after html delete
         this._htmlBucket.grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
         this._imageBucket.grantPut(this._processHTML);
+
+        // HTML on delete lambda
+        this._removeImages = new NodejsFunction(scope, 'RemoveImagesHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/removeImages/index.ts`,
+            environment: {
+                IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+            },
+            functionName: this._removeImagesLambdaName,
+        })
+        this._removeImages.addEventSource(
+            new S3EventSource(this._htmlBucket, {
+                events: [s3.EventType.OBJECT_REMOVED],
+                filters: [{prefix: config.s3.PROCESSED_HTML_PATH}],
+            }),
+        )
+        this._imageBucket.grantRead(this._removeImages);
+        this._imageBucket.grantDelete(this._removeImages);
     }
 
     private _initLogGroups(scope: cdk.Construct) {
         new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+        });
+        new LogGroup(scope, 'RemoveImagesHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
         });
     }
@@ -162,9 +188,5 @@ export class Database extends cdk.Construct {
 
     public metadataTable(): dynamodb.Table {
         return this._metadata;
-    }
-
-    public imageBucket(): s3.Bucket {
-        return this._imageBucket;
     }
 }

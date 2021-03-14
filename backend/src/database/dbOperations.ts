@@ -1,9 +1,9 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult } from './dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult, IDeleteImagesResult } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
-import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
+import { DeleteObjectOutput, GetObjectOutput, ListObjectsV2Output } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
 import * as Logger from '../../logger';
 
@@ -312,7 +312,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
 
 export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
     const s3 = new S3();
-    const uploadPromises: Promise<IImageUploadResult[]> = images.map((image: ITemplateImage) => {
+    const uploadPromises: Promise<IImageUploadResult>[] = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
             Bucket: IMAGE_BUCKET_NAME,
@@ -335,4 +335,51 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
         });
     });
     return Promise.all(uploadPromises);
+}
+
+export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteImagesResult> {
+    const s3 = new S3();
+    Logger.info({ message: `Removing images for template ${templateId}`});
+
+    const listParams = {
+        Bucket: IMAGE_BUCKET_NAME,
+        Prefix: `${templateId}/`
+    }
+    return new Promise<IDeleteImagesResult>((resolve, reject) => {
+        s3.listObjectsV2(listParams, (err: AWSError, data: S3.ListObjectsV2Output) => {
+            if (err) {
+                Logger.logError(err)
+                reject(err);
+            } else if (!data.Contents || data.Contents.length === 0) {
+                resolve({
+                    templateId: templateId,
+                    deletedCount: 0
+                });
+            } else {
+                const deleteParams = {
+                    Bucket: IMAGE_BUCKET_NAME,
+                    Delete: {
+                        Objects: data.Contents.map(image => ({
+                            Key: image.Key
+                        }))
+                    }
+                };
+                s3.deleteObjects(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectsOutput) => {
+                    if (err) {
+                        Logger.logError(err)
+                        reject(err);
+                    } else {
+                        Logger.info({
+                            message: `Removed images for template ${templateId}`, 
+                            additionalInfo: deleteRes
+                        })
+                        resolve({
+                            templateId: templateId,
+                            deletedCount: deleteRes.Deleted.length,
+                        })
+                    }
+                })
+            }
+        })
+    })
 }
