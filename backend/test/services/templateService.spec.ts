@@ -19,7 +19,7 @@ beforeAll(() => {
 describe('template service tests', () => {
     it('creates upload, list, get, delete lambda functions', () => {
         // TODO: assert with actual functionNames of lambda instead of counting
-        expect(stack).to(countResources('AWS::Lambda::Function', 6));
+        expect(stack).to(countResources('AWS::Lambda::Function', 7));
     });
 
     it('adds template endpoints to API gateway', () => {

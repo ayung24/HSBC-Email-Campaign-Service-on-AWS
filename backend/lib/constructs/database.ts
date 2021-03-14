@@ -160,13 +160,13 @@ export class Database extends cdk.Construct {
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
             },
             functionName: this._removeImagesLambdaName,
-        })
+        });
         this._removeImages.addEventSource(
             new S3EventSource(this._htmlBucket, {
                 events: [s3.EventType.OBJECT_REMOVED],
-                filters: [{prefix: config.s3.PROCESSED_HTML_PATH}],
+                filters: [{ prefix: config.s3.PROCESSED_HTML_PATH }],
             }),
-        )
+        );
         this._imageBucket.grantRead(this._removeImages);
         this._imageBucket.grantDelete(this._removeImages);
     }

@@ -339,47 +339,47 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
 
 export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteImagesResult> {
     const s3 = new S3();
-    Logger.info({ message: `Removing images for template ${templateId}`});
+    Logger.info({ message: `Removing images for template ${templateId}` });
 
     const listParams = {
         Bucket: IMAGE_BUCKET_NAME,
-        Prefix: `${templateId}/`
-    }
+        Prefix: `${templateId}/`,
+    };
     return new Promise<IDeleteImagesResult>((resolve, reject) => {
         s3.listObjectsV2(listParams, (err: AWSError, data: S3.ListObjectsV2Output) => {
             if (err) {
-                Logger.logError(err)
+                Logger.logError(err);
                 reject(err);
             } else if (!data.Contents || data.Contents.length === 0) {
                 resolve({
                     templateId: templateId,
-                    deletedCount: 0
+                    deletedCount: 0,
                 });
             } else {
                 const deleteParams = {
                     Bucket: IMAGE_BUCKET_NAME,
                     Delete: {
                         Objects: data.Contents.map(image => ({
-                            Key: image.Key
-                        }))
-                    }
+                            Key: image.Key,
+                        })),
+                    },
                 };
                 s3.deleteObjects(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectsOutput) => {
                     if (err) {
-                        Logger.logError(err)
+                        Logger.logError(err);
                         reject(err);
                     } else {
                         Logger.info({
-                            message: `Removed images for template ${templateId}`, 
-                            additionalInfo: deleteRes
-                        })
+                            message: `Removed images for template ${templateId}`,
+                            additionalInfo: deleteRes,
+                        });
                         resolve({
                             templateId: templateId,
                             deletedCount: deleteRes.Deleted.length,
-                        })
+                        });
                     }
-                })
+                });
             }
-        })
-    })
+        });
+    });
 }
