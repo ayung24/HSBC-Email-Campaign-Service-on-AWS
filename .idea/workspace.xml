@@ -20,7 +20,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/processHTML/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/src/lambda/removeImages/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/constructs/database.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/constructs/database.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/emailCampaignServiceStack.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/emailCampaignServiceStack.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/services/emailService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/emailService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/lib/services/templateService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/templateService.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/logger.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/logger.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/commonFunctions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/commonFunctions.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/database/dbInterfaces.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/database/dbInterfaces.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/database/dbOperations.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/database/dbOperations.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/errorCode.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/errorCode.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/lambdaInterfaces.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/sendEmail/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/sendEmail/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/sendEmail/processHtml.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/uploadTemplate/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/uploadTemplate/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test/services/emailService.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test/services/emailService.spec.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/test/services/templateService.spec.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/test/services/templateService.spec.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.eslintcache" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.vscode/settings.json" beforeDir="false" />
