@@ -12,13 +12,14 @@ let database: Database;
 beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
-    database = new Database(stack, 'mockDatabase');
+    database = new Database(stack, 'mockDatabase', 'test');
     templateService = new TemplateService(stack, api, database, 'test');
 });
 
 describe('template service tests', () => {
     it('creates upload, list, get, delete lambda functions', () => {
-        expect(stack).to(countResources('AWS::Lambda::Function', 4));
+        // TODO: assert with actual functionNames of lambda instead of counting
+        expect(stack).to(countResources('AWS::Lambda::Function', 7));
     });
 
     it('adds template endpoints to API gateway', () => {
@@ -71,6 +72,7 @@ describe('template service tests', () => {
                             HTML_BUCKET_NAME: objectLike({
                                 Ref: stringLike('HTMLBucket*'),
                             }),
+                            SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
                             METADATA_TABLE_NAME: objectLike({
                                 Ref: stringLike('MetadataTable*'),
                             }),
@@ -207,6 +209,7 @@ describe('template service tests', () => {
                             HTML_BUCKET_NAME: objectLike({
                                 Ref: stringLike('HTMLBucket*'),
                             }),
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                         }),
                     },
                     Runtime: 'nodejs12.x',

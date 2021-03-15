@@ -52,6 +52,7 @@ export class EmailService {
             entry: `${config.lambda.LAMBDA_ROOT}/sendEmail/index.ts`,
             environment: {
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
                 VERSION: config.ses.VERSION,
@@ -59,9 +60,10 @@ export class EmailService {
             bundling: {
                 nodeModules: ['nodemailer'],
             },
+            timeout: cdk.Duration.seconds(10),
             functionName: this._emailSendLambdaName,
         });
-        database.htmlBucket().grantRead(this._send); // READ access to HTML bucket
+        database.htmlBucket().grantRead(this._send, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
         database.metadataTable().grantReadData(this._send); // READ template metadata table
         this._send.addToRolePolicy(
             new iam.PolicyStatement({

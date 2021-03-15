@@ -17,3 +17,19 @@ export interface ITemplateFullEntry extends ITemplateBase {
     readonly apiKey: string;
     readonly fieldNames: string[];
 }
+
+export interface ITemplateImage {
+    contentType: string;
+    content: Buffer;
+    key: string;
+}
+
+export interface IImageUploadResult {
+    key: string;
+    location: string;
+}
+
+export interface IDeleteImagesResult {
+    templateId: string;
+    deletedCount: number;
+}

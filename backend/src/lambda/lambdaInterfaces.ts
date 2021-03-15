@@ -34,9 +34,3 @@ export interface ISendEmailReqBody {
 export interface ISendEmailFields {
     [key: string]: string;
 }
-
-export interface IImageContent {
-    contentType: string;
-    content: Buffer;
-    cid: string;
-}

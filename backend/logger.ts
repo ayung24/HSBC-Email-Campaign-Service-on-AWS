@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 
 interface ILogItem {
     message: string;
-    additionalInfo: any;
+    additionalInfo?: any;
 }
 
 type ErrorType = { message: string };
@@ -36,6 +36,17 @@ export function logRequestInfo(event: APIGatewayProxyEvent): void {
         message: 'Request made',
         additionalInfo: {
             user: `${event.requestContext.authorizer?.claims['cognito:username']}-${event.requestContext.authorizer?.claims['sub']}`,
+            path: event.path,
+            httpMethod: event.httpMethod,
+        },
+    });
+}
+
+export function logCURLInfo(event: APIGatewayProxyEvent): void {
+    info({
+        message: 'Request made',
+        additionalInfo: {
+            user: `${event.requestContext.identity.userAgent}`,
             path: event.path,
             httpMethod: event.httpMethod,
         },

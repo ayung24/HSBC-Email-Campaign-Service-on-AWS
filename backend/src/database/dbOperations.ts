@@ -1,14 +1,17 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry } from './dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult, IDeleteImagesResult } from './dbInterfaces';
 import { isEmpty, isEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
-import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
+import { DeleteObjectOutput, GetObjectOutput, ListObjectsV2Output } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
 import * as Logger from '../../logger';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
+const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
+const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 
 function getDynamo(): DynamoDB {
     return new DynamoDB({ apiVersion: process.env.DYNAMO_API_VERSION });
@@ -41,11 +44,12 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             // check name uniqueness
             const isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
-                IndexName: 'name-index',
+                IndexName: 'name-and-status-index',
                 ExpressionAttributeValues: {
                     ':proposedName': { S: name },
+                    ':inService': { S: EntryStatus.IN_SERVICE },
                 },
-                KeyConditionExpression: 'templateName = :proposedName',
+                KeyConditionExpression: 'templateStatus = :inService AND templateName = :proposedName',
             };
             ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
                 if (err) {
@@ -119,7 +123,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
             const s3 = new S3();
             const queryParams = {
                 Bucket: HTML_BUCKET_NAME!,
-                Key: templateId,
+                Key: PROCESSED_HTML_PATH + templateId,
             };
             return new Promise<ITemplateFullEntry>((resolve, reject) => {
                 s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
@@ -215,8 +219,9 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     const ddb = getDynamo();
     Logger.info({ message: 'Getting template metadata', additionalInfo: { templateId: templateId } });
     const queryParams = {
-        ExpressionAttributeValues: { ':id': { S: templateId } },
-        KeyConditionExpression: `templateId = :id`,
+        IndexName: 'id-and-status-index',
+        ExpressionAttributeValues: { ':id': { S: templateId }, ':inService': { S: EntryStatus.IN_SERVICE } },
+        KeyConditionExpression: `templateStatus = :inService AND templateId = :id`,
         TableName: METADATA_TABLE_NAME!,
     };
     return new Promise<ITemplateFullEntry>((resolve, reject) => {
@@ -246,12 +251,12 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
     });
 }
 
-export function GetHTMLById(templateId: string): Promise<string> {
+export function GetHTMLById(templateId: string, pathPrefix: string): Promise<string> {
     const s3 = new S3();
     Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
-        Key: templateId,
+        Key: pathPrefix + templateId,
     };
     return new Promise((resolve, reject) => {
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
@@ -267,6 +272,114 @@ export function GetHTMLById(templateId: string): Promise<string> {
                 } else {
                     resolve(result);
                 }
+            }
+        });
+    });
+}
+
+export function UploadProcessedHTML(templateId: string, html: string): Promise<string> {
+    const s3 = new S3();
+    Logger.info({ message: 'Uploading processed template HTML', additionalInfo: { templateId: templateId } });
+    const uploadParams = {
+        Bucket: HTML_BUCKET_NAME,
+        Key: PROCESSED_HTML_PATH + templateId,
+        ContentType: 'text/html',
+        Body: html,
+    };
+    return new Promise((resolve, reject) => {
+        s3.upload(uploadParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
+            if (err) {
+                Logger.logError(err);
+                reject(err);
+            } else {
+                Logger.info({ message: 'Deleting source template HTML', additionalInfo: { templateId: templateId } });
+                const deleteParams = {
+                    Bucket: HTML_BUCKET_NAME,
+                    Key: SRC_HTML_PATH + templateId,
+                };
+                s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
+                    if (err) {
+                        Logger.logError(err);
+                        reject(err);
+                    } else {
+                        resolve(uploadRes.Location);
+                    }
+                });
+            }
+        });
+    });
+}
+
+export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
+    const s3 = new S3();
+    const uploadPromises: Promise<IImageUploadResult>[] = images.map((image: ITemplateImage) => {
+        Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
+        const params = {
+            Bucket: IMAGE_BUCKET_NAME,
+            Key: `${templateId}/${image.key}`,
+            Body: image.content,
+            ContentType: image.contentType,
+        };
+        return new Promise<IImageUploadResult>((resolve, reject) => {
+            s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
+                if (err) {
+                    Logger.logError(err);
+                    reject(err);
+                } else {
+                    resolve({
+                        key: image.key,
+                        location: data.Location,
+                    });
+                }
+            });
+        });
+    });
+    return Promise.all(uploadPromises);
+}
+
+export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteImagesResult> {
+    const s3 = new S3();
+    Logger.info({ message: `Removing images for template ${templateId}` });
+
+    const listParams = {
+        Bucket: IMAGE_BUCKET_NAME,
+        Prefix: `${templateId}/`,
+    };
+    return new Promise<IDeleteImagesResult>((resolve, reject) => {
+        s3.listObjectsV2(listParams, (err: AWSError, data: S3.ListObjectsV2Output) => {
+            if (err) {
+                Logger.logError(err);
+                reject(err);
+            } else if (!data.Contents || data.Contents.length === 0) {
+                Logger.info({ message: `No images found for template ${templateId}` });
+                resolve({
+                    templateId: templateId,
+                    deletedCount: 0,
+                });
+            } else {
+                const deleteParams = {
+                    Bucket: IMAGE_BUCKET_NAME,
+                    Delete: {
+                        Objects: data.Contents.map(image => ({
+                            Key: image.Key,
+                        })),
+                    },
+                };
+                s3.deleteObjects(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectsOutput) => {
+                    if (err) {
+                        Logger.logError(err);
+                        reject(err);
+                    } else {
+                        Logger.info({
+                            message: `Removed images for template ${templateId}`,
+                            additionalInfo: deleteRes,
+                        });
+                        resolve({
+                            templateId: templateId,
+                            deletedCount: deleteRes.Deleted.length,
+                        });
+                    }
+                });
             }
         });
     });
