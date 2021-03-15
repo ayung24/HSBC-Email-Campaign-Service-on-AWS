@@ -20,7 +20,7 @@ beforeAll(() => {
 describe('email service tests', () => {
     it('creates send, authorizer, identity verifier lambdas', () => {
         // TODO: assert with actual functionNames of lambdas instead of counting
-        expect(stack).to(countResources('AWS::Lambda::Function', 5));
+        expect(stack).to(countResources('AWS::Lambda::Function', 6));
     });
 
     it('adds email endpoint to API gateway', () => {

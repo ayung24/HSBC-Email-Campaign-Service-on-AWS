@@ -28,3 +28,8 @@ export interface IImageUploadResult {
     key: string;
     location: string;
 }
+
+export interface IDeleteImagesResult {
+    templateId: string;
+    deletedCount: number;
+}

@@ -1,5 +1,5 @@
 import { S3CreateEvent } from 'aws-lambda';
-import { isEmptyArray, nonEmptyArray } from '../../commonFunctions';
+import { isEmptyArray } from '../../commonFunctions';
 import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
@@ -74,7 +74,7 @@ export const handler = async function (event: S3CreateEvent) {
         .then(() => {
             Logger.info({ message: `Updated html for template ${templateId}` });
             return {
-                statusCode: 400,
+                statusCode: 200,
             };
         })
         .catch(err => {
