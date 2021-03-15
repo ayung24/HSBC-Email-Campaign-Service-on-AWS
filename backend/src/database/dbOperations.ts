@@ -351,6 +351,7 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
                 Logger.logError(err);
                 reject(err);
             } else if (!data.Contents || data.Contents.length === 0) {
+                Logger.info({ message: `No images found for template ${templateId}` });
                 resolve({
                     templateId: templateId,
                     deletedCount: 0,
