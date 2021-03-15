@@ -35,9 +35,6 @@ export class EmailService {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/emailApiAuth/index.ts`,
             functionName: this._emailApiAuthorizerLambdaName,
-            bundling: {
-                nodeModules: ['cryptr'],
-            },
         });
 
         this._authorizer = new agw.RequestAuthorizer(scope, 'RequestAuthorizer', {
@@ -114,19 +111,16 @@ export class EmailService {
         const emailApiAuthResource = api.root.addResource('emailApiAuth');
         const emailApiAuthIntegration = new agw.LambdaIntegration(this._apiAuth);
         emailApiAuthResource.addMethod('POST', emailApiAuthIntegration, {
-            authorizer: this._authorizer,
             requestValidator: emailApiAuthReqValidator,
-            requestModels: {'application/json': emailApiAuthReqModel},
+            requestModels: { 'application/json': emailApiAuthReqModel },
         });
 
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
-
         emailResource.addMethod('POST', sendIntegration, {
-            authorizer: this._authorizer
+            authorizer: this._authorizer,
         });
     }
-
 
     /**
      * Initialize lambda log groups to control log retention period
