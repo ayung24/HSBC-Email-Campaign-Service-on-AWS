@@ -5,18 +5,27 @@ import { IEmailAPIAuthReq } from '../lambdaInterfaces';
 import { AWSError, KMS} from 'aws-sdk';
 import { config } from '../../../../frontend/src/config';
 
-export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
-    const keyManagementService: KMS = new KMS({
-        region: config.kms.REGION,
-        accessKeyId: config.kms.ACCESS_KEY,
-        secretAccessKey: config.kms.SECRET_KEY,
-    });
+const _keyManagementService: KMS = new KMS({
+    region: config.kms.REGION,
+    accessKeyId: config.kms.ACCESS_KEY,
+    secretAccessKey: config.kms.SECRET_KEY,
+});
 
+async function getDatabaseMetadata(reqContext: IEmailAPIAuthReq): Promise<any> {
+    return new Promise(((resolve) => {
+        const fullEntry = db.GetTemplateById(reqContext.templateID);
+        resolve(fullEntry);
+    })).catch((error) => {
+        return error;
+    });
+}
+
+export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
     const reqContext: IEmailAPIAuthReq = JSON.parse(context.clientContext.Custom);
     const apiKeyFromPOSTReq = reqContext.apiKey;
 
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
-    db.GetTemplateById(reqContext.templateID).then((entry: ITemplateFullEntry) => {
+    getDatabaseMetadata(reqContext).then((entry: ITemplateFullEntry) => {
         const kmsRegion = config.kms.REGION;
         const kmsAccountID = config.kms.ACCOUNT_ID;
         const kmsKeyId = config.kms.KEY_ID;
@@ -28,9 +37,9 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
         };
 
         let decryptKey: string;
-        keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+        _keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
             if (err || !data.Plaintext) {
-                return new Error('Failed to decrypt.');
+                return new Error('Failed to decrypt API key.');
             } else {
                 decryptKey = data.Plaintext.toString('ascii');
             }
@@ -41,6 +50,8 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
         } else {
             callback('Unmatched API key.');
         }
+    }).catch((error) => {
+        callback(error);
     });
 };
 

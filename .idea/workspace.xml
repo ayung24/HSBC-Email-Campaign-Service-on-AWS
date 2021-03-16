@@ -21,7 +21,8 @@
   <component name="ChangeListManager">
     <list default="true" id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/lambda/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/src/lambda/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/package-lock.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.eslintcache" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.vscode/settings.json" beforeDir="false" />
@@ -61,17 +62,39 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="ProjectId" id="1pogoz7dfopbiQGpqfhcRqRhzc4" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.standard" value="true" />
     <property name="node.js.path.for.package.eslint" value="project" />
     <property name="node.js.path.for.package.standard" value="project" />
-    <property name="node.js.selected.package.eslint" value="" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
     <property name="node.js.selected.package.standard" value="" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="ts.external.directory.path" value="$APPLICATION_HOME_DIR$/plugins/JavaScriptLanguage/jsLanguageServicesImpl/external" />
+    <property name="vue.rearranger.settings.migration" value="true" />
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="" />
+      <created>1615855037526</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1615855037526</updated>
+      <workItem from="1615855040155" duration="2341000" />
+    </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -90,22 +113,22 @@
       <screen x="0" y="0" width="1440" height="900" />
     </state>
     <state x="581" y="349" key="#ESLint/0.0.1440.900@0.0.1440.900" timestamp="1615852915565" />
-    <state width="1419" height="245" key="GridCell.Tab.0.bottom" timestamp="1615852902218">
+    <state width="1419" height="245" key="GridCell.Tab.0.bottom" timestamp="1615855088055">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="245" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1615852902218" />
-    <state width="1419" height="245" key="GridCell.Tab.0.center" timestamp="1615852902217">
+    <state width="1419" height="245" key="GridCell.Tab.0.bottom/0.0.1440.900@0.0.1440.900" timestamp="1615855088055" />
+    <state width="1419" height="245" key="GridCell.Tab.0.center" timestamp="1615855088054">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="245" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1615852902217" />
-    <state width="1419" height="245" key="GridCell.Tab.0.left" timestamp="1615852902216">
+    <state width="1419" height="245" key="GridCell.Tab.0.center/0.0.1440.900@0.0.1440.900" timestamp="1615855088054" />
+    <state width="1419" height="245" key="GridCell.Tab.0.left" timestamp="1615855088053">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="245" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1615852902216" />
-    <state width="1419" height="245" key="GridCell.Tab.0.right" timestamp="1615852902217">
+    <state width="1419" height="245" key="GridCell.Tab.0.left/0.0.1440.900@0.0.1440.900" timestamp="1615855088053" />
+    <state width="1419" height="245" key="GridCell.Tab.0.right" timestamp="1615855088055">
       <screen x="0" y="0" width="1440" height="900" />
     </state>
-    <state width="1419" height="245" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1615852902217" />
+    <state width="1419" height="245" key="GridCell.Tab.0.right/0.0.1440.900@0.0.1440.900" timestamp="1615855088055" />
     <state x="743" y="292" key="vcs.readOnlyHandler.ReadOnlyStatusDialog" timestamp="1615852449323">
       <screen x="0" y="23" width="1440" height="812" />
     </state>
