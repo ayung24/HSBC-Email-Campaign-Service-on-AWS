@@ -20,11 +20,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fc3eb275-79bd-470a-afac-e2932977e752" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/lambda/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/lib/services/emailService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/lib/services/emailService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/emailApiAuth/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/src/lambda/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/lambda/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.eslintcache" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
