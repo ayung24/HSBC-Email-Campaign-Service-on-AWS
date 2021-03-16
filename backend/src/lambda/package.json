@@ -10,5 +10,8 @@
     "nodemailer": "^6.5.0",
     "uuid": "^8.3.2",
     "uuid-apikey": "^1.5.1"
+  },
+  "dependencies": {
+    "cryptr": "^6.0.2"
   }
 }
