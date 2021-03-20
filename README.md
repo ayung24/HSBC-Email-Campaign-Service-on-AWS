@@ -10,7 +10,7 @@ https://dev.d8zlt2xxyx88t.amplifyapp.com/
 https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email
 
 ### Email API Development URL
-https://cvmtdo18w4.execute-api.ca-central-1.amazonaws.com/prod/email
+https://cvmtdo18w4.execute-api.us-west-2.amazonaws.com/prod/email
 
 
 #### Sample Email cURL Request
