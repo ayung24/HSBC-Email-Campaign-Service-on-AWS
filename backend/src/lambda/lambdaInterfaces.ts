@@ -15,8 +15,8 @@ export interface IListTemplatesBody {
     limit: string;
 }
 
-export interface IEmailAPIAuthReq {
-    templateID: string;
+export interface IEmailAPIAuthReqBody {
+    templateId: string;
     apiKey: string;
 }
 
