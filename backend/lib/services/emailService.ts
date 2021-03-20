@@ -93,36 +93,6 @@ export class EmailService {
      * ie. use {authorizer: this._authorizer}
      * */
     private _initPaths(scope: cdk.Construct, api: agw.RestApi): void {
-        const emailApiAuthReqValidator = new agw.RequestValidator(scope, 'EmailApiValidator', {
-            restApi: api,
-            requestValidatorName: 'email-api-auth-req-validator',
-            validateRequestBody: true,
-            validateRequestParameters: true,
-        });
-
-        const emailApiAuthReqModel = new agw.Model(scope, 'EmailApiAuthReqModel', {
-            restApi: api,
-            contentType: 'application/json',
-            description: 'Email api auth request payload',
-            schema: {
-                type: agw.JsonSchemaType.OBJECT,
-                properties: {
-                    body: {
-                        type: agw.JsonSchemaType.OBJECT,
-                        properties: {
-                            templateID: {
-                                type: agw.JsonSchemaType.STRING,
-                            },
-                            apiKey: {
-                                type: agw.JsonSchemaType.STRING,
-                            },
-                        },
-                    },
-                },
-                required: ['templateID', 'apiKey'],
-            },
-        });
-
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
         emailResource.addMethod('POST', sendIntegration, {
