@@ -57,7 +57,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
         };
         kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
             if (err || !data.Plaintext) {
-                Logger.err(err);
+                Logger.logError(err);
                 callback("Unauthorized");
             } else if (data.Plaintext.toString() === authContext.apiKey) {
                 Logger.info({message: "Authorization success", additionalInfo: {templateId: template.templateId}});
@@ -70,8 +70,8 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
                 callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Deny', event.methodArn));
             }
         });
-    }).catch((error) => {
-        Logger.err(error);
+    }).catch((err) => {
+        Logger.logError(err);
         callback("Unauthorized");
     });
 };

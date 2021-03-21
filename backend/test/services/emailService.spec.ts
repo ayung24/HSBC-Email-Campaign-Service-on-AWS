@@ -42,7 +42,7 @@ describe('email service tests', () => {
     })
 
     describe('email api authorizer lambda tests', () => {
-        it('authorizer lambda has all enviornment variables', () => {
+        it('has all enviornment variables', () => {
             expect(stack).to(
                 haveResource('AWS::Lambda::Function', {
                     Environment: {
@@ -95,7 +95,7 @@ describe('email service tests', () => {
     })
 
     describe('send lambda tests', () => {
-        it('send lambda has all environment variables', () => {
+        it('has all environment variables', () => {
             expect(stack).to(
                 haveResource('AWS::Lambda::Function', {
                     Environment: {
