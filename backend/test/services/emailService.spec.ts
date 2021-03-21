@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 
 describe('email service tests', () => {
-    it('adds email endpoint to API gateway with CUSTOM authorization type', () => {
+    it('adds email endpoint to API gateway with correct authrization type and query param', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
                 PathPart: 'email',
@@ -28,6 +28,9 @@ describe('email service tests', () => {
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'POST',
                 AuthorizationType: 'CUSTOM',
+                RequestParameters: {
+                    'method.request.querystring.templateId': true,
+                },
             }),
         );
     });
@@ -35,7 +38,7 @@ describe('email service tests', () => {
     it('has request authorizer with correct identity sources', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Authorizer', {
-                IdentitySource: 'method.request.header.TemplateId,method.request.header.APIKey',
+                IdentitySource: 'method.request.header.APIKey',
             }),
         );
     });
