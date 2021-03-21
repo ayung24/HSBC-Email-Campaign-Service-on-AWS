@@ -1,82 +1,96 @@
 import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
+import * as db from '../../database/dbOperations';
+import { ITemplateFullEntry } from '../../database/dbInterfaces';
+import { IEmailAPIAuthReqBody } from '../lambdaInterfaces';
+import { AWSError, KMS} from 'aws-sdk';
+import * as Logger from '../../../logger';
+
+const KMS_REGION = process.env.KMS_REGION;
+const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;
+const KMS_KEY_ID = process.env.KMS_KEY_ID;
+const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
+
+const kms: KMS = new KMS({
+    region: KMS_REGION,
+});
+
+/**
+ * Validates lambda's runtime env variables
+ */
+ const validateEnv = function (): boolean {
+    return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
+};
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
-    // TODO
+    Logger.info({
+        message: 'Received POST /email authorization request',
+        additionalInfo: event
+    });
+
+    if (!validateEnv()) {
+        callback("Internal server error")
+    }
+
+    const headers = event.headers;
+    if (!headers.TemplateId || !headers.APIKey) {
+        callback("Unauthorized");
+    }
+
+    const authContext: IEmailAPIAuthReqBody = {
+        templateId: headers.TemplateId,
+        apiKey: headers.APIKey
+    }
+    Logger.info({
+        message: "Authorizing context", 
+        additionalInfo: authContext
+    });
+
+    // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
+    db.GetTemplateById(authContext.templateId).then((template: ITemplateFullEntry) => {
+        Logger.info({
+            message: "Retrieved template",
+            additionalInfo: template,
+        })
+        const decryptParam = {
+            KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
+            CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
+        };
+        kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+            if (err || !data.Plaintext) {
+                Logger.logError(err);
+                callback("Unauthorized");
+            } else if (data.Plaintext.toString() === authContext.apiKey) {
+                Logger.info({message: "Authorization success", additionalInfo: {templateId: template.templateId}});
+                callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
+            } else {
+                Logger.info({
+                    message: "Authorization failure",
+                    additionalInfo: {templateId: template.templateId}
+                })
+                callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Deny', event.methodArn));
+            }
+        });
+    }).catch((err) => {
+        Logger.logError(err);
+        callback("Unauthorized");
+    });
 };
 
 /**
-export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
-    console.log('Received event:', JSON.stringify(event, null, 2));
-
-    // A simple request-based authorizer example to demonstrate how to use request
-    // parameters to allow or deny a request. In this example, a request is
-    // authorized if the client-supplied headerauth1 header, QueryString1
-    // query parameter, and stage variable of StageVar1 all match
-    // specified values of 'headerValue1', 'queryValue1', and 'stageValue1',
-    // respectively.
-
-    // Retrieve request parameters from the Lambda function input:
-    var headers = event.headers;
-    var queryStringParameters = event.queryStringParameters;
-    var pathParameters = event.pathParameters;
-    var stageVariables = event.stageVariables;
-
-    // Parse the input for the parameter values
-    var tmp = event.methodArn.split(':');
-    var apiGatewayArnTmp = tmp[5].split('/');
-    var awsAccountId = tmp[4];
-    var region = tmp[3];
-    var restApiId = apiGatewayArnTmp[0];
-    var stage = apiGatewayArnTmp[1];
-    var method = apiGatewayArnTmp[2];
-    var resource = '/'; // root resource
-    if (apiGatewayArnTmp[3]) {
-        resource += apiGatewayArnTmp[3];
-    }
-
-    // Perform authorization to return the Allow policy for correct parameters and
-    // the 'Unauthorized' error, otherwise.
-    var authResponse = {};
-    var condition = {};
-    condition.IpAddress = {};
-
-    if (headers.Authorization === 'test123') {
-        callback(null, generateAllow('me', event.methodArn));
-    } else {
-        callback('Unauthorized');
-    }
-};
-
-// Help function to generate an IAM policy
-var generatePolicy = function (principalId, effect, resource) {
-    // Required output:
-    var authResponse = {};
-    authResponse.principalId = principalId;
-    if (effect && resource) {
-        var policyDocument = {};
-        policyDocument.Version = '2012-10-17'; // default version
-        policyDocument.Statement = [];
-        var statementOne = {};
-        statementOne.Action = 'execute-api:Invoke'; // default action
-        statementOne.Effect = effect;
-        statementOne.Resource = resource;
-        policyDocument.Statement[0] = statementOne;
-        authResponse.policyDocument = policyDocument;
-    }
-    // Optional output with custom properties of the String, Number or Boolean type.
-    authResponse.context = {
-        stringKey: 'stringval',
-        numberKey: 123,
-        booleanKey: true,
-    };
+ * Documentation for response:
+ * https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html
+ * */
+const generatePolicy = function (principalID: string, effect: string, methodArn: string) {
+    const authResponse: any = {};
+    authResponse.principalId = principalID;
+    const policyDocument: any = {};
+    policyDocument.Version = '2012-10-17'; // default version
+    policyDocument.Statement = [];
+    const statementOne: any = {};
+    statementOne.Action = 'execute-api:Invoke'; // default action
+    statementOne.Effect = effect;
+    statementOne.Resource = methodArn;
+    policyDocument.Statement[0] = statementOne;
+    authResponse.policyDocument = policyDocument;
     return authResponse;
 };
-
-var generateAllow = function (principalId, resource) {
-    return generatePolicy(principalId, 'Allow', resource);
-};
-
-var generateDeny = function (principalId, resource) {
-    return generatePolicy(principalId, 'Deny', resource);
-};
- */

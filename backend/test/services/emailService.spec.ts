@@ -1,7 +1,7 @@
 import { Stack } from '@aws-cdk/core';
 import { RestApi } from '@aws-cdk/aws-apigateway';
 import { Database } from '../../lib/constructs/database';
-import { arrayWith, countResources, expect, haveResource, haveResourceLike, objectLike, stringLike } from '@aws-cdk/assert/';
+import { arrayWith, expect, haveResource, haveResourceLike, objectLike, stringLike } from '@aws-cdk/assert/';
 import { config } from '../../lib/config';
 import { EmailService } from '../../lib/services/emailService';
 
@@ -18,12 +18,8 @@ beforeAll(() => {
 });
 
 describe('email service tests', () => {
-    it('creates send, authorizer, identity verifier lambdas', () => {
-        // TODO: assert with actual functionNames of lambdas instead of counting
-        expect(stack).to(countResources('AWS::Lambda::Function', 6));
-    });
 
-    it('adds email endpoint to API gateway', () => {
+    it('adds email endpoint to API gateway with CUSTOM authorization type', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
                 PathPart: 'email',
@@ -32,12 +28,74 @@ describe('email service tests', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'POST',
+                AuthorizationType: 'CUSTOM'
             }),
         );
     });
 
+    it('has request authorizer with correct identity sources', () => {
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Authorizer', {
+                IdentitySource: 'method.request.header.TemplateId,method.request.header.APIKey'
+            })
+        )
+    })
+
+    describe('email api authorizer lambda tests', () => {
+        it('has all enviornment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            KMS_REGION: config.KMS.REGION,
+                            KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
+                            KMS_KEY_ID: config.KMS.KEY_ID,
+                            METADATA_TABLE_NAME: objectLike({
+                                Ref: stringLike('MetadataTable*'),
+                            })
+                        })
+                    },
+                    FunctionName: stringLike('EmailAPIAuthorizer*')
+                })
+            )
+        })
+
+        it('has READ permission on metadata table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('dynamodb:GetItem'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('EmailAPIAuthorizer*'),
+                })
+            )
+        })
+
+        it('can decrypt with kms key', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: 'kms:Decrypt',
+                                Effect: 'Allow',
+                                Resource: stringLike(`arn:aws:kms:${config.KMS.REGION}:${config.KMS.ACCOUNT_ID}:key/${config.KMS.KEY_ID}`),
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('EmailAPIAuthorizer*'),
+                })
+            )
+        })
+    })
+
     describe('send lambda tests', () => {
-        it('send lambda has all environment variables', () => {
+        it('has all environment variables', () => {
             expect(stack).to(
                 haveResource('AWS::Lambda::Function', {
                     Environment: {
@@ -45,12 +103,17 @@ describe('email service tests', () => {
                             HTML_BUCKET_NAME: objectLike({
                                 Ref: stringLike('HTMLBucket*'),
                             }),
+                            METADATA_TABLE_NAME: objectLike({
+                                Ref: stringLike('MetadataTable*'),
+                            }),
                             PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                             VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
                             VERSION: config.ses.VERSION,
                         }),
                     },
                     Runtime: 'nodejs12.x',
+                    Timeout: 10,
+                    FunctionName: stringLike('SendEmailHandler*')
                 }),
             );
         });

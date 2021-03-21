@@ -1,9 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult, IDeleteImagesResult } from './dbInterfaces';
-import { isEmpty, isEmptyArray } from '../commonFunctions';
+import { isEmpty, nonEmpty, isEmptyArray, nonEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
-import { DeleteObjectOutput, GetObjectOutput, ListObjectsV2Output } from 'aws-sdk/clients/s3';
+import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
 import * as Logger from '../../logger';
 
@@ -22,7 +22,7 @@ function toSS(set: string[]): DynamoDB.StringSetAttributeValue {
 }
 
 function fromSS(ss?: DynamoDB.StringSetAttributeValue): string[] {
-    return ss && ss != [''] ? ss : [];
+    return ss && nonEmptyArray(ss) && nonEmpty(ss[0]) ? ss : [];
 }
 
 export function AddTemplate(name: string, fieldNames: string[], apiKey: string): Promise<ITemplateFullEntry> {
