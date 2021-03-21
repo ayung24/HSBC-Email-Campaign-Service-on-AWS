@@ -115,23 +115,23 @@ export class EmailService {
                         type: agw.JsonSchemaType.OBJECT,
                         additionalProperties: {
                             type: agw.JsonSchemaType.STRING,
-                        }
-                    }
+                        },
+                    },
                 },
-                required: ["subject", "recipient", "fields"],
-            }
+                required: ['subject', 'recipient', 'fields'],
+            },
         });
 
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
         emailResource.addMethod('POST', sendIntegration, {
             requestParameters: {
-                'method.request.querystring.templateId': true
+                'method.request.querystring.templateId': true,
             },
             authorizer: this._authorizer,
             authorizationType: AuthorizationType.CUSTOM,
             requestValidator: emailReqValidator,
-            requestModels: {'application/json': emailReqModel },
+            requestModels: { 'application/json': emailReqModel },
         });
     }
 

@@ -2,7 +2,7 @@ import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { IEmailAPIAuthReqBody } from '../lambdaInterfaces';
-import { AWSError, KMS} from 'aws-sdk';
+import { AWSError, KMS } from 'aws-sdk';
 import * as Logger from '../../../logger';
 
 const KMS_REGION = process.env.KMS_REGION;
@@ -17,63 +17,65 @@ const kms: KMS = new KMS({
 /**
  * Validates lambda's runtime env variables
  */
- const validateEnv = function (): boolean {
+const validateEnv = function (): boolean {
     return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
 export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
     Logger.info({
         message: 'Received POST /email authorization request',
-        additionalInfo: event
+        additionalInfo: event,
     });
 
     if (!validateEnv()) {
-        callback("Internal server error")
+        callback('Internal server error');
     }
 
     const apiKey = event.headers?.APIKey;
     const templateId = event.queryStringParameters?.id;
-    if (!templateId|| !apiKey) {
-        callback("Unauthorized");
+    if (!templateId || !apiKey) {
+        callback('Unauthorized');
     }
 
     Logger.info({
-        message: "Authorizing context", 
+        message: 'Authorizing context',
         additionalInfo: {
             templateId: templateId,
             apiKey: apiKey,
-        }
+        },
     });
 
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
-    db.GetTemplateById(templateId).then((template: ITemplateFullEntry) => {
-        Logger.info({
-            message: "Retrieved template",
-            additionalInfo: template,
+    db.GetTemplateById(templateId)
+        .then((template: ITemplateFullEntry) => {
+            Logger.info({
+                message: 'Retrieved template',
+                additionalInfo: template,
+            });
+            const decryptParam = {
+                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
+                CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
+            };
+            kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                if (err || !data.Plaintext) {
+                    Logger.logError(err);
+                    callback('Unauthorized');
+                } else if (data.Plaintext.toString() === apiKey) {
+                    Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
+                    callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
+                } else {
+                    Logger.info({
+                        message: 'Authorization failure',
+                        additionalInfo: { templateId: template.templateId },
+                    });
+                    callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Deny', event.methodArn));
+                }
+            });
         })
-        const decryptParam = {
-            KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
-            CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
-        };
-        kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-            if (err || !data.Plaintext) {
-                Logger.logError(err);
-                callback("Unauthorized");
-            } else if (data.Plaintext.toString() === apiKey) {
-                Logger.info({message: "Authorization success", additionalInfo: {templateId: template.templateId}});
-                callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
-            } else {
-                Logger.info({
-                    message: "Authorization failure",
-                    additionalInfo: {templateId: template.templateId}
-                })
-                callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Deny', event.methodArn));
-            }
+        .catch(err => {
+            Logger.logError(err);
+            callback('Unauthorized');
         });
-    }).catch((err) => {
-        Logger.logError(err);
-        callback("Unauthorized");
-    });
 };
 
 /**

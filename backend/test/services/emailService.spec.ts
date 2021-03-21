@@ -18,7 +18,6 @@ beforeAll(() => {
 });
 
 describe('email service tests', () => {
-
     it('adds email endpoint to API gateway with CUSTOM authorization type', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
@@ -28,7 +27,7 @@ describe('email service tests', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'POST',
-                AuthorizationType: 'CUSTOM'
+                AuthorizationType: 'CUSTOM',
             }),
         );
     });
@@ -36,10 +35,10 @@ describe('email service tests', () => {
     it('has request authorizer with correct identity sources', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Authorizer', {
-                IdentitySource: 'method.request.header.TemplateId,method.request.header.APIKey'
-            })
-        )
-    })
+                IdentitySource: 'method.request.header.TemplateId,method.request.header.APIKey',
+            }),
+        );
+    });
 
     describe('email api authorizer lambda tests', () => {
         it('has all enviornment variables', () => {
@@ -52,13 +51,13 @@ describe('email service tests', () => {
                             KMS_KEY_ID: config.KMS.KEY_ID,
                             METADATA_TABLE_NAME: objectLike({
                                 Ref: stringLike('MetadataTable*'),
-                            })
-                        })
+                            }),
+                        }),
                     },
-                    FunctionName: stringLike('EmailAPIAuthorizer*')
-                })
-            )
-        })
+                    FunctionName: stringLike('EmailAPIAuthorizer*'),
+                }),
+            );
+        });
 
         it('has READ permission on metadata table', () => {
             expect(stack).to(
@@ -72,9 +71,9 @@ describe('email service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('EmailAPIAuthorizer*'),
-                })
-            )
-        })
+                }),
+            );
+        });
 
         it('can decrypt with kms key', () => {
             expect(stack).to(
@@ -89,10 +88,10 @@ describe('email service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('EmailAPIAuthorizer*'),
-                })
-            )
-        })
-    })
+                }),
+            );
+        });
+    });
 
     describe('send lambda tests', () => {
         it('has all environment variables', () => {
@@ -113,7 +112,7 @@ describe('email service tests', () => {
                     },
                     Runtime: 'nodejs12.x',
                     Timeout: 10,
-                    FunctionName: stringLike('SendEmailHandler*')
+                    FunctionName: stringLike('SendEmailHandler*'),
                 }),
             );
         });

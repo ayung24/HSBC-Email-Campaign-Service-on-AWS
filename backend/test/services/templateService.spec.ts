@@ -17,7 +17,6 @@ beforeAll(() => {
 });
 
 describe('template service tests', () => {
-
     it('adds template endpoints to API gateway', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
@@ -79,7 +78,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
-                    FunctionName: stringLike('UploadTemplateHandler*')
+                    FunctionName: stringLike('UploadTemplateHandler*'),
                 }),
             );
         });
@@ -138,7 +137,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
-                    FunctionName: stringLike('ListTemplatesHandler*')
+                    FunctionName: stringLike('ListTemplatesHandler*'),
                 }),
             );
         });
