@@ -18,7 +18,6 @@ import { ITemplate } from '../../models/templateInterfaces';
 import { IError } from '../../models/iError';
 
 interface ISendEmailReqBody {
-    templateId: string;
     subject: string;
     recipient: string;
     fields: SendEmailFields;
@@ -58,10 +57,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
-            url: this._getUrl(),
+            url: this._getUrl(props.templateId),
             apiKey: '',
             jsonBody: {
-                templateId: props.templateId,
                 subject: '',
                 recipient: '',
                 fields: {},
@@ -96,10 +94,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.setState({ isDeletePromptOpen: true });
     }
 
-    private _getUrl(): string {
+    private _getUrl(templateId: string): string {
         const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
         if (productionEndpoint) {
-            return `${productionEndpoint.endpoint}/email`;
+            return `${productionEndpoint.endpoint}/email/?id=${templateId}`;
         } else {
             const toast = {
                 id: 'getUrlError',
@@ -203,7 +201,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
         return (
-            nonEmpty(jsonBody.templateId) &&
             nonEmpty(jsonBody.recipient) &&
             nonEmpty(jsonBody.subject) &&
             // all fields are present

@@ -54,7 +54,7 @@ export class EmailService {
 
         this._authorizer = new agw.RequestAuthorizer(scope, 'RequestAuthorizer', {
             handler: this._apiAuth,
-            identitySources: [IdentitySource.header('TemplateId'), IdentitySource.header('APIKey')],
+            identitySources: [IdentitySource.header('APIKey')],
         });
     }
 
@@ -93,11 +93,45 @@ export class EmailService {
      * ie. use {authorizer: this._authorizer}
      * */
     private _initPaths(scope: cdk.Construct, api: agw.RestApi): void {
+        const emailReqValidator = new agw.RequestValidator(scope, 'SendEmailValidator', {
+            restApi: api,
+            requestValidatorName: 'SendEmailReqValidator',
+            validateRequestBody: true,
+        });
+        const emailReqModel = new agw.Model(scope, 'SendEmailReqModel', {
+            restApi: api,
+            contentType: 'application/json',
+            description: 'Send email request payload',
+            schema: {
+                type: agw.JsonSchemaType.OBJECT,
+                properties: {
+                    subject: {
+                        type: agw.JsonSchemaType.STRING,
+                    },
+                    recipient: {
+                        type: agw.JsonSchemaType.STRING,
+                    },
+                    fields: {
+                        type: agw.JsonSchemaType.OBJECT,
+                        additionalProperties: {
+                            type: agw.JsonSchemaType.STRING,
+                        }
+                    }
+                },
+                required: ["subject", "recipient", "fields"],
+            }
+        });
+
         const emailResource = api.root.addResource('email');
         const sendIntegration = new agw.LambdaIntegration(this._send);
         emailResource.addMethod('POST', sendIntegration, {
+            requestParameters: {
+                'method.request.querystring.templateId': true
+            },
             authorizer: this._authorizer,
             authorizationType: AuthorizationType.CUSTOM,
+            requestValidator: emailReqValidator,
+            requestModels: {'application/json': emailReqModel },
         });
     }
 

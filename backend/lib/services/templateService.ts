@@ -105,7 +105,7 @@ export class TemplateService {
             },
             functionName: this._deleteTemplateLambdaName,
         });
-        // configure delete templates lambda permissions
+        // configureag delete templates lambda permissions
         database.metadataTable().grantReadWriteData(this._delete);
         database.htmlBucket().grantDelete(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
     }
@@ -117,7 +117,7 @@ export class TemplateService {
     private _initPaths(scope: cdk.Construct, api: agw.RestApi) {
         const uploadReqValidator = new agw.RequestValidator(scope, 'UploadTemplateValidator', {
             restApi: api,
-            requestValidatorName: 'template-upload-req-validator',
+            requestValidatorName: 'UploadTemplateReqValidator',
             validateRequestBody: true,
         });
         const uploadReqModel = new agw.Model(scope, 'UploadTemplateReqModel', {

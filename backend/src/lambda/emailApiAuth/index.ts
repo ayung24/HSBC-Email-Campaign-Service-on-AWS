@@ -31,22 +31,22 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
         callback("Internal server error")
     }
 
-    const headers = event.headers;
-    if (!headers.TemplateId || !headers.APIKey) {
+    const apiKey = event.headers?.APIKey;
+    const templateId = event.queryStringParameters?.id;
+    if (!templateId|| !apiKey) {
         callback("Unauthorized");
     }
 
-    const authContext: IEmailAPIAuthReqBody = {
-        templateId: headers.TemplateId,
-        apiKey: headers.APIKey
-    }
     Logger.info({
         message: "Authorizing context", 
-        additionalInfo: authContext
+        additionalInfo: {
+            templateId: templateId,
+            apiKey: apiKey,
+        }
     });
 
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
-    db.GetTemplateById(authContext.templateId).then((template: ITemplateFullEntry) => {
+    db.GetTemplateById(templateId).then((template: ITemplateFullEntry) => {
         Logger.info({
             message: "Retrieved template",
             additionalInfo: template,
@@ -59,7 +59,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
             if (err || !data.Plaintext) {
                 Logger.logError(err);
                 callback("Unauthorized");
-            } else if (data.Plaintext.toString() === authContext.apiKey) {
+            } else if (data.Plaintext.toString() === apiKey) {
                 Logger.info({message: "Authorization success", additionalInfo: {templateId: template.templateId}});
                 callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
             } else {
