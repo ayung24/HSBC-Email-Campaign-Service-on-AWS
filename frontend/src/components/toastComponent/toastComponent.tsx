@@ -60,8 +60,8 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
                         onClose={() => this._closeToast(prop.id)}
                         show={this._isOpen(prop.id)}
                         animation={true}
-                        delay={4000}
-                        autohide={prop.type !== ToastType.ERROR}
+                        delay={prop.type !== ToastType.ERROR ? 4000 : 5000}
+                        autohide
                     >
                         <Toast.Header className={prop.type}>
                             <strong className='header-text'>{prop.type.toString()}</strong>
