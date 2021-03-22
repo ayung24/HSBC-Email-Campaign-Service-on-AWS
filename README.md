@@ -58,7 +58,7 @@ To be updated with every push to main
     - We send the email from Shizuko's UBC email
     - Email the user wishes to send to must be verified. Ask Make Bank to send a verification email to the email of your choice
         - This is hopefully to be resolved when we leave sandbox mode
-#### ***March 22, 2020***
+#### ***March 23, 2020***
 - Error toasts now disappear after 6 seconds
 - Toasts of the same error will overwrite the previous
     - e.g. Entering an invalid email, then entering a different invalid email will update the error toast to the latest erroneous email
