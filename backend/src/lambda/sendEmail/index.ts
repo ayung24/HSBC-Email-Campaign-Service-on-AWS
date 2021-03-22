@@ -1,10 +1,10 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as AWS from 'aws-sdk';
 import { createTransport, SentMessageInfo } from 'nodemailer';
-import { ISendEmailReqBody, ISendEmailFields } from '../lambdaInterfaces';
+import { ISendEmailFields, ISendEmailReqBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
-import { ErrorCode } from '../../errorCode';
+import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../../logger';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
@@ -61,7 +61,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             headers: headers,
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error',
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
                 code: ErrorCode.ES0,
             }),
         };
@@ -70,18 +70,24 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             headers: headers,
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Invalid request format',
+                message: ErrorMessages.INVALID_REQUEST_FORMAT,
                 code: ErrorCode.ES1,
             }),
         };
     }
 
     const req: ISendEmailReqBody = JSON.parse(event.body);
-    return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId, PROCESSED_HTML_PATH)])
+    return Promise.all([db.GetTemplateById(req.templateId), db.GetHTMLById(req.templateId, PROCESSED_HTML_PATH!)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
             const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
             if (!html) {
-                return Promise.reject(new Error('Missing required dynamic fields'));
+                const missingFieldsError = new ESCError(
+                    ErrorCode.ES2,
+                    `Missing required dynamic fields for template ${metadata.templateId}`,
+                    true,
+                );
+                Logger.logError(missingFieldsError);
+                return Promise.reject(missingFieldsError);
             }
             const params = {
                 from: VERIFIED_EMAIL_ADDRESS,
@@ -89,14 +95,20 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 subject: req.subject,
                 html: html,
             };
-            return transporter.sendMail(params);
+            return transporter.sendMail(params).catch(err => {
+                Logger.logError(err);
+                const condensedParams = Object.assign({}, params);
+                delete condensedParams.html;
+                const sendMailError = new ESCError(ErrorCode.ES5, `Send email error: { to: ${params.to}, subject: ${params.subject} }`);
+                return Promise.reject(sendMailError);
+            });
         })
         .then((res: SentMessageInfo) => {
             return {
                 headers: headers,
                 statusCode: 200,
                 body: JSON.stringify({
-                    tempalteId: req.templateId,
+                    templateId: req.templateId,
                     sender: res.envelope.from,
                     recipient: req.recipient,
                     messageId: res.messageId,
@@ -104,12 +116,24 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS32;
+            }
             return {
                 headers: headers,
-                statusCode: 500,
+                statusCode: statusCode,
                 body: JSON.stringify({
-                    message: err.message,
-                    code: ErrorCode.ES2,
+                    message: message,
+                    code: code,
                 }),
             };
         });
