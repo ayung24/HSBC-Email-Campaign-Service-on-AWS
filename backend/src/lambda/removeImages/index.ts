@@ -1,5 +1,5 @@
 import { S3CreateEvent } from 'aws-lambda';
-import { ErrorCode } from '../../errorCode';
+import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import { isEmptyArray } from '../../commonFunctions';
 import * as db from '../../database/dbOperations';
 import { IDeleteImagesResult } from '../../database/dbInterfaces';
@@ -16,7 +16,7 @@ export const handler = async function (event: S3CreateEvent) {
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error',
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
                 code: ErrorCode.TS11,
             }),
         };
@@ -31,7 +31,7 @@ export const handler = async function (event: S3CreateEvent) {
     }
 
     const removeEvent = event.Records[0];
-    const templateId = decodeURIComponent(removeEvent.s3.object.key.replace(/\+/g, ' ')).replace(PROCESSED_HTML_PATH, '');
+    const templateId = decodeURIComponent(removeEvent.s3.object.key.replace(/\+/g, ' ')).replace(PROCESSED_HTML_PATH!, '');
     return db
         .DeleteImagesByTemplateId(templateId)
         .then((deleteRes: IDeleteImagesResult) => {
@@ -41,11 +41,23 @@ export const handler = async function (event: S3CreateEvent) {
             };
         })
         .catch(err => {
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS31;
+            }
             return {
-                statusCode: 500,
+                statusCode: statusCode,
                 body: JSON.stringify({
-                    message: err.message,
-                    code: ErrorCode.TS13,
+                    message: message,
+                    code: code,
                 }),
             };
         });

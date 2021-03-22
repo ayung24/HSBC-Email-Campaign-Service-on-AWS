@@ -19,10 +19,9 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
     }
 
     private _addToast(toast: ToastInterface): void {
-        if (!this._toastMessages.some(messages => messages.id === toast.id)) {
-            this._toastMessages.push(toast);
-            this._toastComponent.current?.updateToasts(this._toastMessages);
-        }
+        this._toastMessages = this._toastMessages.filter(messages => messages.id !== toast.id);
+        this._toastMessages.push(toast);
+        this._toastComponent.current?.updateToasts(this._toastMessages);
     }
 
     private _removeToast(id: string): void {

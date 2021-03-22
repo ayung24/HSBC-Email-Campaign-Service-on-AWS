@@ -2,10 +2,10 @@ import React from 'react';
 import './uploadTemplateModalComponent.css';
 import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComponent';
 import { Button, Modal } from 'react-bootstrap';
-import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
-import { IError } from '../../models/iError';
+import { IError, IErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 
@@ -97,7 +97,14 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                 .then(([htmlFile, fieldNames]) => {
                     this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
                 })
-                .catch(err => console.log(err));
+                .catch(err => {
+                    this._addToast({
+                        id: 'parseDocxError',
+                        body: `Could not parse word document file. Error: ${err}`,
+                        type: ToastType.ERROR,
+                        open: true,
+                    });
+                });
         } else {
             this._addToast(this._createFileTypeErrorToast(file));
         }
@@ -117,7 +124,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _createFileTypeErrorToast(file: File): ToastInterface {
         return {
-            id: `wrongFileType-${file.name}`,
+            id: 'wrongFileType',
             body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.docx]`,
             type: ToastType.ERROR,
             open: true,
@@ -125,9 +132,10 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _createUploadErrorToast(err: IError, name: string): ToastInterface {
+        const body = createErrorMessage(err, 'Could not upload template.');
         return {
-            id: `uploadTemplateError-${name}`,
-            body: `An error occurred when uploading template. Error: [${err.code}: ${err.message}]`,
+            id: 'uploadTemplateError',
+            body: body,
             type: ToastType.ERROR,
             open: true,
         };
@@ -151,8 +159,8 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                 this._addToast(this._createUploadSuccessToast(t.templateName));
                 this._closeModal();
             })
-            .catch((err: IError) => {
-                this._addToast(this._createUploadErrorToast(err, this.state.templateName));
+            .catch((err: IErrorReturnResponse) => {
+                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
             })
             .finally(() => this.setState({ isLoading: false }));
     }

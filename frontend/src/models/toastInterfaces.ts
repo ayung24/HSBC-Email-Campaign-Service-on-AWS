@@ -1,3 +1,5 @@
+import { IError } from './iError';
+
 export interface ToastInterface {
     id: string;
     body: string;
@@ -26,4 +28,8 @@ export enum ToastType {
 
 export interface ToastFunctionProperties {
     addToast: (t: ToastInterface) => void;
+}
+
+export function createErrorMessage(error: IError, message: string) {
+    return `[ESCError.${error.code}] ${message} Error: ${error.message} Refresh the page to see the most up to date list of in service templates.`;
 }
