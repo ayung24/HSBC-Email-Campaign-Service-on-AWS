@@ -10,6 +10,7 @@ import {
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
 } from '../models/templateInterfaces';
+import { ESCError } from '../models/iError';
 
 const mammoth = require('mammoth');
 
@@ -51,7 +52,12 @@ export class TemplateService {
             xhr.open('POST', typedPresignedPost.url, true);
             xhr.send(formData);
             xhr.onload = function () {
-                this.status === 204 ? resolve() : reject(this.responseText);
+                if (this.status === 204) {
+                    resolve();
+                } else {
+                    const uploadHtmlError = new ESCError('TS26', 'Upload template HTML failed');
+                    reject(uploadHtmlError);
+                }
             };
         });
     }
