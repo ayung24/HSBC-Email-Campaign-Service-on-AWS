@@ -1,9 +1,9 @@
 import { S3CreateEvent } from 'aws-lambda';
-import { isEmptyArray, nonEmptyArray } from '../../commonFunctions';
+import { isEmptyArray } from '../../commonFunctions';
 import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
-import { ErrorCode } from '../../errorCode';
+import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../../logger';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
@@ -25,7 +25,7 @@ export const handler = async function (event: S3CreateEvent) {
         return {
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error',
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
                 code: ErrorCode.TS10,
             }),
         };
@@ -39,14 +39,14 @@ export const handler = async function (event: S3CreateEvent) {
         };
     }
     const uploadEvent = event.Records[0];
-    const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH, '');
+    const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH!, '');
     Logger.info({
         message: `Post-processing HTML for template with id ${templateId}`,
         additionalInfo: uploadEvent,
     });
 
     return db
-        .GetHTMLById(templateId, SRC_HTML_PATH)
+        .GetHTMLById(templateId, SRC_HTML_PATH!)
         .then((html: string) => {
             const images: ITemplateImage[] = [];
             const $ = cheerio.load(html);
@@ -74,16 +74,27 @@ export const handler = async function (event: S3CreateEvent) {
         .then(() => {
             Logger.info({ message: `Updated html for template ${templateId}` });
             return {
-                statusCode: 400,
+                statusCode: 200,
             };
         })
         .catch(err => {
-            Logger.logError(err);
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS30;
+            }
             return {
-                statusCode: 500,
+                statusCode: statusCode,
                 body: JSON.stringify({
-                    message: err.message,
-                    code: ErrorCode.TS8,
+                    message: message,
+                    code: code,
                 }),
             };
         });

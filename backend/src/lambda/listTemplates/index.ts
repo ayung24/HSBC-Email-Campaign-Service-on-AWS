@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateBase } from '../../database/dbInterfaces';
-import { ErrorCode } from '../../errorCode';
+import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../../logger';
 
 const headers = {
@@ -38,12 +38,24 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
             };
         })
         .catch(err => {
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS29;
+            }
             return {
                 headers: headers,
-                statusCode: 500,
+                statusCode: statusCode,
                 body: JSON.stringify({
-                    message: err.message,
-                    code: ErrorCode.TS3,
+                    message: message,
+                    code: code,
                 }),
             };
         });

@@ -1,11 +1,12 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult } from './dbInterfaces';
-import { isEmpty, isEmptyArray } from '../commonFunctions';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult, IDeleteImagesResult } from './dbInterfaces';
+import { isEmpty, nonEmpty, isEmptyArray, nonEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
 import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
 import * as Logger from '../../logger';
+import { ErrorCode, ESCError } from '../ESCError';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -22,7 +23,7 @@ function toSS(set: string[]): DynamoDB.StringSetAttributeValue {
 }
 
 function fromSS(ss?: DynamoDB.StringSetAttributeValue): string[] {
-    return ss && ss != [''] ? ss : [];
+    return ss && nonEmptyArray(ss) && nonEmpty(ss[0]) ? ss : [];
 }
 
 export function AddTemplate(name: string, fieldNames: string[], apiKey: string): Promise<ITemplateFullEntry> {
@@ -37,7 +38,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
     });
     return new Promise((resolve, reject) => {
         if (isEmpty(name) || isEmpty(apiKey)) {
-            const fieldsEmptyError = new Error('Template name or api key is empty');
+            const fieldsEmptyError = new ESCError(ErrorCode.TS15, 'Template name or api key is empty');
             Logger.logError(fieldsEmptyError);
             reject(fieldsEmptyError);
         } else {
@@ -54,9 +55,14 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
                 if (err) {
                     Logger.logError(err, 'Name validation failure');
-                    reject(err);
+                    const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
+                    reject(nameValidationError);
                 } else if (data.Count && data.Count > 0) {
-                    const nameNotUniqueError = new Error(`Template name not unique: ${JSON.stringify(data)}`);
+                    const nameNotUniqueError = new ESCError(
+                        ErrorCode.TS17,
+                        `Template name [${name}] is not unique.`,
+                        true,
+                    );
                     Logger.logError(nameNotUniqueError);
                     reject(nameNotUniqueError);
                 } else {
@@ -90,7 +96,11 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 ddb.putItem(proposedMetadataEntry, (err: AWSError, data: DynamoDB.PutItemOutput) => {
                     if (err) {
                         Logger.logError(err);
-                        reject(err);
+                        const addMetadataError = new ESCError(
+                            ErrorCode.TS18,
+                            `Add template metadata error: ${JSON.stringify(proposedMetadataEntry)}`,
+                        );
+                        reject(addMetadataError);
                     } else {
                         resolve(proposedMetadataEntry.Item);
                     }
@@ -113,7 +123,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
     const ddb: DynamoDB = getDynamo();
     Logger.info({ message: 'Deleting template', additionalInfo: { templateId: templateId } });
     if (isEmpty(templateId)) {
-        const templateIdEmptyError = new Error('Template id is empty');
+        const templateIdEmptyError = new ESCError(ErrorCode.TS19, 'Template id is empty');
         Logger.logError(templateIdEmptyError);
         return Promise.reject(templateIdEmptyError);
     }
@@ -129,7 +139,8 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 s3.deleteObject(queryParams, (err: AWSError, data: DeleteObjectOutput) => {
                     if (err) {
                         Logger.logError(err);
-                        reject(err);
+                        const deleteHtmlError = new ESCError(ErrorCode.TS20, `Delete HTML error: ${JSON.stringify(queryParams)}`);
+                        reject(deleteHtmlError);
                     } else {
                         resolve(entry);
                     }
@@ -158,7 +169,11 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 ddb.updateItem(deleteEntry, (err: AWSError, data: UpdateItemOutput) => {
                     if (err) {
                         Logger.logError(err);
-                        reject(err);
+                        const updateTemplateStatusError = new ESCError(
+                            ErrorCode.TS21,
+                            `Update template status error: ${JSON.stringify(deleteEntry)}`,
+                        );
+                        reject(updateTemplateStatusError);
                     } else {
                         resolve(data.Attributes);
                     }
@@ -192,11 +207,12 @@ export function ListTemplatesByDate(start: string, end: string): Promise<ITempla
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
                 Logger.logError(err);
-                reject(err);
+                const listError = new ESCError(ErrorCode.TS22, 'List template error');
+                reject(listError);
             } else {
                 const items = data.Items;
                 if (!items || items.length < 0) {
-                    const undefinedItemsError = new Error('Retrieved undefined items from database');
+                    const undefinedItemsError = new ESCError(ErrorCode.TS23, 'Retrieved undefined items from database');
                     Logger.logError(undefinedItemsError);
                     reject(undefinedItemsError);
                 } else {
@@ -228,11 +244,16 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
                 Logger.logError(err);
-                reject(err);
+                const getTemplateError = new ESCError(ErrorCode.TS24, `Get template error: ${JSON.stringify(queryParams)}`);
+                reject(getTemplateError);
             } else {
                 const dynamoResult = data.Items;
                 if (!dynamoResult || dynamoResult.length < 1) {
-                    const noTemplateError = new Error(`No template with id ${templateId} found`);
+                    const noTemplateError = new ESCError(
+                        ErrorCode.TS25,
+                        `No template with id ${templateId} found.`,
+                        true,
+                    );
                     Logger.logError(noTemplateError);
                     reject(noTemplateError);
                 } else {
@@ -262,11 +283,12 @@ export function GetHTMLById(templateId: string, pathPrefix: string): Promise<str
         s3.getObject(queryParams, (err: AWSError, data: GetObjectOutput) => {
             if (err) {
                 Logger.logError(err);
-                reject(err);
+                const getHTMLError = new ESCError(ErrorCode.ES3, `Get HTML error: ${JSON.stringify(queryParams)}`);
+                reject(getHTMLError);
             } else {
                 const result = data.Body?.toString('utf-8');
                 if (!result || isEmpty(result)) {
-                    const noItemError = new Error(`No HTML with template id ${templateId} found`);
+                    const noItemError = new ESCError(ErrorCode.ES4, `No HTML with template id ${templateId} found`, true);
                     Logger.logError(noItemError);
                     reject(noItemError);
                 } else {
@@ -281,7 +303,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
     const s3 = new S3();
     Logger.info({ message: 'Uploading processed template HTML', additionalInfo: { templateId: templateId } });
     const uploadParams = {
-        Bucket: HTML_BUCKET_NAME,
+        Bucket: HTML_BUCKET_NAME!,
         Key: PROCESSED_HTML_PATH + templateId,
         ContentType: 'text/html',
         Body: html,
@@ -290,17 +312,22 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
         s3.upload(uploadParams, (err: Error, uploadRes: S3.ManagedUpload.SendData) => {
             if (err) {
                 Logger.logError(err);
-                reject(err);
+                const uploadHtmlError = new ESCError(
+                    ErrorCode.TS5,
+                    `Upload HTML error: { Bucket: ${uploadParams.Bucket}, Key: ${uploadParams.Key} }.`,
+                );
+                reject(uploadHtmlError);
             } else {
                 Logger.info({ message: 'Deleting source template HTML', additionalInfo: { templateId: templateId } });
                 const deleteParams = {
-                    Bucket: HTML_BUCKET_NAME,
+                    Bucket: HTML_BUCKET_NAME!,
                     Key: SRC_HTML_PATH + templateId,
                 };
                 s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
                     if (err) {
                         Logger.logError(err);
-                        reject(err);
+                        const deleteSourceHtmlError = new ESCError(ErrorCode.TS7, `Delete HTML error: ${JSON.stringify(deleteParams)}`);
+                        reject(deleteSourceHtmlError);
                     } else {
                         resolve(uploadRes.Location);
                     }
@@ -312,10 +339,10 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
 
 export function UploadImages(templateId: string, images: ITemplateImage[]): Promise<IImageUploadResult[]> {
     const s3 = new S3();
-    const uploadPromises: Promise<IImageUploadResult[]> = images.map((image: ITemplateImage) => {
+    const uploadPromises: Promise<IImageUploadResult>[] = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
-            Bucket: IMAGE_BUCKET_NAME,
+            Bucket: IMAGE_BUCKET_NAME!,
             Key: `${templateId}/${image.key}`,
             Body: image.content,
             ContentType: image.contentType,
@@ -324,7 +351,8 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
             s3.upload(params, (err: Error, data: S3.ManagedUpload.SendData) => {
                 if (err) {
                     Logger.logError(err);
-                    reject(err);
+                    const uploadImageError = new ESCError(ErrorCode.TS8, `Upload image error: ${JSON.stringify(params)}`);
+                    reject(uploadImageError);
                 } else {
                     resolve({
                         key: image.key,
@@ -335,4 +363,54 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
         });
     });
     return Promise.all(uploadPromises);
+}
+
+export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteImagesResult> {
+    const s3 = new S3();
+    Logger.info({ message: `Removing images for template ${templateId}` });
+
+    const listParams = {
+        Bucket: IMAGE_BUCKET_NAME!,
+        Prefix: `${templateId}/`,
+    };
+    return new Promise<IDeleteImagesResult>((resolve, reject) => {
+        s3.listObjectsV2(listParams, (err: AWSError, data: S3.ListObjectsV2Output) => {
+            if (err) {
+                Logger.logError(err);
+                const listImagesError = new ESCError(ErrorCode.TS13, `List images error: ${JSON.stringify(listParams)}`);
+                reject(listImagesError);
+            } else if (!data.Contents || data.Contents.length === 0) {
+                Logger.info({ message: `No images found for template ${templateId}` });
+                resolve({
+                    templateId: templateId,
+                    deletedCount: 0,
+                });
+            } else {
+                const deleteParams = {
+                    Bucket: IMAGE_BUCKET_NAME!,
+                    Delete: {
+                        Objects: data.Contents.map(image => ({
+                            Key: image.Key!,
+                        })),
+                    },
+                };
+                s3.deleteObjects(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectsOutput) => {
+                    if (err) {
+                        Logger.logError(err);
+                        const deleteImagesError = new ESCError(ErrorCode.TS2, `Delete images error: ${JSON.stringify(deleteParams)}`);
+                        reject(deleteImagesError);
+                    } else {
+                        Logger.info({
+                            message: `Removed images for template ${templateId}`,
+                            additionalInfo: deleteRes,
+                        });
+                        resolve({
+                            templateId: templateId,
+                            deletedCount: deleteRes.Deleted!.length,
+                        });
+                    }
+                });
+            }
+        });
+    });
 }
