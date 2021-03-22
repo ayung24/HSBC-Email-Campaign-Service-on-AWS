@@ -25,7 +25,6 @@ export interface IDeleteTemplateBody {
 }
 
 export interface ISendEmailReqBody {
-    templateId: string;
     subject: string;
     recipient: string;
     fields: ISendEmailFields;
