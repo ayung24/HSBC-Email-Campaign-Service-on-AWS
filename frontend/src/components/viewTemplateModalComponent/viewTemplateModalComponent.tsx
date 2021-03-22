@@ -97,7 +97,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _getUrl(templateId: string): string {
         const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
         if (productionEndpoint) {
-            return `${productionEndpoint.endpoint}/email/?id=${templateId}`;
+            return `${productionEndpoint.endpoint}/email/?templateid=${templateId}`;
         } else {
             const toast = {
                 id: 'getUrlError',

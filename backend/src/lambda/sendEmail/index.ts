@@ -65,7 +65,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 code: ErrorCode.ES0,
             }),
         };
-    } else if (!event.queryStringParameters || !event.queryStringParameters.id || !event.body) {
+    } else if (!event.queryStringParameters || !event.queryStringParameters.templateid || !event.body) {
         return {
             headers: headers,
             statusCode: 400,
@@ -76,7 +76,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
 
-    const templateId: string = event.queryStringParameters.id;
+    const templateId: string = event.queryStringParameters.templateid;
     const req: ISendEmailReqBody = JSON.parse(event.body);
     return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {

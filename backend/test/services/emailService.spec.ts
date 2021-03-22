@@ -29,7 +29,7 @@ describe('email service tests', () => {
                 HttpMethod: 'POST',
                 AuthorizationType: 'CUSTOM',
                 RequestParameters: {
-                    'method.request.querystring.templateId': true,
+                    'method.request.querystring.templateid': true,
                 },
             }),
         );

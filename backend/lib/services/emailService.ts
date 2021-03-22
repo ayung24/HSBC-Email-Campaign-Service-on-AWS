@@ -97,6 +97,7 @@ export class EmailService {
             restApi: api,
             requestValidatorName: 'SendEmailReqValidator',
             validateRequestBody: true,
+            validateRequestParameters: true,
         });
         const emailReqModel = new agw.Model(scope, 'SendEmailReqModel', {
             restApi: api,
@@ -126,7 +127,7 @@ export class EmailService {
         const sendIntegration = new agw.LambdaIntegration(this._send);
         emailResource.addMethod('POST', sendIntegration, {
             requestParameters: {
-                'method.request.querystring.templateId': true,
+                'method.request.querystring.templateid': true,
             },
             authorizer: this._authorizer,
             authorizationType: AuthorizationType.CUSTOM,

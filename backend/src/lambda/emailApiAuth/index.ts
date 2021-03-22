@@ -32,7 +32,7 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
     }
 
     const apiKey = event.headers?.APIKey;
-    const templateId = event.queryStringParameters?.id;
+    const templateId = event.queryStringParameters?.templateid;
     if (!templateId || !apiKey) {
         callback('Unauthorized');
     }
