@@ -12,7 +12,7 @@ const headers = {
 
 export const handler = async function (event: APIGatewayProxyEvent) {
     Logger.logRequestInfo(event);
-    if (!event.pathParameters.id) {
+    if (event.pathParameters === null || !event.pathParameters.id ) {
         return {
             headers: headers,
             statusCode: 400,
@@ -30,6 +30,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 headers: headers,
                 statusCode: 200,
                 body: JSON.stringify(res),
+                message: JSON.stringify(event),
             };
         })
         .catch(err => {
