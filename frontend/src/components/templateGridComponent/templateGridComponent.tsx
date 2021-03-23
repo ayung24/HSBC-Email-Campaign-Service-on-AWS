@@ -49,7 +49,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                             String(uploadTime.getMinutes()).padStart(2, '0');
 
                         return (
-                            <tr key={templateId}>
+                            <tr key={templateId + ' , ' + uploadTime.toString()}>
                                 <td className={'name'}>{templateName}</td>
                                 <td className={'upload-time'}>{dateStr}</td>
                                 <td className={'view-details'}>
@@ -62,6 +62,12 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                                 </td>
                             </tr>
                         );
+                    });
+
+                    templates.sort((a: any, b: any) => {
+                        const date1 = new Date(a.key.split(',')[1]).getTime();
+                        const date2 = new Date(b.key.split(',')[1]).getTime();
+                        return date2 - date1;
                     });
 
                     this.setState({ templates: templates });
