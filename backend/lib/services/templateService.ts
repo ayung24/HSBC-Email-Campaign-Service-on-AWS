@@ -23,7 +23,10 @@ export class TemplateService {
     private readonly _listTemplatesLambdaName: string;
     private readonly _deleteTemplateLambdaName: string;
 
+    private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._uploadTemplateLambdaName = `UploadTemplateHandler-${buildEnv}`;
         this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
         this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
@@ -168,18 +171,22 @@ export class TemplateService {
         new LogGroup(scope, 'UploadTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._uploadTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'GetTemplateMetadataHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateMetadataLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'ListTemplatesHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._listTemplatesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'DeleteTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._deleteTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
     }
 }

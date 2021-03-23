@@ -19,7 +19,10 @@ export class EmailService {
     private readonly _emailApiAuthorizerLambdaName: string;
     private readonly _emailSendLambdaName: string;
 
+    private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
         this._emailSendLambdaName = `SendEmailHandler-${buildEnv}`;
         new SESEmailVerifier(scope, 'SESEmailVerify', {
@@ -144,10 +147,12 @@ export class EmailService {
         new LogGroup(scope, 'EmailAPIAuthorizerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailApiAuthorizerLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'SendEmailHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
     }
 }
