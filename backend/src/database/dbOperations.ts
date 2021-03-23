@@ -281,7 +281,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
     const s3 = new S3();
     Logger.info({ message: 'Uploading processed template HTML', additionalInfo: { templateId: templateId } });
     const uploadParams = {
-        Bucket: HTML_BUCKET_NAME,
+        Bucket: HTML_BUCKET_NAME!,
         Key: PROCESSED_HTML_PATH + templateId,
         ContentType: 'text/html',
         Body: html,
@@ -294,7 +294,7 @@ export function UploadProcessedHTML(templateId: string, html: string): Promise<s
             } else {
                 Logger.info({ message: 'Deleting source template HTML', additionalInfo: { templateId: templateId } });
                 const deleteParams = {
-                    Bucket: HTML_BUCKET_NAME,
+                    Bucket: HTML_BUCKET_NAME!,
                     Key: SRC_HTML_PATH + templateId,
                 };
                 s3.deleteObject(deleteParams, (err: AWSError, deleteRes: S3.DeleteObjectOutput) => {
@@ -315,7 +315,7 @@ export function UploadImages(templateId: string, images: ITemplateImage[]): Prom
     const uploadPromises: Promise<IImageUploadResult>[] = images.map((image: ITemplateImage) => {
         Logger.info({ message: 'Uploading template images', additionalInfo: { templateId: templateId } });
         const params = {
-            Bucket: IMAGE_BUCKET_NAME,
+            Bucket: IMAGE_BUCKET_NAME!,
             Key: `${templateId}/${image.key}`,
             Body: image.content,
             ContentType: image.contentType,
@@ -342,7 +342,7 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
     Logger.info({ message: `Removing images for template ${templateId}` });
 
     const listParams = {
-        Bucket: IMAGE_BUCKET_NAME,
+        Bucket: IMAGE_BUCKET_NAME!,
         Prefix: `${templateId}/`,
     };
     return new Promise<IDeleteImagesResult>((resolve, reject) => {
@@ -358,10 +358,10 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
                 });
             } else {
                 const deleteParams = {
-                    Bucket: IMAGE_BUCKET_NAME,
+                    Bucket: IMAGE_BUCKET_NAME!,
                     Delete: {
                         Objects: data.Contents.map(image => ({
-                            Key: image.Key,
+                            Key: image.Key!,
                         })),
                     },
                 };
@@ -376,7 +376,7 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
                         });
                         resolve({
                             templateId: templateId,
-                            deletedCount: deleteRes.Deleted.length,
+                            deletedCount: deleteRes.Deleted!.length,
                         });
                     }
                 });

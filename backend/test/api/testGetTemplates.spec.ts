@@ -11,6 +11,7 @@ const headers = {
     'Content-Type': 'application/json',
 };
 
+
 describe('GET /templates/:id', () => {
     beforeEach(() => {
         jest.restoreAllMocks();
