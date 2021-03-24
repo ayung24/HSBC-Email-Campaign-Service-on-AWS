@@ -1,15 +1,9 @@
-import { GetMetadataByID } from '../mocks/dbOperations.mock';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../../src/lambda/getTemplateMetadata'
 import { EntryStatus, ITemplateFullEntry } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
-
-
-const headers = {
-    'Access-Control-Allow-Origin': '*', // Required for CORS support to work
-    'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
-    'Content-Type': 'application/json',
-};
+import * as db from '../../src/database/dbOperations'
+import { ErrorCode } from '../../src/errorCode';
 
 
 describe('GET /templates/:id', () => {
@@ -30,18 +24,38 @@ describe('GET /templates/:id', () => {
 
         const testEvent:APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             pathParameters: {
-                id: 'test-id-1'
+                id: 'test-id-valid'
+            }
+        });
+        const retrieveDataSpy = jest.spyOn(db, 'GetTemplateById').mockReturnValue(new Promise(resolve => {
+            resolve(mResponse);
+          }));
+
+        const result = await handler(testEvent);
+        expect(result.statusCode).toEqual(200);
+        expect(result.body).toEqual(JSON.stringify(mResponse));
+        expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
+    });
+
+    it('View template details: valid template id', async () => {
+        const testEvent:APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
+            pathParameters: {
+                id: 'non-existing-test-id'
             }
         });
 
+        const mError = new Error(`No template with id ${testEvent.pathParameters!.id} found`)
+        const mResponse = {
+            message: `No template with id ${testEvent.pathParameters!.id} found`,
+            code: ErrorCode.TS5,
+        }
+
+        const retrieveDataSpy = jest.spyOn(db, 'GetTemplateById').mockRejectedValue(mError);
+
         const result = await handler(testEvent);
-        const retrieveDataSpy = GetMetadataByID.mockResolvedValueOnce(mResponse);
-        expect(result).toEqual({
-            headers: headers,
-            statusCode: 200,
-            body: JSON.stringify(mResponse),
-          });
-        expect(retrieveDataSpy).toBeCalledWith('test-id-1');
+        expect(result.statusCode).toEqual(400);
+        expect(result.body).toEqual(JSON.stringify(mResponse));
+        expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
     });
 });
 
