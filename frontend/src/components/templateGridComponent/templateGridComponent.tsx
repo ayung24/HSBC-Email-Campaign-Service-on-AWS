@@ -3,10 +3,11 @@ import Table from 'react-bootstrap/Table';
 import './templateGridComponent.css';
 import { ViewTemplateModalComponent } from '../viewTemplateModalComponent/viewTemplateModalComponent';
 import { TemplateService } from '../../services/templateService';
-import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
+import { IError, IErrorReturnResponse } from '../../models/iError';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;
@@ -48,7 +49,7 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                             String(uploadTime.getMinutes()).padStart(2, '0');
 
                         return (
-                            <tr key={templateId}>
+                            <tr key={templateId + ' , ' + uploadTime.getTime()}>
                                 <td className={'name'}>{templateName}</td>
                                 <td className={'upload-time'}>{dateStr}</td>
                                 <td className={'view-details'}>
@@ -63,12 +64,19 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
                         );
                     });
 
+                    templates.sort((a: any, b: any) => {
+                        const date1 = a.key.split(',')[1];
+                        const date2 = b.key.split(',')[1];
+                        return date2 - date1;
+                    });
+
                     this.setState({ templates: templates });
                 })
-                .catch(() => {
+                .catch((err: IErrorReturnResponse) => {
+                    const body = createErrorMessage(err.response.data, 'Could not load template list.');
                     const toast = {
                         id: 'getTemplatesError',
-                        body: 'Could not load template list.',
+                        body: body,
                         type: ToastType.ERROR,
                         open: true,
                     };

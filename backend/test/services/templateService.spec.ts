@@ -2,7 +2,7 @@ import { TemplateService } from '../../lib/services/templateService';
 import { Stack } from '@aws-cdk/core';
 import { RestApi } from '@aws-cdk/aws-apigateway';
 import { Database } from '../../lib/constructs/database';
-import { arrayWith, countResources, expect, haveResource, haveResourceLike, objectLike, stringLike } from '@aws-cdk/assert/';
+import { arrayWith, expect, haveResource, haveResourceLike, objectLike, stringLike } from '@aws-cdk/assert/';
 import { config } from '../../lib/config';
 
 let stack: Stack;
@@ -17,11 +17,6 @@ beforeAll(() => {
 });
 
 describe('template service tests', () => {
-    it('creates upload, list, get, delete lambda functions', () => {
-        // TODO: assert with actual functionNames of lambda instead of counting
-        expect(stack).to(countResources('AWS::Lambda::Function', 7));
-    });
-
     it('adds template endpoints to API gateway', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
@@ -83,6 +78,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
+                    FunctionName: stringLike('UploadTemplateHandler*'),
                 }),
             );
         });
@@ -141,6 +137,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
+                    FunctionName: stringLike('ListTemplatesHandler*'),
                 }),
             );
         });
@@ -175,6 +172,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
+                    FunctionName: stringLike('GetTemplateMetadataHandler*'),
                 }),
             );
         });
@@ -213,6 +211,7 @@ describe('template service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
+                    FunctionName: stringLike('DeleteTemplateHandler*'),
                 }),
             );
         });

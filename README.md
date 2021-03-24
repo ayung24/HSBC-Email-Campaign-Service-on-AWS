@@ -7,15 +7,15 @@ https://main.d8zlt2xxyx88t.amplifyapp.com/
 https://dev.d8zlt2xxyx88t.amplifyapp.com/
 
 ### Email API Production URL
-https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email
+https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email/?templateid={id}
 
 ### Email API Development URL
-https://cvmtdo18w4.execute-api.ca-central-1.amazonaws.com/prod/email
+https://cvmtdo18w4.execute-api.us-west-2.amazonaws.com/prod/email/?templateid={id}
 
 
 #### Sample Email cURL Request
 ```
-curl -X POST https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email -H "Authorization:<API-KEY>" -H "Content-Type: application/json" --data-raw '{"templateId":"id123","subject":"Hello World","recipient":"test@email.com","fields":{"AMOUNT":"$1,000,000","NAME":"User","PROMO_CODE":"ABCD1234"}}'
+curl -X POST https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email/?templateid=id123 -H "APIKey:<API-KEY>" -H "Content-Type: application/json" --data-raw '{"subject":"Hello World","recipient":"test@email.com","fields":{"AMOUNT":"$1,000,000","NAME":"User","PROMO_CODE":"ABCD1234"}}'
 ```
 
 ### Login Credentials
@@ -58,3 +58,17 @@ To be updated with every push to main
     - We send the email from Shizuko's UBC email
     - Email the user wishes to send to must be verified. Ask Make Bank to send a verification email to the email of your choice
         - This is hopefully to be resolved when we leave sandbox mode
+#### ***March 23, 2020***
+- Error toasts now disappear after 6 seconds
+- Toasts of the same error will overwrite the previous
+    - e.g. Entering an invalid email, then entering a different invalid email will update the error toast to the latest erroneous email
+- Error toasts now display detailed error messages upon a user error
+    - User errors are errors that can be corrected by a user
+    - e.g. Creating a template with a non unique name
+- Email API endpoint is secured by API key of template
+- Email API endpoint now requires template id as query parameter
+    - We need the template id to check the API key, which was previously provided in the request body
+    - AWS API Gateway authorizers do not include request bodies
+    - "Enhanced request authorizer Lambda functions receive an event object that is similar to proxy integrations. It contains all of the information about a request, excluding the body." - https://aws.amazon.com/blogs/compute/using-enhanced-request-authorizers-in-amazon-api-gateway/
+
+

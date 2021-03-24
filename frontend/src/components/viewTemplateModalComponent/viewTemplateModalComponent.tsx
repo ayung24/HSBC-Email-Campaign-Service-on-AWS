@@ -8,17 +8,16 @@ import toolsIcon from '../../images/tools.png';
 import { config } from '../../config';
 import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
-import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplate } from '../../models/templateInterfaces';
-import { IError } from '../../models/iError';
+import { IError, IErrorReturnResponse } from '../../models/iError';
 
 interface ISendEmailReqBody {
-    templateId: string;
     subject: string;
     recipient: string;
     fields: SendEmailFields;
@@ -58,10 +57,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
-            url: this._getUrl(),
+            url: this._getUrl(props.templateId),
             apiKey: '',
             jsonBody: {
-                templateId: props.templateId,
                 subject: '',
                 recipient: '',
                 fields: {},
@@ -96,10 +94,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.setState({ isDeletePromptOpen: true });
     }
 
-    private _getUrl(): string {
+    private _getUrl(templateId: string): string {
         const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
         if (productionEndpoint) {
-            return `${productionEndpoint.endpoint}/email`;
+            return `${productionEndpoint.endpoint}/email/?templateid=${templateId}`;
         } else {
             const toast = {
                 id: 'getUrlError',
@@ -149,8 +147,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         });
                         resolve();
                     })
-                    .catch((err: any) => {
-                        this._addToast(this._getMetadataErrorToast(err, templateName));
+                    .catch((err: IErrorReturnResponse) => {
+                        this._addToast(this._getMetadataErrorToast(err.response.data, templateName));
                         reject(err);
                     })
                     .finally(() => this.setState({ isLoading: false }));
@@ -158,10 +156,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
-    private _getMetadataErrorToast(err: any, templateName: string): ToastInterface {
+    private _getMetadataErrorToast(error: IError, templateName: string): ToastInterface {
+        const body = createErrorMessage(error, `Could not get template details for template [${templateName}].`);
         return {
-            id: `getMetadataError-${err.response}`,
-            body: `An error occurred when getting field names for template [${templateName}]. Error: ${err.response}`,
+            id: 'getMetadataError',
+            body: body,
             type: ToastType.ERROR,
             open: true,
         };
@@ -183,7 +182,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (!this._isCompleteJson(this.state.jsonBody)) {
             const TOAST_INCOMPLETE = {
                 id: 'copyJsonFailed',
-                body: 'Incomplete parameters for JSON\nPlease fill in all fields',
+                body: 'Incomplete parameters for JSON. Please fill in all fields',
                 type: ToastType.ERROR,
                 open: true,
             };
@@ -191,7 +190,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         } else if (!REGEX.test(this.state.jsonBody.recipient)) {
             const TOAST_INVALID_EMAIL = {
                 id: 'copyJsonFailed',
-                body: `"${this.state.jsonBody.recipient}" is not a valid email`,
+                body: `[${this.state.jsonBody.recipient}] is not a valid email.`,
                 type: ToastType.ERROR,
                 open: true,
             };
@@ -203,7 +202,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
         return (
-            nonEmpty(jsonBody.templateId) &&
             nonEmpty(jsonBody.recipient) &&
             nonEmpty(jsonBody.subject) &&
             // all fields are present
@@ -242,17 +240,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     EventEmitter.getInstance().dispatch('refreshGrid');
                     const toast = {
                         id: 'deleteTemplatesSuccess',
-                        body: 'Successfully deleted template: ' + templateName + '.',
+                        body: `Successfully deleted template: [${templateName}].`,
                         type: ToastType.SUCCESS,
                         open: true,
                     };
                     this._addToast(toast);
                     this._handleModalClose();
                 })
-                .catch((err: IError) => {
+                .catch((err: IErrorReturnResponse) => {
+                    const body = createErrorMessage(err.response.data, `Could not delete template [${templateName}].`);
                     const toast = {
                         id: 'deleteTemplatesError',
-                        body: `An error occurred while deleting template [${templateName}]. Error: [${err.code}: ${err.message}]`,
+                        body: body,
                         type: ToastType.ERROR,
                         open: true,
                     };

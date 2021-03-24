@@ -4,9 +4,9 @@ import * as db from '../../database/dbOperations';
 import { S3Client } from '@aws-sdk/client-s3';
 import { createPresignedPost, PresignedPost } from '@aws-sdk/s3-presigned-post';
 import * as AWS from 'aws-sdk';
-import { ITemplateFullEntry } from '../../database/dbInterfaces';
-import { ErrorCode } from '../../errorCode';
 import { AWSError, KMS } from 'aws-sdk';
+import { ITemplateFullEntry } from '../../database/dbInterfaces';
+import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -57,6 +57,10 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             'Content-Type': 'text/html; charset=UTF-8',
         },
         Expires: PRESIGNED_URL_EXPIRY,
+    }).catch(err => {
+        Logger.logError(err);
+        const presignedPostError = new ESCError(ErrorCode.TS3, `Get presigned POST error`);
+        return Promise.reject(presignedPostError);
     });
 };
 
@@ -73,7 +77,9 @@ async function generateEncryptedApiKey(): Promise<string> {
     return new Promise((resolve, reject) => {
         kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
             if (err) {
-                reject(err);
+                Logger.logError(err);
+                const encryptError = new ESCError(ErrorCode.TS14, 'API key encryption failed');
+                reject(encryptError);
             } else {
                 const encryptedBase64data = Buffer.from(data.CiphertextBlob).toString('base64');
                 resolve(encryptedBase64data);
@@ -89,7 +95,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             headers: headers,
             statusCode: 500,
             body: JSON.stringify({
-                message: 'Internal server error',
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
                 code: ErrorCode.TS0,
             }),
         };
@@ -98,7 +104,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             headers: headers,
             statusCode: 400,
             body: JSON.stringify({
-                message: 'Invalid request format',
+                message: ErrorMessages.INVALID_REQUEST_FORMAT,
                 code: ErrorCode.TS1,
             }),
         };
@@ -128,12 +134,24 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
         })
         .catch(err => {
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS33;
+            }
             return {
                 headers: headers,
-                statusCode: 500,
+                statusCode: statusCode,
                 body: JSON.stringify({
-                    message: err.message,
-                    code: ErrorCode.TS2,
+                    message: message,
+                    code: code,
                 }),
             };
         });

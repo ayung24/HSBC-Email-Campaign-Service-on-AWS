@@ -10,8 +10,8 @@
     "test": "jest",
     "cdk": "cdk",
     "cdk:diff": "cdk diff || true",
-    "cdk:deploy": "cdk deploy --require-approval never --parameters BUILDENV=dev",
-    "cdk:deploy:prod": "cdk deploy --require-approval never --parameters BUILDENV=prod",
+    "cdk:deploy": "cdk deploy --require-approval never --context BUILDENV=dev",
+    "cdk:deploy:prod": "cdk deploy --require-approval never --context BUILDENV=prod",
     "lint": "eslint */**/*.ts --fix"
   },
   "devDependencies": {
