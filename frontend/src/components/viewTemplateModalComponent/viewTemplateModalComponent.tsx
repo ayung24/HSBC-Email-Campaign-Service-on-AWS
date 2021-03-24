@@ -16,6 +16,7 @@ import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplate } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
+import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -46,6 +47,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _addToast: (t: ToastInterface) => void;
     private _templateService: TemplateService;
     private _keyManagementService: KMS;
+    private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
 
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
@@ -54,6 +56,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         super(props);
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
+        this._uploadModalComponent = React.createRef();
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
@@ -284,6 +287,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _toggleUploadModal(): void {
+        this._uploadModalComponent.current?.toggleModal();
+    }
+
     render(): JSX.Element {
         return (
             <div>
@@ -330,56 +337,58 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </InputGroup>
                                 </div>
                                 <div className='dynamicParameters'>{this._renderFieldNames('single')}</div>
-                            </Tab>
-                            <Tab id='batch' eventKey='batch' title='Batch'>
-                                <div className='sendParameters'>
-                                    <Form.Label>Recipients</Form.Label>
-                                    <InputGroup id='recipient' className='mb-3'>
-                                        <FormControl placeholder='Recipient' />
+                                <div className='sendFields'>
+                                    <Form.Label>URL</Form.Label>
+                                    <InputGroup className='mb-3'>
+                                        <FormControl disabled placeholder='URL' value={this.state.url} />
+                                        <InputGroup.Append>
+                                            <Button id='copyBtn' variant='outline-secondary'>
+                                                <Image
+                                                    src={copyImage}
+                                                    alt='copy icon'
+                                                    onClick={event => this._copyText(this.state.url, event)}
+                                                    fluid
+                                                />
+                                            </Button>
+                                        </InputGroup.Append>
                                     </InputGroup>
-                                    <Form.Label>Subject</Form.Label>
-                                    <InputGroup id='subject' className='mb-3'>
-                                        <FormControl placeholder='Subject' />
+                                    <Form.Label>API Key</Form.Label>
+                                    <InputGroup className='mb-3'>
+                                        <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
+                                        <InputGroup.Append>
+                                            <Button id='copyBtn' variant='outline-secondary'>
+                                                <Image
+                                                    src={copyImage}
+                                                    alt='copy icon'
+                                                    onClick={event => this._copyText(this.state.apiKey, event)}
+                                                    fluid
+                                                />
+                                            </Button>
+                                        </InputGroup.Append>
+                                    </InputGroup>
+                                    <Form.Label>JSON Body</Form.Label>
+                                    <InputGroup className='mb-3'>
+                                        <TextareaAutosize
+                                            readOnly
+                                            className='jsonBody'
+                                            value={JSON.stringify(this.state.jsonBody, null, '\t')}
+                                        />
+                                        <InputGroup.Append>
+                                            <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
+                                                <Image src={copyImage} alt='copy icon' fluid />
+                                            </Button>
+                                        </InputGroup.Append>
                                     </InputGroup>
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('batch')}</div>
+                            </Tab>
+                            <Tab id='batch' eventKey='batch' title='Batch'>
+                                <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>
+                                    UPLOAD +
+                                </Button>
+                                <UploadTemplateModalComponent ref={this._uploadModalComponent} addToast={this._addToast.bind(this)} />
                             </Tab>
                         </Tabs>
                     </Modal.Body>
-                    <Modal.Footer id='footer'>
-                        <Form.Label>URL</Form.Label>
-                        <InputGroup className='mb-3'>
-                            <FormControl disabled placeholder='URL' value={this.state.url} />
-                            <InputGroup.Append>
-                                <Button id='copyBtn' variant='outline-secondary'>
-                                    <Image src={copyImage} alt='copy icon' onClick={event => this._copyText(this.state.url, event)} fluid />
-                                </Button>
-                            </InputGroup.Append>
-                        </InputGroup>
-                        <Form.Label>API Key</Form.Label>
-                        <InputGroup className='mb-3'>
-                            <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
-                            <InputGroup.Append>
-                                <Button id='copyBtn' variant='outline-secondary'>
-                                    <Image
-                                        src={copyImage}
-                                        alt='copy icon'
-                                        onClick={event => this._copyText(this.state.apiKey, event)}
-                                        fluid
-                                    />
-                                </Button>
-                            </InputGroup.Append>
-                        </InputGroup>
-                        <Form.Label>JSON Body</Form.Label>
-                        <InputGroup className='mb-3'>
-                            <TextareaAutosize readOnly className='jsonBody' value={JSON.stringify(this.state.jsonBody, null, '\t')} />
-                            <InputGroup.Append>
-                                <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
-                                    <Image src={copyImage} alt='copy icon' fluid />
-                                </Button>
-                            </InputGroup.Append>
-                        </InputGroup>
-                    </Modal.Footer>
                 </Modal>
                 <Modal show={this.state.isDeletePromptOpen} onHide={() => this._handleDeletePromptClose()}>
                     <Modal.Body>Are you sure you want to delete this template?</Modal.Body>
