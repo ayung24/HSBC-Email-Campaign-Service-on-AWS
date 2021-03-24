@@ -156,6 +156,11 @@
     border-top: 1px solid #dee2e6;
 }
 
+#sendCsv {
+    background-color: #db0011;
+    border-color: #db0011;
+}
+
 .jsonBody {
     resize: none;
     flex: 1;
