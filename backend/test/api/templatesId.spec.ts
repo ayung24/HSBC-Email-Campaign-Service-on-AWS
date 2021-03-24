@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../../src/lambda/getTemplateMetadata';
 import { EntryStatus, ITemplateFullEntry } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
-import { ErrorCode } from '../../src/errorCode';
+import { ErrorCode, ESCError } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
 
 describe('GET /templates/:id', () => {
@@ -43,10 +43,10 @@ describe('GET /templates/:id', () => {
                 id: 'non-existing-test-id',
             },
         });
-        const mError = new Error(`No template with id ${testEvent.pathParameters!.id} found`);
+        const mError = new ESCError(ErrorCode.TS28, `No template with id ${testEvent.pathParameters!.id} found.`, true);
         const mResponse = {
-            message: `No template with id ${testEvent.pathParameters!.id} found`,
-            code: ErrorCode.TS5,
+            message: `No template with id ${testEvent.pathParameters!.id} found.`,
+            code: ErrorCode.TS28,
         };
         const retrieveDataSpy = jest.spyOn(db, 'GetTemplateById').mockRejectedValue(mError);
 
