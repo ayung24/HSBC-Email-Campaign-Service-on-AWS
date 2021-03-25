@@ -33,3 +33,11 @@ export interface ISendEmailReqBody {
 export interface ISendEmailFields {
     [key: string]: string;
 }
+
+export interface IEmailQueueBody {
+    templateId: string;
+    subject: string;
+    from: string;
+    to: string;
+    fields: ISendEmailFields;
+}

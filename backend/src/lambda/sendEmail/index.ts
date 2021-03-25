@@ -1,24 +1,31 @@
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import { SQSEvent, SQSRecord } from 'aws-lambda';
 import * as AWS from 'aws-sdk';
 import { createTransport, SentMessageInfo } from 'nodemailer';
-import { ISendEmailFields, ISendEmailReqBody } from '../lambdaInterfaces';
+import { ISendEmailFields, IEmailQueueBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
-import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
+import { nonEmptyArray } from '../../commonFunctions'
 import * as Logger from '../../../logger';
 
-const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
-const VERSION = process.env.VERSION || '2010-12-01';
+const SES_VERSION = process.env.SES_VERSION || '2010-12-01';
+const SQS_VERSION = process.env.SQS_VERSION || '2012-11-05';
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
-const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
+const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
+const MAX_SEND_RATE = process.env.MAX_SEND_RATE;
+
+const sqs = new AWS.SQS({
+    apiVersion: SQS_VERSION,
+});
 
 const ses = new AWS.SES({
-    apiVersion: VERSION,
+    apiVersion: SES_VERSION,
 });
 
 const transporter = createTransport({
     SES: ses,
+    maxConnections: 1,
+    sendingRate: parseInt(MAX_SEND_RATE),
 });
 
 const headers = {
@@ -31,111 +38,115 @@ const headers = {
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS;
+    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!EMAIL_QUEUE_URL && !!MAX_SEND_RATE;
 };
 
 /**
  * @param srcHTML HTML with dynamic fields
  * @param fields dynamic field values
- * @param fieldNames required dynamic fields
  * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
  */
-const replaceFields = function (srcHTML: string, fields: ISendEmailFields, fieldNames: string[]): string | undefined {
-    const keys = Object.keys(fields);
-    const isValid = fieldNames.every(field => keys.includes(field));
-    if (!isValid) {
-        return undefined;
-    } else {
-        const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
-        const html = srcHTML.replace(regex, (_, field) => {
-            return fields[field];
-        });
-        return html;
-    }
+const replaceFields = function (srcHTML: string, fields: ISendEmailFields): string {
+    const fieldNames = Object.keys(fields);
+    const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
+    const html = srcHTML.replace(regex, (_, field) => {
+        return fields[field];
+    });
+    return html;
 };
 
-export const handler = async function (event: APIGatewayProxyEvent) {
-    Logger.logCURLInfo(event);
+const sendEmail = function(record: SQSRecord): Promise<SentMessageInfo> {
+    const body: IEmailQueueBody = JSON.parse(record.body);
+    Logger.info({message: 'Sending email for SQS record', additionalInfo: record});
+    return db.GetHTMLById(body.templateId, PROCESSED_HTML_PATH)
+    .then(srcHTML => {
+        const html: string = replaceFields(srcHTML, body.fields);
+        const params = {
+            from: body.from,
+            to: body.to,
+            subject: body.subject,
+            html: html,
+        };
+        return transporter.sendMail(params).catch(err => {
+            Logger.logError(err);
+            const sendMailError = new ESCError(ErrorCode.ES5, `Send email error for SQS record ${record.messageId}`);
+            return Promise.reject(sendMailError);
+        })
+    }).then((info: SentMessageInfo) => {
+        // dequeue sent email manually from email queue
+        const params = {
+            QueueUrl: EMAIL_QUEUE_URL,
+            ReceiptHandle: record.receiptHandle
+        }
+        return new Promise((resolve) => 
+            sqs.deleteMessage(params, (err: AWS.AWSError, data: {}) => {
+                // in case dequeue fails, we will just log it, email send succeeded regardless
+                if (err) {
+                    Logger.logError(err);
+                }
+                resolve(info);
+            })
+        );
+    })
+}
+
+export const handler = async function (event: SQSEvent) {
+    Logger.info({message: "Received SQS event", additionalInfo: event });
     if (!validateEnv()) {
         return {
             headers: headers,
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.ES0,
+                code: ErrorCode.ES8,
             }),
         };
-    } else if (!event.queryStringParameters || !event.queryStringParameters.templateid || !event.body) {
-        return {
-            headers: headers,
-            statusCode: 400,
-            body: JSON.stringify({
-                message: ErrorMessages.INVALID_REQUEST_FORMAT,
-                code: ErrorCode.ES1,
-            }),
-        };
-    }
-
-    const templateId: string = event.queryStringParameters.templateid;
-    const req: ISendEmailReqBody = JSON.parse(event.body);
-    return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH)])
-        .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
-            const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
-            if (!html) {
-                const missingFieldsError = new ESCError(
-                    ErrorCode.ES2,
-                    `Missing required dynamic fields for template ${metadata.templateId}`,
-                    true,
-                );
-                Logger.logError(missingFieldsError);
-                return Promise.reject(missingFieldsError);
-            }
-            const params = {
-                from: VERIFIED_EMAIL_ADDRESS,
-                to: req.recipient,
-                subject: req.subject,
-                html: html,
-            };
-            return transporter.sendMail(params).catch(err => {
-                Logger.logError(err);
-                const condensedParams = Object.assign({}, params);
-                delete condensedParams.html;
-                const sendMailError = new ESCError(ErrorCode.ES5, `Send email error: { to: ${params.to}, subject: ${params.subject} }`);
-                return Promise.reject(sendMailError);
-            });
-        })
-        .then((res: SentMessageInfo) => {
+    } else if (nonEmptyArray(event.Records)) {
+        let sendPromises: Promise<SentMessageInfo>[] = event.Records.map(sendEmail);
+        let sent: SentMessageInfo[] = [];
+        const chainedSend: Promise<SentMessageInfo> = sendPromises.slice(1).reduce((chain, nextSend) => {
+            return chain.then(info => {
+                sent.push(info);
+                return nextSend;
+            }).catch(err => {
+                // ignore and proceed to next send
+                return nextSend;
+            })
+        }, sendPromises[0]);
+        return chainedSend.then(info => {
+            sent.push(info);
+            Logger.info({message: `Sent ${sent.length} emails`, additionalInfo: sent})
             return {
                 headers: headers,
                 statusCode: 200,
                 body: JSON.stringify({
-                    templateId: templateId,
-                    sender: res.envelope.from,
-                    recipient: req.recipient,
-                    messageId: res.messageId,
-                }),
-            };
-        })
-        .catch(err => {
-            let statusCode: number;
-            let message: string;
-            let code: string;
-            if (err instanceof ESCError) {
-                statusCode = err.getStatusCode();
-                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = err.code;
-            } else {
-                statusCode = 500;
-                message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS32;
+                    messageIds: sent.map(info => info.messageId)
+                })
             }
-            return {
-                headers: headers,
-                statusCode: statusCode,
-                body: JSON.stringify({
-                    message: message,
-                    code: code,
-                }),
-            };
+        }).finally(() => {
+            if (sent.length < event.Records.length) {
+                // at least one record failed to be sent,
+                // throw an error to keep failed messages on email queue
+                const batchError = new ESCError(ErrorCode.ES9, `Partial batch failure: ${sent.length}/${event.Records.length} sent`)
+                Logger.logError(batchError);
+                return {
+                    headers: headers,
+                    statusCode: batchError.getStatusCode(),
+                    body: JSON.stringify({
+                        message: batchError.message,
+                        code: batchError.code,
+                    })
+                }
+            }
         });
+    } else {
+        Logger.info({message: "No record received in batch"})
+        return {
+            headers: headers,
+            statusCode: 200,
+            body: JSON.stringify({
+                messageIds: []
+            })
+        }
+    }
 };

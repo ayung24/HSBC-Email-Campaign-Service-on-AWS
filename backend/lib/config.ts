@@ -25,5 +25,9 @@ export const config = {
     ses: {
         VERSION: '2010-12-01',
         VERIFIED_EMAIL_ADDRESS: 'shizuko@student.ubc.ca',
+        MAX_SEND_RATE: 1, // email per second
     },
+    sqs: {
+        BATCH_SIZE: 5,
+    }
 };

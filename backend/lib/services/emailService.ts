@@ -1,6 +1,7 @@
 import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as agw from '@aws-cdk/aws-apigateway';
+import * as sqs from '@aws-cdk/aws-sqs';
 import { AuthorizationType, IdentitySource } from '@aws-cdk/aws-apigateway';
 import * as iam from '@aws-cdk/aws-iam';
 import { config } from '../config';
@@ -10,30 +11,59 @@ import { SESEmailVerifier } from '../constructs/emailVerifier';
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
 import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
+import { Duration } from '@aws-cdk/core';
+import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
+import { Session } from 'inspector';
 
 export class EmailService {
     private _apiAuth: NodejsFunction;
     private _authorizer: agw.Authorizer;
     private _send: lambda.Function;
+    private _process: lambda.Function;
+    private _emailQueue: sqs.Queue;
+    private _emailDlq: sqs.Queue;
 
     private readonly _emailApiAuthorizerLambdaName: string;
-    private readonly _emailSendLambdaName: string;
+    private readonly _sendEmailLambdaName: string;
+    private readonly _processEmailLambdaName: string;
+    private readonly _emailQueueName: string;
+    private readonly _emailQueueDlqName: string;
 
     private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
 
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
         this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
-        this._emailSendLambdaName = `SendEmailHandler-${buildEnv}`;
+        this._sendEmailLambdaName = `SendEmailHandler-${buildEnv}`;
+        this._processEmailLambdaName = `ProcessEmailHandler-${buildEnv}`;
+        this._emailQueueName = `EmailQueue-${buildEnv}`;
+        this._emailQueueDlqName = `EmailDLQ-${buildEnv}`;
         new SESEmailVerifier(scope, 'SESEmailVerify', {
             email: config.ses.VERIFIED_EMAIL_ADDRESS,
         });
+        this._initQueues(scope);
         this._initFunctions(scope, database);
         this._initAuth(scope, database);
         this._initPaths(scope, api);
         this._initLogGroups(scope);
     }
 
+    private _initQueues(scope: cdk.Construct) {
+        this._emailDlq = new sqs.Queue(scope, "EmailDLQ", {
+            queueName: `${this._emailQueueDlqName}.fifo`,
+            fifo: true,
+            retentionPeriod: Duration.days(14)
+        })
+        this._emailQueue = new sqs.Queue(scope, 'EmailQueue', {
+            queueName: `${this._emailQueueName}.fifo`,
+            fifo: true,
+            visibilityTimeout: Duration.seconds(10),
+            deadLetterQueue: {
+                maxReceiveCount: 1,
+                queue: this._emailDlq,
+            }
+        })
+    }
     private _initAuth(scope: cdk.Construct, database: Database) {
         this._apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -62,24 +92,39 @@ export class EmailService {
     }
 
     private _initFunctions(scope: cdk.Construct, database: Database) {
-        this._send = new NodejsFunction(scope, 'SendEmailHandler', {
+        this._process = new NodejsFunction(scope, 'ProcessEmailHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/sendEmail/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/processEmail/index.ts`,
             environment: {
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
+                EMAIL_QUEUE_URL: this._emailQueue.queueUrl;
+            },
+            timeout: cdk.Duration.seconds(10),
+            functionName: this._processEmailLambdaName,
+        });
+        database.htmlBucket().grantRead(this._send, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
+        database.metadataTable().grantReadData(this._send); // READ template metadata table
+        this._emailQueue.grantSendMessages(this._process);
+
+        this._send = new NodejsFunction(scope, 'SendEmailHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/sendEmail/index.ts`,
+            environment: {
+                SES_VERSION: config.ses.VERSION,
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
-                VERSION: config.ses.VERSION,
+                EMAIL_DLQ_URL: this._emailDlq.queueUrl,
             },
             bundling: {
                 nodeModules: ['nodemailer'],
             },
             timeout: cdk.Duration.seconds(10),
-            functionName: this._emailSendLambdaName,
+            reservedConcurrentExecutions: 1,
+            functionName: this._sendEmailLambdaName,
         });
-        database.htmlBucket().grantRead(this._send, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
-        database.metadataTable().grantReadData(this._send); // READ template metadata table
+        this._emailQueue.grantConsumeMessages(this._send);
+        this._emailDlq.grantSendMessages(this._send);
         this._send.addToRolePolicy(
             new iam.PolicyStatement({
                 // SEND permission using SES
@@ -88,6 +133,11 @@ export class EmailService {
                 effect: iam.Effect.ALLOW,
             }),
         );
+        this._send.addEventSource(
+            new SqsEventSource(this._emailQueue, {
+                batchSize: 5,
+            })
+        )
     }
 
     /**
@@ -150,7 +200,7 @@ export class EmailService {
             removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'SendEmailHandlerLogs', {
-            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailSendLambdaName,
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._sendEmailLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
