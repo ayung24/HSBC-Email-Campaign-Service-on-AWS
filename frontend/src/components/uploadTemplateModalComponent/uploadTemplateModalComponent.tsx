@@ -95,7 +95,16 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
             this._templateService
                 .parseDocx(file)
                 .then(([htmlFile, fieldNames]) => {
-                    this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
+                    if (htmlFile.size !== 0) {
+                        this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
+                    } else {
+                        this._addToast({
+                            id: 'emptyDocxError',
+                            body: `Word document file is empty.`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        });
+                    }
                 })
                 .catch(err => {
                     this._addToast({
