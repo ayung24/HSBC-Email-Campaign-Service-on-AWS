@@ -91,19 +91,11 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _handleUploadFile(file: File): void {
         if (this._isValidFileType(file.type)) {
+            this.setState({ file: file });
             this._templateService
                 .parseDocx(file)
                 .then(([htmlFile, fieldNames]) => {
-                    if (htmlFile.size !== 0) {
-                        this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
-                    } else {
-                        this._addToast({
-                            id: 'emptyDocxError',
-                            body: `File [${file.name}] is empty.`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        });
-                    }
+                    this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
                 })
                 .catch(err => {
                     this._addToast({
@@ -159,18 +151,27 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _doUpload(): void {
-        this.setState({ isLoading: true });
-        this._templateService
-            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-            .then((t: ITemplate) => {
-                EventEmitter.getInstance().dispatch('refreshGrid');
-                this._addToast(this._createUploadSuccessToast(t.templateName));
-                this._closeModal();
-            })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+        if (this.state.htmlFile.size === 0) {
+            this._addToast({
+                id: 'emptyDocxError',
+                body: `File is empty.`,
+                type: ToastType.ERROR,
+                open: true,
+            });
+        } else {
+            this.setState({ isLoading: true });
+            this._templateService
+                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+                .then((t: ITemplate) => {
+                    EventEmitter.getInstance().dispatch('refreshGrid');
+                    this._addToast(this._createUploadSuccessToast(t.templateName));
+                    this._closeModal();
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+                })
+                .finally(() => this.setState({ isLoading: false }));
+        }
     }
 
     componentDidMount(): void {
