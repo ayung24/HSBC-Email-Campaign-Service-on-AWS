@@ -91,12 +91,11 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _handleUploadFile(file: File): void {
         if (this._isValidFileType(file.type)) {
-            this.setState({ file: file });
             this._templateService
                 .parseDocx(file)
                 .then(([htmlFile, fieldNames]) => {
                     if (htmlFile.size !== 0) {
-                        this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
+                        this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
                     } else {
                         this._addToast({
                             id: 'emptyDocxError',
