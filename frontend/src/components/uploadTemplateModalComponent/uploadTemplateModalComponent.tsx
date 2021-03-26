@@ -154,7 +154,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         if (this.state.htmlFile.size === 0) {
             this._addToast({
                 id: 'emptyDocxError',
-                body: `File is empty.`,
+                body: `Uploaded file is empty.`,
                 type: ToastType.ERROR,
                 open: true,
             });
