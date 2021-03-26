@@ -99,7 +99,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                     } else {
                         this._addToast({
                             id: 'emptyDocxError',
-                            body: `Word document file is empty.`,
+                            body: `File [${file.name}] is empty.`,
                             type: ToastType.ERROR,
                             open: true,
                         });
