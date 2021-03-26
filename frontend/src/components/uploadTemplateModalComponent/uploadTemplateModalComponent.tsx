@@ -151,10 +151,10 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _doUpload(): void {
-        if (this.state.htmlFile.size === 0) {
+        if (this.state.htmlFile == undefined || this.state.htmlFile.size === 0) {
             this._addToast({
                 id: 'emptyDocxError',
-                body: `Uploaded file is empty.`,
+                body: `Cannot upload an empty template.`,
                 type: ToastType.ERROR,
                 open: true,
             });
