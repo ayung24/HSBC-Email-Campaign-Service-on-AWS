@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { handler } from '../../src/lambda/getTemplateMetadata';
-import { EntryStatus, ITemplateFullEntry } from '../../src/database/dbInterfaces';
+import { EntryStatus, ITemplateBase, ITemplateFullEntry } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { ErrorCode, ESCError } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
@@ -56,3 +56,5 @@ describe('GET /templates/:id', () => {
         expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
     });
 });
+
+
