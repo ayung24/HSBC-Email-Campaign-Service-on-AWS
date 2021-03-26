@@ -28,6 +28,7 @@ export const config = {
         MAX_SEND_RATE: 1, // email per second
     },
     sqs: {
+        VERSION: '2012-11-05',
         BATCH_SIZE: 5,
     }
 };

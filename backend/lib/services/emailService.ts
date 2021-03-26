@@ -18,14 +18,14 @@ import { Session } from 'inspector';
 export class EmailService {
     private _apiAuth: NodejsFunction;
     private _authorizer: agw.Authorizer;
-    private _send: lambda.Function;
+    private _execute: lambda.Function;
     private _process: lambda.Function;
     private _emailQueue: sqs.Queue;
     private _emailDlq: sqs.Queue;
 
     private readonly _emailApiAuthorizerLambdaName: string;
-    private readonly _sendEmailLambdaName: string;
-    private readonly _processEmailLambdaName: string;
+    private readonly _processSendLambdaName: string;
+    private readonly _executeSendLambdaName: string;
     private readonly _emailQueueName: string;
     private readonly _emailQueueDlqName: string;
 
@@ -34,8 +34,8 @@ export class EmailService {
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
         this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
-        this._sendEmailLambdaName = `SendEmailHandler-${buildEnv}`;
-        this._processEmailLambdaName = `ProcessEmailHandler-${buildEnv}`;
+        this._processSendLambdaName = `ProcessSendHandler-${buildEnv}`;
+        this._executeSendLambdaName = `ExecuteSendHandler-${buildEnv}`;
         this._emailQueueName = `EmailQueue-${buildEnv}`;
         this._emailQueueDlqName = `EmailDLQ-${buildEnv}`;
         new SESEmailVerifier(scope, 'SESEmailVerify', {
@@ -52,16 +52,18 @@ export class EmailService {
         this._emailDlq = new sqs.Queue(scope, "EmailDLQ", {
             queueName: `${this._emailQueueDlqName}.fifo`,
             fifo: true,
-            retentionPeriod: Duration.days(14)
+            retentionPeriod: Duration.days(14),
+            contentBasedDeduplication: true,
         })
         this._emailQueue = new sqs.Queue(scope, 'EmailQueue', {
             queueName: `${this._emailQueueName}.fifo`,
             fifo: true,
-            visibilityTimeout: Duration.seconds(10),
+            visibilityTimeout: Duration.minutes(1),  // recommended timeout is 6 x lambda timeout
             deadLetterQueue: {
-                maxReceiveCount: 1,
+                maxReceiveCount: 5,
                 queue: this._emailDlq,
-            }
+            },
+            contentBasedDeduplication: true,
         })
     }
     private _initAuth(scope: cdk.Construct, database: Database) {
@@ -92,40 +94,49 @@ export class EmailService {
     }
 
     private _initFunctions(scope: cdk.Construct, database: Database) {
-        this._process = new NodejsFunction(scope, 'ProcessEmailHandler', {
+        this._process = new NodejsFunction(scope, 'ProcessSendHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/processEmail/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/processSend/index.ts`,
             environment: {
-                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
-                EMAIL_QUEUE_URL: this._emailQueue.queueUrl;
+                EMAIL_QUEUE_URL: this._emailQueue.queueUrl,
+                VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
             },
             timeout: cdk.Duration.seconds(10),
-            functionName: this._processEmailLambdaName,
+            functionName: this._processSendLambdaName,
         });
-        database.htmlBucket().grantRead(this._send, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
-        database.metadataTable().grantReadData(this._send); // READ template metadata table
+        database.metadataTable().grantReadData(this._process); // READ template metadata table
         this._emailQueue.grantSendMessages(this._process);
 
-        this._send = new NodejsFunction(scope, 'SendEmailHandler', {
+        this._execute = new NodejsFunction(scope, 'ExecuteSendHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/sendEmail/index.ts`,
+            entry: `${config.lambda.LAMBDA_ROOT}/executeSend/index.ts`,
             environment: {
                 SES_VERSION: config.ses.VERSION,
-                VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
-                EMAIL_DLQ_URL: this._emailDlq.queueUrl,
+                SQS_VERSION: config.sqs.VERSION,
+                EMAIL_QUEUE_URL: this._emailQueue.queueUrl,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                MAX_SEND_RATE: config.ses.MAX_SEND_RATE.toString(),
             },
             bundling: {
                 nodeModules: ['nodemailer'],
             },
             timeout: cdk.Duration.seconds(10),
-            reservedConcurrentExecutions: 1,
-            functionName: this._sendEmailLambdaName,
+            reservedConcurrentExecutions: 5,
+            functionName: this._executeSendLambdaName,
         });
-        this._emailQueue.grantConsumeMessages(this._send);
-        this._emailDlq.grantSendMessages(this._send);
-        this._send.addToRolePolicy(
+        database.htmlBucket().grantRead(this._execute, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
+        this._emailQueue.grantConsumeMessages(this._execute);
+        this._emailDlq.grantSendMessages(this._execute);
+        this._execute.addEventSource(
+            new SqsEventSource(this._emailQueue, {
+                batchSize: config.sqs.BATCH_SIZE,
+            })
+        )
+
+        this._execute.addToRolePolicy(
             new iam.PolicyStatement({
                 // SEND permission using SES
                 actions: ['ses:SendEmail', 'ses:SendRawEmail'],
@@ -133,11 +144,6 @@ export class EmailService {
                 effect: iam.Effect.ALLOW,
             }),
         );
-        this._send.addEventSource(
-            new SqsEventSource(this._emailQueue, {
-                batchSize: 5,
-            })
-        )
     }
 
     /**
@@ -177,8 +183,8 @@ export class EmailService {
         });
 
         const emailResource = api.root.addResource('email');
-        const sendIntegration = new agw.LambdaIntegration(this._send);
-        emailResource.addMethod('POST', sendIntegration, {
+        const processIntegration = new agw.LambdaIntegration(this._process);
+        emailResource.addMethod('POST', processIntegration, {
             requestParameters: {
                 'method.request.querystring.templateid': true,
             },
@@ -199,10 +205,15 @@ export class EmailService {
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
-        new LogGroup(scope, 'SendEmailHandlerLogs', {
-            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._sendEmailLambdaName,
+        new LogGroup(scope, 'ExecuteSendHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._executeSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
+        new LogGroup(scope, 'ProcessSendHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processSendLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
+        })
     }
 }

@@ -102,17 +102,19 @@ export const handler = async function (event: SQSEvent) {
             }),
         };
     } else if (nonEmptyArray(event.Records)) {
-        let sendPromises: Promise<SentMessageInfo>[] = event.Records.map(sendEmail);
+        let sendPromises: (() => Promise<SentMessageInfo>)[] = event.Records.map((record) => () => sendEmail(record));
         let sent: SentMessageInfo[] = [];
         const chainedSend: Promise<SentMessageInfo> = sendPromises.slice(1).reduce((chain, nextSend) => {
             return chain.then(info => {
+                console.log("next")
                 sent.push(info);
-                return nextSend;
+                return nextSend();
             }).catch(err => {
                 // ignore and proceed to next send
-                return nextSend;
+                console.error("failed");
+                return nextSend();
             })
-        }, sendPromises[0]);
+        }, sendPromises[0]());
         return chainedSend.then(info => {
             sent.push(info);
             Logger.info({message: `Sent ${sent.length} emails`, additionalInfo: sent})

@@ -1,7 +1,6 @@
 import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
-import { IEmailAPIAuthReqBody } from '../lambdaInterfaces';
 import { AWSError, KMS } from 'aws-sdk';
 import * as Logger from '../../../logger';
 

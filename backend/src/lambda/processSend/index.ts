@@ -83,6 +83,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                     fields: req.fields,
                 }),
                 QueueUrl: EMAIL_QUEUE_URL,
+                MessageGroupId: "0",
             }
             return new Promise((resolve, reject) => {
                 sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
