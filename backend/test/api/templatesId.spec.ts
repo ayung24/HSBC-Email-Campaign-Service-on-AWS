@@ -1,5 +1,5 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { handler } from '../../src/lambda/getTemplateMetadata';
+import * as getTemplateMetadataHandler from '../../src/lambda/getTemplateMetadata';
 import { EntryStatus, ITemplateFullEntry } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { ErrorCode, ESCError } from '../../src/ESCError';
@@ -31,7 +31,7 @@ describe('GET /templates/:id', () => {
             }),
         );
 
-        const result = await handler(testEvent);
+        const result = await getTemplateMetadataHandler.handler(testEvent);
         expect(result.statusCode).toEqual(200);
         expect(result.body).toEqual(JSON.stringify(mResponse));
         expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
@@ -50,7 +50,7 @@ describe('GET /templates/:id', () => {
         };
         const retrieveDataSpy = jest.spyOn(db, 'GetTemplateById').mockRejectedValue(mError);
 
-        const result = await handler(testEvent);
+        const result = await getTemplateMetadataHandler.handler(testEvent);
         expect(result.statusCode).toEqual(400);
         expect(result.body).toEqual(JSON.stringify(mResponse));
         expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
