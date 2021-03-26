@@ -151,18 +151,27 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _doUpload(): void {
-        this.setState({ isLoading: true });
-        this._templateService
-            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-            .then((t: ITemplate) => {
-                EventEmitter.getInstance().dispatch('refreshGrid');
-                this._addToast(this._createUploadSuccessToast(t.templateName));
-                this._closeModal();
-            })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+        if (!this.state.htmlFile || this.state.htmlFile.size === 0) {
+            this._addToast({
+                id: 'emptyDocxError',
+                body: `Cannot upload an empty template.`,
+                type: ToastType.ERROR,
+                open: true,
+            });
+        } else {
+            this.setState({ isLoading: true });
+            this._templateService
+                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+                .then((t: ITemplate) => {
+                    EventEmitter.getInstance().dispatch('refreshGrid');
+                    this._addToast(this._createUploadSuccessToast(t.templateName));
+                    this._closeModal();
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+                })
+                .finally(() => this.setState({ isLoading: false }));
+        }
     }
 
     componentDidMount(): void {
