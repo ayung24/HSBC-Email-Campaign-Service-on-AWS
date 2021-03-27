@@ -171,3 +171,21 @@
     border-bottom-left-radius: .25rem;
     color: #495057;
 }
+
+.uploadCsv {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.uploadCsvText {
+    float: left;
+    padding-top: 10px;
+    padding-right: 40px;
+}
+
+.sendButton {
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
+}

@@ -18,12 +18,17 @@ interface UploadModalState extends SpinnerState {
     fieldNames: Array<string>;
 }
 
-export class UploadTemplateModalComponent extends React.Component<ToastFunctionProperties, UploadModalState> {
+interface UploadTemplateModalProperties extends ToastFunctionProperties {
+    templateNameField: boolean;
+    fileTypeAcceptance: string;
+}
+
+export class UploadTemplateModalComponent extends React.Component<UploadTemplateModalProperties, UploadModalState> {
     private _templateService: TemplateService;
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;
 
-    constructor(props: ToastFunctionProperties) {
+    constructor(props: UploadTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
         this.state = {
@@ -74,7 +79,11 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         this.setState({ dragging: false });
 
         if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-            this._handleUploadFile(event.dataTransfer.files[0]);
+            if (this.props.fileTypeAcceptance === 'csv') {
+                this._handleUploadCsvFile(event.dataTransfer.files[0]);
+            } else {
+                this._handleUploadWordFile(event.dataTransfer.files[0]);
+            }
         }
     }
 
@@ -85,11 +94,23 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
-            this._handleUploadFile(event.target.files[0]);
+            if (this.props.fileTypeAcceptance === 'csv') {
+                this._handleUploadCsvFile(event.target.files[0]);
+            } else {
+                this._handleUploadWordFile(event.target.files[0]);
+            }
         }
     }
 
-    private _handleUploadFile(file: File): void {
+    private _handleUploadCsvFile(file: File): void {
+        if (this._isValidFileType(file.type)) {
+            console.log('hi');
+        } else {
+            this._addToast(this._createCsvFileTypeErrorToast(file));
+        }
+    }
+
+    private _handleUploadWordFile(file: File): void {
         if (this._isValidFileType(file.type)) {
             this.setState({ file: file });
             this._templateService
@@ -106,7 +127,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                     });
                 });
         } else {
-            this._addToast(this._createFileTypeErrorToast(file));
+            this._addToast(this._createWordFileTypeErrorToast(file));
         }
     }
 
@@ -119,13 +140,26 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _isValidFileType(fileType: string): boolean {
-        return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' === fileType;
+        if (this.props.fileTypeAcceptance === 'csv') {
+            return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' === fileType;
+        } else {
+            return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' === fileType;
+        }
     }
 
-    private _createFileTypeErrorToast(file: File): ToastInterface {
+    private _createWordFileTypeErrorToast(file: File): ToastInterface {
         return {
             id: 'wrongFileType',
             body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.docx]`,
+            type: ToastType.ERROR,
+            open: true,
+        };
+    }
+
+    private _createCsvFileTypeErrorToast(file: File): ToastInterface {
+        return {
+            id: 'wrongFileType',
+            body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.xlsx]`,
             type: ToastType.ERROR,
             open: true,
         };
@@ -152,17 +186,39 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _doUpload(): void {
         this.setState({ isLoading: true });
-        this._templateService
-            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-            .then((t: ITemplate) => {
-                EventEmitter.getInstance().dispatch('refreshGrid');
-                this._addToast(this._createUploadSuccessToast(t.templateName));
-                this._closeModal();
-            })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+        if (this.props.fileTypeAcceptance === 'csv') {
+            console.log('hi');
+        } else {
+            this._templateService
+                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+                .then((t: ITemplate) => {
+                    EventEmitter.getInstance().dispatch('refreshGrid');
+                    this._addToast(this._createUploadSuccessToast(t.templateName));
+                    this._closeModal();
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+                })
+                .finally(() => this.setState({ isLoading: false }));
+        }
+    }
+
+    private _requireNameCreation() {
+        if (this.props.templateNameField) {
+            return (
+                <div className='name-input-container'>
+                    <label htmlFor='phone'>Name</label>
+                    <input
+                        type='text'
+                        id='template-name'
+                        name='template-name'
+                        placeholder='Template Name'
+                        value={this.state.templateName}
+                        onChange={this._onTemplateNameChanged.bind(this)}
+                    />
+                </div>
+            );
+        }
     }
 
     componentDidMount(): void {
@@ -200,17 +256,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                                 onDrop={this._dropListener.bind(this)}
                                 onFileChanged={this._onFileChanged.bind(this)}
                             />
-                            <div className='name-input-container'>
-                                <label htmlFor='phone'>Name</label>
-                                <input
-                                    type='text'
-                                    id='template-name'
-                                    name='template-name'
-                                    placeholder='Template Name'
-                                    value={this.state.templateName}
-                                    onChange={this._onTemplateNameChanged.bind(this)}
-                                />
-                            </div>
+                            {this._requireNameCreation()}
                             <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUpload.bind(this)}>
                                 Create
                             </Button>
