@@ -80,10 +80,13 @@ export class TemplateService {
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
             },
             functionName: this._getTemplateMetadataLambdaName,
         });
         database.metadataTable().grantReadData(this._templateMetadata);
+        database.htmlBucket().grantRead(this._templateMetadata, `${config.s3.PROCESSED_HTML_PATH}*`);
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,

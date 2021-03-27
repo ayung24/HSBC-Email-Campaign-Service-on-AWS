@@ -162,3 +162,18 @@
     border-bottom-left-radius: .25rem;
     color: #495057;
 }
+
+.delete.float-right.btn.btn-primary {
+    background-color: #db0011;
+    border-color: #db0011;
+    color: white;
+    margin-top: 12px;
+}
+
+.float-right.btn.btn-primary {
+    background-color: #f0eff0;
+    border-color: black;
+    color: black;
+    margin-top: 12px;
+    margin-right: 8px;
+}

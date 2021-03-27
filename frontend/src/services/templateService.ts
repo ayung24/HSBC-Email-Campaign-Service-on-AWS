@@ -1,7 +1,6 @@
 import { RequestService } from './requestService';
 import { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import {
-    IGetTemplatesReqBody,
     IGetTemplatesResponse,
     IGetTemplatesResponseItem,
     ITemplate,
@@ -9,6 +8,7 @@ import {
     ITemplateMetadataUploadResponse,
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
+    ITemplateWithHTML,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
 
@@ -82,9 +82,9 @@ export class TemplateService {
         });
     }
 
-    public getTemplateMetaData(templateId: string): Promise<ITemplate> {
-        return this._requestService.GET<ITemplate>('/templates/' + templateId, (viewResponse: ITemplate) => {
-            return new Promise<ITemplate>(resolve => {
+    public getTemplateMetaData(templateId: string): Promise<ITemplateWithHTML> {
+        return this._requestService.GET<ITemplateWithHTML>('/templates/' + templateId, (viewResponse: ITemplateWithHTML) => {
+            return new Promise<ITemplateWithHTML>(resolve => {
                 resolve(viewResponse);
             });
         });
