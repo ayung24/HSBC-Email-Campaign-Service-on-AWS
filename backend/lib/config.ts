@@ -30,5 +30,5 @@ export const config = {
     sqs: {
         VERSION: '2012-11-05',
         BATCH_SIZE: 5,
-    }
+    },
 };

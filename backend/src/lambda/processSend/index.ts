@@ -19,12 +19,12 @@ const headers = {
     'Content-Type': 'application/json',
 };
 
-const sqs = new AWS.SQS({apiVersion: SQS_VERSION})
+const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
 /**
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!EMAIL_QUEUE_URL;
+    return !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS && !!EMAIL_QUEUE_URL;
 };
 
 /**
@@ -62,7 +62,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
 
     const templateId: string = event.queryStringParameters.templateid;
     const req: ISendEmailReqBody = JSON.parse(event.body);
-    return db.GetTemplateById(templateId)
+    return db
+        .GetTemplateById(templateId)
         .then((metadata: ITemplateFullEntry) => {
             const validFields: boolean = checkFields(req.fields, metadata.fieldNames);
             if (!validFields) {
@@ -83,8 +84,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                     fields: req.fields,
                 }),
                 QueueUrl: EMAIL_QUEUE_URL,
-                MessageGroupId: "0",
-            }
+                MessageGroupId: '0', // id does not matter since we're not grouping
+            };
             return new Promise((resolve, reject) => {
                 sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
                     if (err) {
@@ -94,8 +95,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                     } else {
                         resolve(data.MessageId);
                     }
-                })
-            })
+                });
+            });
         })
         .then(messageId => {
             return {
@@ -105,9 +106,9 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                     templateId: templateId,
                     from: VERIFIED_EMAIL_ADDRESS,
                     to: req.recipient,
-                    queueMessageId: messageId
-                })
-            }
+                    queueMessageId: messageId,
+                }),
+            };
         })
         .catch(err => {
             let statusCode: number;

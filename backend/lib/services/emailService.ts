@@ -48,22 +48,22 @@ export class EmailService {
     }
 
     private _initQueues(scope: cdk.Construct) {
-        this._emailDlq = new sqs.Queue(scope, "EmailDLQ", {
+        this._emailDlq = new sqs.Queue(scope, 'EmailDLQ', {
             queueName: `${this._emailQueueDlqName}.fifo`,
             fifo: true,
             retentionPeriod: Duration.days(14),
             contentBasedDeduplication: true,
-        })
+        });
         this._emailQueue = new sqs.Queue(scope, 'EmailQueue', {
             queueName: `${this._emailQueueName}.fifo`,
             fifo: true,
-            visibilityTimeout: Duration.minutes(2),  // recommended timeout is 6 x lambda timeout
+            visibilityTimeout: Duration.minutes(2), // recommended timeout is 6 x lambda timeout
             deadLetterQueue: {
                 maxReceiveCount: 5,
                 queue: this._emailDlq,
             },
             contentBasedDeduplication: true,
-        })
+        });
     }
     private _initAuth(scope: cdk.Construct, database: Database) {
         this._apiAuth = new NodejsFunction(scope, 'EmailAPIAuthorizer', {
@@ -133,8 +133,8 @@ export class EmailService {
         this._execute.addEventSource(
             new SqsEventSource(this._emailQueue, {
                 batchSize: config.sqs.BATCH_SIZE,
-            })
-        )
+            }),
+        );
 
         this._execute.addToRolePolicy(
             new iam.PolicyStatement({
@@ -214,6 +214,6 @@ export class EmailService {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
-        })
+        });
     }
 }

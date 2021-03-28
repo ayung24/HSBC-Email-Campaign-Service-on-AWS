@@ -4,7 +4,7 @@ import { createTransport, SentMessageInfo } from 'nodemailer';
 import { ISendEmailFields, IEmailQueueBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import { nonEmptyArray } from '../../commonFunctions'
+import { nonEmptyArray } from '../../commonFunctions';
 import * as Logger from '../../../logger';
 import { SendMessageResult } from 'aws-sdk/clients/sqs';
 
@@ -27,12 +27,6 @@ const ses = new AWS.SES({
 const transporter = createTransport({
     SES: ses,
 });
-
-const headers = {
-    'Access-Control-Allow-Origin': '*', // Required for CORS support to work
-    'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
-    'Content-Type': 'application/json',
-};
 
 /**
  * Validates lambda's runtime env variables
@@ -60,16 +54,16 @@ const replaceFields = function (srcHTML: string, fields: ISendEmailFields): stri
  * @param templateId to retrive HTML for
  * @param htmlCache with cached templateId to html string
  */
-const getHTML = function(templateId: string, htmlCache: Map<string, string>): Promise<string> {
+const getHTML = function (templateId: string, htmlCache: Map<string, string>): Promise<string> {
     if (htmlCache.has(templateId)) {
         return Promise.resolve(htmlCache.get(templateId));
     } else {
         return db.GetHTMLById(templateId, PROCESSED_HTML_PATH).then(html => {
             htmlCache.set(templateId, html);
             return Promise.resolve(html);
-        })
+        });
     }
-}
+};
 
 /**
  * Given record with send body, invoke SES send and delete message off the email queue if successful.
@@ -77,83 +71,89 @@ const getHTML = function(templateId: string, htmlCache: Map<string, string>): Pr
  * @param record
  * @param htmlCache with cached templateId to html string
  */
-const sendEmail = function(record: SQSRecord, htmlCache: Map<string, string>): Promise<SentMessageInfo> {
+const sendEmail = function (record: SQSRecord, htmlCache: Map<string, string>): Promise<SentMessageInfo> {
     const body: IEmailQueueBody = JSON.parse(record.body);
-    
-    Logger.info({message: 'Sending email for record', additionalInfo: record});
 
-    return getHTML(body.templateId, htmlCache).then(srcHTML => {
-        const html: string = replaceFields(srcHTML, body.fields);
-        const params = {
-            from: body.from,
-            to: body.to,
-            subject: body.subject,
-            html: html,
-        };
-        return transporter.sendMail(params).catch(err => {
-            Logger.logError(err);
-            let sendMailError;
-            if (err.statusCode === 400 && err.message == "Throttling") {
-                sendMailError = new ESCError(ErrorCode.ES10, `Send email throttled for record ${record.messageId}`);
-            } else if (err.statusCode < 500) {
-                sendMailError = new ESCError(ErrorCode.ES5, JSON.stringify(record), true);
-            } else {
-                sendMailError = new ESCError(ErrorCode.ES11, `Internal send email error for record ${record.messageId}`)
-            }
-            return Promise.reject(sendMailError);
-        })
-    }).then((info: SentMessageInfo) => {
-        // dequeue sent email manually from email queue
-        Logger.info({message: "Email sent successfully for record", additionalInfo: record.messageId})
-        const params = {
-            QueueUrl: EMAIL_QUEUE_URL,
-            ReceiptHandle: record.receiptHandle
-        }
-        return new Promise(resolve => {
-            sqs.deleteMessage(params, (err: AWS.AWSError, data: {}) => {
-                // in case dequeue fails, we will just log it, email send succeeded regardless
-                if (err) {
-                    Logger.logError(err);
+    Logger.info({ message: 'Sending email for record', additionalInfo: record });
+
+    return getHTML(body.templateId, htmlCache)
+        .then(srcHTML => {
+            const html: string = replaceFields(srcHTML, body.fields);
+            const params = {
+                from: body.from,
+                to: body.to,
+                subject: body.subject,
+                html: html,
+            };
+            return transporter.sendMail(params).catch(err => {
+                Logger.logError(err);
+                let sendMailError;
+                if (err.statusCode === 400 && err.message == 'Throttling') {
+                    sendMailError = new ESCError(ErrorCode.ES10, `Send email throttled for record ${record.messageId}`);
+                } else if (err.statusCode < 500) {
+                    sendMailError = new ESCError(ErrorCode.ES5, JSON.stringify(record), true);
+                } else {
+                    sendMailError = new ESCError(ErrorCode.ES11, `Internal send email error for record ${record.messageId}`);
                 }
-                Logger.info({message: "Delete record from email queue", additionalInfo: record.messageId})
-                resolve(info);
-            })
+                return Promise.reject(sendMailError);
+            });
         })
-    })
-}
+        .then((info: SentMessageInfo) => {
+            // dequeue sent email manually from email queue
+            Logger.info({ message: 'Email sent successfully for record', additionalInfo: record.messageId });
+            const params = {
+                QueueUrl: EMAIL_QUEUE_URL,
+                ReceiptHandle: record.receiptHandle,
+            };
+            return new Promise(resolve => {
+                sqs.deleteMessage(params, (err: AWS.AWSError, data) => {
+                    // in case dequeue fails, we will just log it, email send succeeded regardless
+                    if (err) {
+                        Logger.logError(err);
+                    }
+                    Logger.info({ message: 'Delete record from email queue', additionalInfo: record.messageId });
+                    resolve(info);
+                });
+            });
+        });
+};
 
 /**
  * Handles error depending on error type (user/non-user error).
  * User errors are non-retriable, and the record gets moved to DLQ to avoid further retries.
  * Non-user errors are unhandled to let SQS's retry process invoke this lambda again
- * @param err 
+ * @param err
  */
-const handleError = function(err: Error) {
+const handleError = function (err: Error) {
     if (err instanceof ESCError && err.isUserError) {
-        Logger.info({message: "Handle non-retriable send", additionalInfo: err.message});
+        Logger.info({ message: 'Handle non-retriable send', additionalInfo: err.message });
         const record: SQSRecord = JSON.parse(err.message);
         const params = {
             QueueUrl: EMAIL_DLQ_URL,
             MessageBody: err.message,
-            MessageGroupId: "0", // id doesn't matter, we are not grouping records
-        }
-        return sqs.sendMessage(params).promise().then((data: SendMessageResult) => {
-            Logger.info({message: "Sent to DLQ", additionalInfo: data})
-            const deleteParams = {
-                QueueUrl: EMAIL_QUEUE_URL,
-                ReceiptHandle: record.receiptHandle,
-            }
-            return sqs.deleteMessage(deleteParams).promise();
-        }).catch((err: AWS.AWSError) => {
-            // queue operation failed, we will just log it, at worst case, this record gets processed again
-            Logger.logError(err);
-            return Promise.resolve();
-        });
+            MessageGroupId: '0', // id doesn't matter, we are not grouping records
+        };
+        return sqs
+            .sendMessage(params)
+            .promise()
+            .then((data: SendMessageResult) => {
+                Logger.info({ message: 'Sent to DLQ', additionalInfo: data });
+                const deleteParams = {
+                    QueueUrl: EMAIL_QUEUE_URL,
+                    ReceiptHandle: record.receiptHandle,
+                };
+                return sqs.deleteMessage(deleteParams).promise();
+            })
+            .catch((err: AWS.AWSError) => {
+                // queue operation failed, we will just log it, at worst case, this record gets processed again
+                Logger.logError(err);
+                return Promise.resolve();
+            });
     } else {
         // non-user errors are retriable
         return Promise.resolve();
     }
-}
+};
 
 /**
  * Timeout for t seconds
@@ -162,10 +162,9 @@ const handleError = function(err: Error) {
 const delay = t => new Promise(resolve => setTimeout(resolve, t));
 
 export const handler = async function (event: SQSEvent) {
-    Logger.info({message: "Received SQS event", additionalInfo: event });
+    Logger.info({ message: 'Received SQS event', additionalInfo: event });
     if (!validateEnv()) {
         return {
-            headers: headers,
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
@@ -176,53 +175,52 @@ export const handler = async function (event: SQSEvent) {
         // We cache htmls for duration of this lambda invocation
         const htmlCache = new Map<string, string>();
 
-        let sendPromises: (() => Promise<SentMessageInfo>)[] = event.Records.map((record) => () => sendEmail(record, htmlCache));
-        let sent: SentMessageInfo[] = [];
+        const sendPromises: (() => Promise<SentMessageInfo>)[] = event.Records.map(record => () => sendEmail(record, htmlCache));
+        const sent: SentMessageInfo[] = [];
         const chainedSend: Promise<SentMessageInfo> = sendPromises.slice(1).reduce((chain, nextSend) => {
-            return chain.then(info => {
-                sent.push(info);
-                return delay(1000).then(() => nextSend());
-            }).catch(err => {
-                return handleError(err).then(() => nextSend());
-            })
+            return chain
+                .then(info => {
+                    sent.push(info);
+                    return delay(1000).then(() => nextSend());
+                })
+                .catch(err => {
+                    return handleError(err).then(() => nextSend());
+                });
         }, sendPromises[0]());
 
         return chainedSend
-        .then(info => sent.push(info))
-        .catch(err => handleError(err))
-        .finally(() => {
-            if (sent.length < event.Records.length) {
-                // at least one record failed to be sent,
-                // return error to keep failed messages on email queue
-                const batchError = new ESCError(ErrorCode.ES9, `Partial batch failure: ${sent.length}/${event.Records.length} sent`)
-                Logger.logError(batchError);
-                return {
-                    headers: headers,
-                    statusCode: batchError.getStatusCode(),
-                    body: JSON.stringify({
-                        message: batchError.message,
-                        code: batchError.code,
-                    })
+            .then(info => sent.push(info))
+            .catch(err => handleError(err))
+            .finally(() => {
+                if (sent.length < event.Records.length) {
+                    // at least one record failed to be sent,
+                    // return error to keep failed messages on email queue
+                    const batchError = new ESCError(ErrorCode.ES9, `Partial batch failure: ${sent.length}/${event.Records.length} sent`);
+                    Logger.logError(batchError);
+                    return {
+                        statusCode: batchError.getStatusCode(),
+                        body: JSON.stringify({
+                            message: batchError.message,
+                            code: batchError.code,
+                        }),
+                    };
+                } else {
+                    Logger.info({ message: `Sent ${sent.length} emails`, additionalInfo: sent.map(info => info.messageId) });
+                    return {
+                        statusCode: 200,
+                        body: JSON.stringify({
+                            messageIds: sent.map(info => info.messageId),
+                        }),
+                    };
                 }
-            } else {
-                Logger.info({message: `Sent ${sent.length} emails`, additionalInfo: sent.map(info => info.messageId)})
-                return {
-                    headers: headers,
-                    statusCode: 200,
-                    body: JSON.stringify({
-                        messageIds: sent.map(info => info.messageId)
-                    })
-                }
-            }
-        });
+            });
     } else {
-        Logger.info({message: "No record received in batch"})
+        Logger.info({ message: 'No record received in batch' });
         return {
-            headers: headers,
             statusCode: 200,
             body: JSON.stringify({
-                messageIds: []
-            })
-        }
+                messageIds: [],
+            }),
+        };
     }
 };
