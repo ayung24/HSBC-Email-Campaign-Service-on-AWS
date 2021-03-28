@@ -1,5 +1,13 @@
 import { v4 as uuid } from 'uuid';
-import { EntryStatus, ITemplateBase, ITemplateFullEntry, ITemplateImage, IImageUploadResult, IDeleteImagesResult } from './dbInterfaces';
+import {
+    EntryStatus,
+    ITemplateBase,
+    ITemplateFullEntry,
+    ITemplateImage,
+    IImageUploadResult,
+    IDeleteImagesResult,
+    ITemplateWithHTML,
+} from './dbInterfaces';
 import { isEmpty, nonEmpty, isEmptyArray, nonEmptyArray } from '../commonFunctions';
 import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
@@ -227,7 +235,7 @@ export function ListTemplatesByDate(start: string, end: string): Promise<ITempla
     });
 }
 
-export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry> {
+export function GetTemplateById(templateId: string): Promise<ITemplateWithHTML> {
     const ddb = getDynamo();
     Logger.info({ message: 'Getting template metadata', additionalInfo: { templateId: templateId } });
     const queryParams = {
@@ -236,7 +244,8 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
         KeyConditionExpression: `templateStatus = :inService AND templateId = :id`,
         TableName: METADATA_TABLE_NAME!,
     };
-    return new Promise<ITemplateFullEntry>((resolve, reject) => {
+    const getHtml = GetHTMLById(templateId, PROCESSED_HTML_PATH!);
+    const getTemplateMetadata = new Promise<ITemplateFullEntry>((resolve, reject) => {
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
                 Logger.logError(err);
@@ -260,6 +269,17 @@ export function GetTemplateById(templateId: string): Promise<ITemplateFullEntry>
                     });
                 }
             }
+        });
+    });
+    return Promise.all([getTemplateMetadata, getHtml]).then(([entry, html]: [ITemplateFullEntry, string]) => {
+        return Promise.resolve({
+            templateId: entry.templateId,
+            timeCreated: entry.timeCreated,
+            templateStatus: entry.templateStatus,
+            templateName: entry.templateName,
+            apiKey: entry.apiKey,
+            fieldNames: entry.fieldNames,
+            html: html,
         });
     });
 }
