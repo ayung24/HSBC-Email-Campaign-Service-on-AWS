@@ -4,7 +4,7 @@ import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;

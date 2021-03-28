@@ -2,7 +2,7 @@ import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { AWSError, KMS } from 'aws-sdk';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const KMS_REGION = process.env.KMS_REGION;
 const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;

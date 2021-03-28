@@ -5,7 +5,7 @@ import { ISendEmailFields, IEmailQueueBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import { nonEmptyArray } from '../../commonFunctions';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 import { SendMessageResult } from 'aws-sdk/clients/sqs';
 
 const SES_VERSION = process.env.SES_VERSION || '2010-12-01';
