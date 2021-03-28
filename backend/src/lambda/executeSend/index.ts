@@ -181,7 +181,7 @@ export const handler = async function (event: SQSEvent) {
             return chain
                 .then(info => {
                     sent.push(info);
-                    return delay(1000).then(() => nextSend());
+                    return delay(1000 / parseInt(MAX_SEND_RATE, 10)).then(() => nextSend());
                 })
                 .catch(err => {
                     return handleError(err).then(() => nextSend());
