@@ -13,7 +13,6 @@ import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { Duration } from '@aws-cdk/core';
 import { SqsEventSource } from '@aws-cdk/aws-lambda-event-sources';
-import { Session } from 'inspector';
 
 export class EmailService {
     private _apiAuth: NodejsFunction;
@@ -58,7 +57,7 @@ export class EmailService {
         this._emailQueue = new sqs.Queue(scope, 'EmailQueue', {
             queueName: `${this._emailQueueName}.fifo`,
             fifo: true,
-            visibilityTimeout: Duration.minutes(1),  // recommended timeout is 6 x lambda timeout
+            visibilityTimeout: Duration.minutes(2),  // recommended timeout is 6 x lambda timeout
             deadLetterQueue: {
                 maxReceiveCount: 5,
                 queue: this._emailDlq,
@@ -116,6 +115,7 @@ export class EmailService {
                 SES_VERSION: config.ses.VERSION,
                 SQS_VERSION: config.sqs.VERSION,
                 EMAIL_QUEUE_URL: this._emailQueue.queueUrl,
+                EMAIL_DLQ_URL: this._emailDlq.queueUrl,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 MAX_SEND_RATE: config.ses.MAX_SEND_RATE.toString(),
@@ -123,7 +123,7 @@ export class EmailService {
             bundling: {
                 nodeModules: ['nodemailer'],
             },
-            timeout: cdk.Duration.seconds(10),
+            timeout: cdk.Duration.seconds(20),
             reservedConcurrentExecutions: 5,
             functionName: this._executeSendLambdaName,
         });
