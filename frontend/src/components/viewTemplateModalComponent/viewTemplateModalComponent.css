@@ -159,6 +159,8 @@
 #sendCsv {
     background-color: #db0011;
     border-color: #db0011;
+    padding: 0.5rem 2rem;
+    font-weight: bold;
 }
 
 .jsonBody {

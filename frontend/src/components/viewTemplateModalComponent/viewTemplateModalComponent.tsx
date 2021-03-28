@@ -390,7 +390,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     <UploadTemplateModalComponent
                                         ref={this._uploadModalComponent}
                                         templateNameField={false}
-                                        fileTypeAcceptance={'csv'}
+                                        fileTypeAcceptance={'.xlsx'}
                                         addToast={this._addToast.bind(this)}
                                     />
                                 </div>

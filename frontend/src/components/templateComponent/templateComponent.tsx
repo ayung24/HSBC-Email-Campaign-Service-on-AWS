@@ -47,7 +47,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                 <UploadTemplateModalComponent
                     ref={this._uploadModalComponent}
                     templateNameField={true}
-                    fileTypeAcceptance={'word'}
+                    fileTypeAcceptance={'.docx'}
                     addToast={this._addToast.bind(this)}
                 />
                 <div className='template-container'>

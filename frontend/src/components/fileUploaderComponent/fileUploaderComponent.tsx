@@ -4,6 +4,7 @@ import './fileUploadComponent.css';
 type PresentationalProps = {
     dragging: boolean;
     file: File | null;
+    fileTypeAcceptance: string;
     onDrag: (event: React.DragEvent<HTMLDivElement>) => void;
     onDragStart: (event: React.DragEvent<HTMLDivElement>) => void;
     onDragEnd: (event: React.DragEvent<HTMLDivElement>) => void;
@@ -69,7 +70,7 @@ export class FileUploaderComponent extends React.Component<PresentationalProps> 
                         type='file'
                         className='file-uploader__input'
                         onChange={this.props.onFileChanged}
-                        accept='.docx'
+                        accept={this.props.fileTypeAcceptance}
                     />
                 </div>
             </div>
