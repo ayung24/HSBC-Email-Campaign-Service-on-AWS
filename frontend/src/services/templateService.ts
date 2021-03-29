@@ -91,7 +91,6 @@ export class TemplateService {
     }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {
-        let fieldNames: Array<string> = [];
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onerror = () => reject({ error: reader.error, message: reader.error });
@@ -101,9 +100,7 @@ export class TemplateService {
             .then(arrayBuffer => mammoth.convertToHtml({ arrayBuffer: arrayBuffer }))
             .then(resultObj => {
                 const html: string = resultObj.value;
-                const file = new File([html], 'templateHTML.html');
-                fieldNames = this._parseFieldsFromHTML(html);
-                return [file, fieldNames];
+                return this._parseFieldsFromHTML(html);
             });
     }
 
@@ -111,15 +108,26 @@ export class TemplateService {
      * Parses given html string and outputs dynamic field names in an array
      * @param html HTML string containing dynamic fields as ${...}
      */
-    private _parseFieldsFromHTML(html: string): Array<string> {
-        const dynamicFieldRegex = new RegExp(/\${(.*?)}/gm);
-        let matches = dynamicFieldRegex.exec(html);
-        const fields = [];
-        while (matches) {
-            fields.push(matches[1]);
-            matches = dynamicFieldRegex.exec(html);
-        }
-        return fields;
+    private _parseFieldsFromHTML(html: string): Promise<[htmlFile: any, fieldNames: Array<string>]> {
+        const file = new File([html], 'templateHTML.html');
+
+        return new Promise((resolve, reject) => {
+            const dynamicFieldRegex = new RegExp(/\${(.*?)}/gm);
+            let matches = dynamicFieldRegex.exec(html);
+            const fields = [];
+            while (matches) {
+                const validRegex = new RegExp(/[A-Z0-9_]+/m);
+                const checkMatches = validRegex.exec(matches[1]);
+                if (checkMatches === null) {
+                    reject('Dynamic value cannot be empty.');
+                } else if (checkMatches[0].length !== matches[1].length) {
+                    reject('Dynamic value {' + matches[1] + '} contains non-capital letters or characters other than underscore');
+                }
+                fields.push(matches[1]);
+                matches = dynamicFieldRegex.exec(html);
+            }
+            resolve([file, fields]);
+        });
     }
 
     public deleteTemplate(templateId: string): Promise<IDeleteTemplateResponseBody> {

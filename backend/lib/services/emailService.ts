@@ -74,10 +74,13 @@ export class EmailService {
                 KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
                 KMS_KEY_ID: config.KMS.KEY_ID,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
             },
             functionName: this._emailApiAuthorizerLambdaName,
         });
         database.metadataTable().grantReadData(this._apiAuth);
+        database.htmlBucket().grantRead(this._apiAuth, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
         this._apiAuth.addToRolePolicy(
             new PolicyStatement({
                 actions: ['kms:Decrypt'],
