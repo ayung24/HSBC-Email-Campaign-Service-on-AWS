@@ -143,7 +143,7 @@
 
 .dynamicParameters {
     width: 100%;
-    height: 230px;
+    height: 25vh;
     padding-top:10px;
     overflow-y: scroll;
 }
@@ -180,7 +180,7 @@ div.dynamicParameters:empty {
 
 .cli-div {
     width: 100%;
-    height: 290px;
+    height: 30vh;
     padding-top: 10px;
     overflow-y: scroll;
 }
