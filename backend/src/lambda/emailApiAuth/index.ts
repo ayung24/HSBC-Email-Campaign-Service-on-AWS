@@ -70,7 +70,7 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent, 
                         reject(new ESCError(ErrorCode.ES8, 'KMS error'));
                     } else if (data.Plaintext.toString() === apiKey) {
                         Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
-                        resolve(generatePolicy(event.requestContext.identity.userAgent || "", 'Allow', event.methodArn));
+                        resolve(generatePolicy(event.requestContext.identity.userAgent || '', 'Allow', event.methodArn));
                     } else {
                         Logger.err({
                             message: 'Authorization failure',

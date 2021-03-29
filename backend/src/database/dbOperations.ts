@@ -66,11 +66,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                     const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
                     reject(nameValidationError);
                 } else if (data.Count && data.Count > 0) {
-                    const nameNotUniqueError = new ESCError(
-                        ErrorCode.TS17,
-                        `Template name [${name}] is not unique.`,
-                        true,
-                    );
+                    const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
                     Logger.logError(nameNotUniqueError);
                     reject(nameNotUniqueError);
                 } else {
