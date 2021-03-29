@@ -76,7 +76,7 @@ async function generateEncryptedApiKey(): Promise<string> {
 
     return new Promise((resolve, reject) => {
         kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
-            if (err) {
+            if (err || !data.CiphertextBlob) {
                 Logger.logError(err);
                 const encryptError = new ESCError(ErrorCode.TS14, 'API key encryption failed');
                 reject(encryptError);
