@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as getTemplateMetadataHandler from '../../src/lambda/getTemplateMetadata';
 import * as getDeleteTemplateHandler from '../../src/lambda/deleteTemplate';
-import { EntryStatus, ITemplateFullEntry, ITemplateBase} from '../../src/database/dbInterfaces';
+import { EntryStatus, ITemplateWithHTML, ITemplateBase} from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { ErrorCode, ESCError } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
@@ -12,7 +12,7 @@ describe('GET /templates/:id', () => {
     });
 
     it('View template details: valid template id', async () => {
-        const mResponse: ITemplateFullEntry = {
+        const mResponse: ITemplateWithHTML = {
             // Some dummy values
             templateId: 'valid-test-id',
             timeCreated: 1616066356850,
@@ -20,6 +20,7 @@ describe('GET /templates/:id', () => {
             templateName: 'test template',
             apiKey: 'API-KEY',
             fieldNames: ['test-field1'],
+            html: '<h1>test html</h1>'
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             pathParameters: {
