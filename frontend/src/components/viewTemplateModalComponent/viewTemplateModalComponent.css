@@ -143,9 +143,13 @@
 
 .dynamicParameters {
     width: 100%;
-    height: 245px;
+    height: 230px;
     padding-top:10px;
     overflow-y: scroll;
+}
+
+div.dynamicParameters:empty {
+    display: none;
 }
 
 .jsonBody, .curl {
