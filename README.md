@@ -70,5 +70,16 @@ To be updated with every push to main
     - We need the template id to check the API key, which was previously provided in the request body
     - AWS API Gateway authorizers do not include request bodies
     - "Enhanced request authorizer Lambda functions receive an event object that is similar to proxy integrations. It contains all of the information about a request, excluding the body." - https://aws.amazon.com/blogs/compute/using-enhanced-request-authorizers-in-amazon-api-gateway/
-
-
+#### ***March 28, 2020***
+- Newly added templates now show up first
+- Empty .docx file uploaded as templates show error toast
+- Templates with invalid dynamic fields show error toast. Dynamic fields must be non-empty and only contain uppercase letters, numbers or underscores.
+    - e.g. ${DYNAMIC_FIELD123} is allowed
+    - e.g. ${} is not allowed
+    - e.g. ${dynamic_field} is not allowed
+    - e.g. ${DYNAMIC#()} is not allowed
+- UI has preview template button to preview the HTML
+- UI has send email button to send from UI (there is still the option to send via cURL or Postman)
+- UI has cURL request preview
+- Previous build cURL requests fail. This is fixed in this build
+- Non-functional: Added security and service tests

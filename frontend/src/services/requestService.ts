@@ -45,6 +45,16 @@ export class RequestService {
             .then(response => handler(response));
     }
 
+    public EMAIL<T>(path: string, apiKey: string, params: any, handler: (r: any) => Promise<T>): Promise<T> {
+        const request = {
+            headers: {
+                APIKey: apiKey,
+            },
+            body: params,
+        };
+        return API.post(this._apiName, path, request).then(response => handler(response));
+    }
+
     private static _getToken(): Promise<string> {
         return Auth.currentAuthenticatedUser().then(user => user.signInUserSession.idToken.jwtToken);
     }

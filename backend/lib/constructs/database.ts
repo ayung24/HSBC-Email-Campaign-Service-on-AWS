@@ -9,9 +9,8 @@ import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
 
 export class Database extends cdk.Construct {
-    // TODO: #23
-    private static readonly DEBUG: boolean = true;
-    private static readonly REMOVAL_POLICY = Database.DEBUG ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
+    private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
+    private readonly AUTO_DELETE_OBJECTS: boolean;
 
     private _metadata: dynamodb.Table;
     private _htmlBucket: s3.Bucket;
@@ -19,11 +18,14 @@ export class Database extends cdk.Construct {
     private _processHTML: lambda.Function;
     private _removeImages: lambda.Function;
 
-    private _processHTMLLambdaName: string;
-    private _removeImagesLambdaName: string;
+    private readonly _processHTMLLambdaName: string;
+    private readonly _removeImagesLambdaName: string;
 
     constructor(scope: cdk.Construct, id: string, buildEnv: string) {
         super(scope, id);
+        const isDev = buildEnv === 'dev';
+        this.REMOVAL_POLICY = isDev ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
+        this.AUTO_DELETE_OBJECTS = isDev;
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
         this._removeImagesLambdaName = `RemoveImagesHandler-${buildEnv}`;
         this._initTable(scope);
@@ -43,7 +45,7 @@ export class Database extends cdk.Construct {
             partitionKey: { name: TEMPLATE_KEY, type: dynamodb.AttributeType.STRING },
             sortKey: metaDataSortKey,
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-            removalPolicy: Database.REMOVAL_POLICY,
+            removalPolicy: this.REMOVAL_POLICY,
         });
 
         // query by name and status
@@ -92,7 +94,8 @@ export class Database extends cdk.Construct {
             encryption: s3.BucketEncryption.UNENCRYPTED,
             publicReadAccess: false,
             blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-            removalPolicy: Database.REMOVAL_POLICY,
+            removalPolicy: this.REMOVAL_POLICY,
+            autoDeleteObjects: this.AUTO_DELETE_OBJECTS,
             // By default, every bucket accepts only GET requests from another domain,
             // so need explicit CORS rule to enable upload from client
             cors: [
@@ -110,7 +113,8 @@ export class Database extends cdk.Construct {
             encryption: s3.BucketEncryption.UNENCRYPTED,
             accessControl: s3.BucketAccessControl.PUBLIC_READ,
             publicReadAccess: true,
-            removalPolicy: Database.REMOVAL_POLICY,
+            removalPolicy: this.REMOVAL_POLICY,
+            autoDeleteObjects: this.AUTO_DELETE_OBJECTS,
             cors: [
                 {
                     allowedOrigins: ['*'],
@@ -175,10 +179,12 @@ export class Database extends cdk.Construct {
         new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'RemoveImagesHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
     }
 

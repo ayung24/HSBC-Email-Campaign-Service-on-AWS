@@ -23,7 +23,10 @@ export class TemplateService {
     private readonly _listTemplatesLambdaName: string;
     private readonly _deleteTemplateLambdaName: string;
 
+    private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._uploadTemplateLambdaName = `UploadTemplateHandler-${buildEnv}`;
         this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
         this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
@@ -77,10 +80,13 @@ export class TemplateService {
             environment: {
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
                 DYNAMO_API_VERSION: config.dynamo.apiVersion,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
             },
             functionName: this._getTemplateMetadataLambdaName,
         });
         database.metadataTable().grantReadData(this._templateMetadata);
+        database.htmlBucket().grantRead(this._templateMetadata, `${config.s3.PROCESSED_HTML_PATH}*`);
 
         this._list = new NodejsFunction(scope, 'ListTemplatesHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -107,6 +113,7 @@ export class TemplateService {
         });
         // configure delete templates lambda permissions
         database.metadataTable().grantReadWriteData(this._delete);
+        database.htmlBucket().grantRead(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
         database.htmlBucket().grantDelete(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
     }
 
@@ -168,18 +175,22 @@ export class TemplateService {
         new LogGroup(scope, 'UploadTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._uploadTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'GetTemplateMetadataHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateMetadataLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'ListTemplatesHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._listTemplatesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'DeleteTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._deleteTemplateLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
     }
 }

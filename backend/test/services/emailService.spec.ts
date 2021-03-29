@@ -18,7 +18,7 @@ beforeAll(() => {
 });
 
 describe('email service tests', () => {
-    it('adds email endpoint to API gateway with correct authrization type and query param', () => {
+    it('adds email endpoint to API gateway with correct authorization type and query param', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Resource', {
                 PathPart: 'email',
@@ -55,6 +55,10 @@ describe('email service tests', () => {
                             METADATA_TABLE_NAME: objectLike({
                                 Ref: stringLike('MetadataTable*'),
                             }),
+                            HTML_BUCKET_NAME: objectLike({
+                                Ref: stringLike('HTMLBucket*'),
+                            }),
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                         }),
                     },
                     FunctionName: stringLike('EmailAPIAuthorizer*'),
@@ -69,6 +73,22 @@ describe('email service tests', () => {
                         Statement: arrayWith(
                             objectLike({
                                 Action: arrayWith('dynamodb:GetItem'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('EmailAPIAuthorizer*'),
+                }),
+            );
+        });
+
+        it('has READ permission on HTML processed table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('s3:GetObject*', 's3:GetBucket*', 's3:List*'),
                                 Effect: 'Allow',
                             }),
                         ),

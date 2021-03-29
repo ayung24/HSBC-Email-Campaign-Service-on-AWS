@@ -1,0 +1,452 @@
+{
+	"info": {
+		"_postman_id": "84e5643b-b45e-4267-a1ac-d9f684df9b01",
+		"name": "security_api_testing",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Upload Template Negative",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request fails with a status code of 401\", function () {",
+							"  pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bad_security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload Template Happy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);",
+							"postman.setEnvironmentVariable(\"template_id\", jsonData.templateId);",
+							"postman.setEnvironmentVariable(\"post_html_url\", jsonData.imageUploadUrl.url);",
+							"postman.setEnvironmentVariable(\"bucket\", jsonData.imageUploadUrl.fields[\"bucket\"]);",
+							"postman.setEnvironmentVariable(\"acl\", jsonData.imageUploadUrl.fields[\"acl\"]);",
+							"postman.setEnvironmentVariable(\"content_type\", jsonData.imageUploadUrl.fields[\"Content-Type\"]);",
+							"postman.setEnvironmentVariable(\"algorithm\", jsonData.imageUploadUrl.fields[\"X-Amz-Algorithm\"]);",
+							"postman.setEnvironmentVariable(\"credential\", jsonData.imageUploadUrl.fields[\"X-Amz-Credential\"]);",
+							"postman.setEnvironmentVariable(\"date\", jsonData.imageUploadUrl.fields[\"X-Amz-Date\"]);",
+							"postman.setEnvironmentVariable(\"token\", jsonData.imageUploadUrl.fields[\"X-Amz-Security-Token\"]);",
+							"postman.setEnvironmentVariable(\"key\", jsonData.imageUploadUrl.fields[\"key\"]);",
+							"postman.setEnvironmentVariable(\"policy\", jsonData.imageUploadUrl.fields[\"Policy\"]);",
+							"postman.setEnvironmentVariable(\"signature\", jsonData.imageUploadUrl.fields[\"X-Amz-Signature\"]);",
+							"",
+							"pm.test(\"Request is successful with a status code of 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"templateName\":\"Security API Test\",\"fieldNames\":[\"NAME\",\"AMOUNT\",\"PROMO_CODE\"]}"
+				},
+				"url": {
+					"raw": "{{api_url}}/templates",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates"
+					]
+				},
+				"description": "Upload a template"
+			},
+			"response": []
+		},
+		{
+			"name": "Upload HTML",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request is successful with a status code of 204\", function () {",
+							"  pm.response.to.have.status(204);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {}
+			},
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "bucket",
+							"value": "{{bucket}}",
+							"type": "text"
+						},
+						{
+							"key": "acl",
+							"value": "{{acl}}",
+							"type": "text"
+						},
+						{
+							"key": "Content-Type",
+							"value": "text/html; charset=UTF-8",
+							"type": "text"
+						},
+						{
+							"key": "X-Amz-Algorithm",
+							"value": "{{algorithm}}",
+							"type": "text"
+						},
+						{
+							"key": "X-Amz-Credential",
+							"value": "{{credential}}",
+							"type": "text"
+						},
+						{
+							"key": "X-Amz-Date",
+							"value": "{{date}}",
+							"type": "text"
+						},
+						{
+							"key": "X-Amz-Security-Token",
+							"value": "{{token}}",
+							"type": "text"
+						},
+						{
+							"key": "key",
+							"value": "{{key}}",
+							"type": "text"
+						},
+						{
+							"key": "Policy",
+							"value": "{{policy}}",
+							"type": "text"
+						},
+						{
+							"key": "X-Amz-Signature",
+							"value": "{{signature}}",
+							"type": "text"
+						},
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/philipmak/Desktop/testHTML.html"
+						}
+					],
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{post_html_url}}",
+					"host": [
+						"{{post_html_url}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Templates Negative",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request fails with a status code of 401\", function () {",
+							"  pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bad_security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates"
+					]
+				},
+				"description": "List templates with bad token"
+			},
+			"response": []
+		},
+		{
+			"name": "List Templates Happy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request is successful with a status code of 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates"
+					]
+				},
+				"description": "List all templates"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Template Details Negative",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request fails with a status code of 401\", function () {",
+							"  pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bad_security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates/{{template_id}}",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates",
+						"{{template_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Template Details Happy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request is successful with a status code of 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates/{{template_id}}",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates",
+						"{{template_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Template Negative",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request fails with a status code of 401\", function () {",
+							"  pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{bad_security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates/{{template_id}}",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates",
+						"{{template_id}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Template Happy",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Request is successful with a status code of 200\", function () {",
+							"  pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{security_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{api_url}}/templates/{{template_id}}",
+					"host": [
+						"{{api_url}}"
+					],
+					"path": [
+						"templates",
+						"{{template_id}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer"
+	}
+}

@@ -19,7 +19,10 @@ export class EmailService {
     private readonly _emailApiAuthorizerLambdaName: string;
     private readonly _emailSendLambdaName: string;
 
+    private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
+
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
         this._emailSendLambdaName = `SendEmailHandler-${buildEnv}`;
         new SESEmailVerifier(scope, 'SESEmailVerify', {
@@ -40,10 +43,13 @@ export class EmailService {
                 KMS_ACCOUNT_ID: config.KMS.ACCOUNT_ID,
                 KMS_KEY_ID: config.KMS.KEY_ID,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
             },
             functionName: this._emailApiAuthorizerLambdaName,
         });
         database.metadataTable().grantReadData(this._apiAuth);
+        database.htmlBucket().grantRead(this._apiAuth, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
         this._apiAuth.addToRolePolicy(
             new PolicyStatement({
                 actions: ['kms:Decrypt'],
@@ -144,10 +150,12 @@ export class EmailService {
         new LogGroup(scope, 'EmailAPIAuthorizerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailApiAuthorizerLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
         new LogGroup(scope, 'SendEmailHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._emailSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
         });
     }
 }
