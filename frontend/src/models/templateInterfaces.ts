@@ -8,6 +8,10 @@ export interface ITemplate {
     uploadTime: Date;
 }
 
+export interface ITemplateWithHTML extends ITemplate {
+    html: string;
+}
+
 export interface ITemplateDisplay {
     templateId: string;
     templateName: string;

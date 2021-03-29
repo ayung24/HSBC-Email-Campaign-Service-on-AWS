@@ -14,7 +14,7 @@ import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
-import { ITemplate } from '../../models/templateInterfaces';
+import { ITemplateWithHTML } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 
 interface ISendEmailReqBody {
@@ -34,6 +34,7 @@ interface ViewModalState extends SpinnerState {
     apiKey: string;
     jsonBody: ISendEmailReqBody;
     fieldNames: string[];
+    html: string;
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
@@ -66,6 +67,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             },
             fieldNames: [],
             isLoading: false,
+            html: '',
         };
 
         this._inputFormNameRecipient = 'form-control-recipient';
@@ -92,6 +94,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
 
     private _handleDeletePromptOpen(): void {
         this.setState({ isDeletePromptOpen: true });
+    }
+
+    private _handlePreview(): void {
+        const newWindow = window.open();
+        if (newWindow) {
+            newWindow.document.title = this.props.templateName;
+            newWindow.document.body.innerHTML = this.state.html;
+        }
     }
 
     private _getUrl(templateId: string): string {
@@ -127,7 +137,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountID}:key/${kmsKeyId}`,
                             CiphertextBlob: apiKeyBuffer,
                         };
-                        return new Promise<ITemplate>((resolve, reject) => {
+                        return new Promise<ITemplateWithHTML>((resolve, reject) => {
                             this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
                                 if (err) {
                                     reject(err);
@@ -140,10 +150,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             });
                         });
                     })
-                    .then((response: ITemplate) => {
+                    .then((response: ITemplateWithHTML) => {
                         this.setState({
                             fieldNames: response.fieldNames,
                             apiKey: response.apiKey,
+                            html: response.html,
                         });
                         resolve();
                     })
@@ -296,13 +307,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
-                            <Button
-                                variant='outline-dark'
-                                className='float-right'
-                                onClick={this._handleDeletePromptOpen.bind(this)}
-                                style={{ marginTop: '12px' }}
-                            >
+                            <Button className='delete float-right' onClick={this._handleDeletePromptOpen.bind(this)}>
                                 Delete
+                            </Button>
+                            <Button className='float-right' onClick={this._handlePreview.bind(this)}>
+                                Preview
                             </Button>
                             <Modal.Title>{this.props.templateName}</Modal.Title>
                             <span>Created at {this.props.timeCreated}</span>

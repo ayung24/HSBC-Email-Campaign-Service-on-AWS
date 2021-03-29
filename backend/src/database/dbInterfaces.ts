@@ -18,6 +18,10 @@ export interface ITemplateFullEntry extends ITemplateBase {
     readonly fieldNames: string[];
 }
 
+export interface ITemplateWithHTML extends ITemplateFullEntry {
+    readonly html: string;
+}
+
 export interface ITemplateImage {
     contentType: string;
     content: Buffer;

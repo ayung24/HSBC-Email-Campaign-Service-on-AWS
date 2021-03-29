@@ -1,0 +1,29 @@
+{
+  "id": "c97a0058-fd14-4dca-8c0e-e4bce562c4e1",
+  "name": "security_api_testing",
+  "values": [
+    {
+      "key": "security_token",
+      "value": "<generated>",
+      "enabled": true
+    },
+    {
+      "key": "api_url",
+      "value": "https://cvmtdo18w4.execute-api.us-west-2.amazonaws.com/prod",
+      "enabled": true
+    },
+    {
+      "key": "bad_security_token",
+      "value": "badsecuritytoken",
+      "enabled": true
+    },
+    {
+      "key": "template_id",
+      "value": "<generated>",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment",
+  "_postman_exported_at": "2021-03-24T04:54:22.269Z",
+  "_postman_exported_using": "Postman/7.36.4"
+}

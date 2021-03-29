@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
-import { ITemplateFullEntry } from '../../database/dbInterfaces';
+import { ITemplateWithHTML } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../../logger';
 
@@ -25,7 +25,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const id: string = event.pathParameters.id;
     return db
         .GetTemplateById(id)
-        .then((res: ITemplateFullEntry) => {
+        .then((res: ITemplateWithHTML) => {
             return {
                 headers: headers,
                 statusCode: 200,

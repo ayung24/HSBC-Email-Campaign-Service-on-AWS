@@ -1,0 +1,346 @@
+{
+  "info": {
+    "_postman_id": "84e5643b-b45e-4267-a1ac-d9f684df9b01",
+    "name": "security_api_testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Template Negative",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request fails with a status code of 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bad_security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Template Happy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var jsonData = JSON.parse(responseBody);",
+              "postman.setEnvironmentVariable(\"template_id\", jsonData.templateId);",
+              "",
+              "pm.test(\"Request is successful with a status code of 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"templateName\":\"Security API Test\",\"fieldNames\":[\"NAME\",\"AMOUNT\",\"PROMO_CODE\"]}"
+        },
+        "url": {
+          "raw": "{{api_url}}/templates",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates"
+          ]
+        },
+        "description": "Upload a template"
+      },
+      "response": []
+    },
+    {
+      "name": "List Templates Negative",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request fails with a status code of 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bad_security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates"
+          ]
+        },
+        "description": "List templates with bad token"
+      },
+      "response": []
+    },
+    {
+      "name": "List Templates Happy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request is successful with a status code of 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates"
+          ]
+        },
+        "description": "List all templates"
+      },
+      "response": []
+    },
+    {
+      "name": "Get Template Details Negative",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request fails with a status code of 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bad_security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates/{{template_id}}",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates",
+            "{{template_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Template Details Happy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request is successful with a status code of 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates/{{template_id}}",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates",
+            "{{template_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Template Negative",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request fails with a status code of 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{bad_security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates/{{template_id}}",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates",
+            "{{template_id}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Template Happy",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Request is successful with a status code of 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{security_token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{api_url}}/templates/{{template_id}}",
+          "host": [
+            "{{api_url}}"
+          ],
+          "path": [
+            "templates",
+            "{{template_id}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer"
+  }
+}
