@@ -7,18 +7,15 @@
 }
 
 .modal-title {
-    margin-top: 0px;
+    margin-top: 0;
 }
 
 .modal-dialog-scrollable #body.modal-body {
-    overflow-y: visible;
-}
-
-#body {
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     padding: 0 1.5rem 1rem 1.5rem;
-    flex-grow: 0;
-    flex-shrink: 1;
-    flex-basis: 'auto';
 }
 
 #viewModal .modal-content {
@@ -29,7 +26,7 @@
     justify-content: flex-start;  
 }
 
-#single, #batch {
+#single, #batch, #ui, #cli {
     color: black;
 }
 
@@ -50,12 +47,12 @@
     text-align: center;
 }
 
-.nav-tabs .nav-item.show .nav-link, .nav-tabs #single.nav-link.active, #batch.nav-link.active {
+.nav-tabs .nav-item.show .nav-link, .nav-tabs #single.nav-link.active, #batch.nav-link.active, #ui.nav-link.active, #cli.nav-link.active {
     font-weight: bold;
     border-bottom: 5px solid black;
 }
 
-.nav-tabs #single.nav-link, #batch.nav-link {
+.nav-tabs #single.nav-link, #batch.nav-link, #ui.nav-link, #cli.nav-link {
     border: none;
     border-bottom: 1px solid black;
 }
@@ -78,15 +75,19 @@
     text-overflow:ellipsis;
 }
 
-#footer>* {
-    margin: 0;
+.send-button {
+    width: 100%;
 }
 
-#footer {
-    padding: .75rem 1.5rem 0 1.5rem;
-    margin-bottom: 0;
+.send-button.btn.btn-outline-dark {
+    background-color: #f0eff0;
+    border-color: black;
+    color: black;
+}
+
+.tab-content {
     overflow-y: scroll;
-    flex: 0 1 auto;
+    height: 100%;
 }
 
 #tools {
@@ -148,11 +149,10 @@
 .dynamicParameters {
     width: 100%;
     height: 250px;
-    overflow-y: scroll;
     padding-top:10px;
 }
 
-.jsonBody {
+.jsonBody, .curl {
     resize: none;
     flex: 1;
     background-color: #E9ECEF;

@@ -78,6 +78,20 @@ export const handler = async function (event: APIGatewayProxyEvent) {
 
     const templateId: string = event.queryStringParameters.templateid;
     const req: ISendEmailReqBody = JSON.parse(event.body);
+
+    // Check email is valid https://regexr.com/3e48o
+    const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!REGEX.test(req.recipient)) {
+        return {
+            headers: headers,
+            statusCode: 400,
+            body: JSON.stringify({
+                message: `Recipient email address is not a valid email.`,
+                code: ErrorCode.ES11,
+            }),
+        };
+    }
+
     return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
             const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);

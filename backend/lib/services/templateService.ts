@@ -113,6 +113,7 @@ export class TemplateService {
         });
         // configure delete templates lambda permissions
         database.metadataTable().grantReadWriteData(this._delete);
+        database.htmlBucket().grantRead(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
         database.htmlBucket().grantDelete(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
     }
 

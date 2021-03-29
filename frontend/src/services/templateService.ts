@@ -116,7 +116,7 @@ export class TemplateService {
             let matches = dynamicFieldRegex.exec(html);
             const fields = [];
             while (matches) {
-                const validRegex = new RegExp(/[A-Z_]+/m);
+                const validRegex = new RegExp(/[A-Z0-9_]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
                 if (checkMatches === null) {
                     reject('Dynamic value cannot be empty.');

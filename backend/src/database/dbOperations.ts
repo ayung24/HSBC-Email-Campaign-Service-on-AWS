@@ -290,7 +290,7 @@ export function GetTemplateById(templateId: string): Promise<ITemplateWithHTML> 
 
 export function GetHTMLById(templateId: string, pathPrefix: string): Promise<string> {
     const s3 = new S3();
-    Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId } });
+    Logger.info({ message: 'Getting template HTML', additionalInfo: { templateId: templateId, key: pathPrefix + templateId } });
     const queryParams = {
         Bucket: HTML_BUCKET_NAME!,
         Key: pathPrefix + templateId,

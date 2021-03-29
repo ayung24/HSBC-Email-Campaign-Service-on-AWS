@@ -1,29 +1,84 @@
 {
-  "id": "c97a0058-fd14-4dca-8c0e-e4bce562c4e1",
-  "name": "security_api_testing",
-  "values": [
-    {
-      "key": "security_token",
-      "value": "<generated>",
-      "enabled": true
-    },
-    {
-      "key": "api_url",
-      "value": "https://cvmtdo18w4.execute-api.us-west-2.amazonaws.com/prod",
-      "enabled": true
-    },
-    {
-      "key": "bad_security_token",
-      "value": "badsecuritytoken",
-      "enabled": true
-    },
-    {
-      "key": "template_id",
-      "value": "<generated>",
-      "enabled": true
-    }
-  ],
-  "_postman_variable_scope": "environment",
-  "_postman_exported_at": "2021-03-24T04:54:22.269Z",
-  "_postman_exported_using": "Postman/7.36.4"
+	"id": "c97a0058-fd14-4dca-8c0e-e4bce562c4e1",
+	"name": "security_api_testing",
+	"values": [
+		{
+			"key": "security_token",
+			"value": "<generated>",
+			"enabled": true
+		},
+		{
+			"key": "api_url",
+			"value": "https://cvmtdo18w4.execute-api.ca-central-1.amazonaws.com/prod",
+			"enabled": true
+		},
+		{
+			"key": "bad_security_token",
+			"value": "badsecuritytoken",
+			"enabled": true
+		},
+		{
+			"key": "template_id",
+			"value": "<generated>",
+			"enabled": true
+		},
+		{
+			"key": "post_html_url",
+			"value": "<generated>",
+			"enabled": true
+		},
+		{
+			"key": "bucket",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "acl",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "content_type",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "algorithm",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "credential",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "date",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "token",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "key",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "policy",
+			"value": null,
+			"enabled": true
+		},
+		{
+			"key": "signature",
+			"value": null,
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2021-03-28T06:56:16.102Z",
+	"_postman_exported_using": "Postman/7.36.4"
 }
