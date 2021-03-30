@@ -90,7 +90,15 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalClose(): void {
-        this.setState({ isViewOpen: false });
+        this.setState({
+            isViewOpen: false,
+            jsonBody: {
+                subject: '',
+                recipient: '',
+                fields: {},
+            },
+            curlRequest: '',
+        });
     }
 
     private _handleModalOpen(): void {
@@ -197,8 +205,20 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
-        event.target.src = copiedImage;
         document.body.removeChild(textArea);
+        if (event.target.className === 'img-fluid') {
+            event.target.src = copiedImage;
+        } else {
+            event.target.firstChild.src = copiedImage;
+        }
+        const fieldName = event.target.getAttribute('name') ?? event.target.parentNode.getAttribute('name');
+        const copiedToast = {
+            id: `copyToast-${fieldName}`,
+            body: `Copied ${fieldName} to clipboard`,
+            type: ToastType.NOTIFICATION,
+            open: true,
+        };
+        this._addToast(copiedToast);
     }
 
     private _validateEmailRequest(): boolean {
@@ -418,6 +438,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             className='send-button'
                                             onClick={this._sendEmail.bind(this)}
                                             style={{ marginTop: '12px' }}
+                                            disabled={this.state.isEmailLoading}
                                         >
                                             {!this.state.isEmailLoading && <span>Send Email</span>}
                                             {this.state.isEmailLoading && (
@@ -431,13 +452,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             <InputGroup className='mb-3'>
                                                 <FormControl disabled placeholder='URL' value={this.state.url} />
                                                 <InputGroup.Append>
-                                                    <Button id='copyBtn' variant='outline-secondary'>
-                                                        <Image
-                                                            src={copyImage}
-                                                            alt='copy icon'
-                                                            onClick={event => this._copyText(this.state.url, event)}
-                                                            fluid
-                                                        />
+                                                    <Button
+                                                        name='URL'
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyText(this.state.apiKey, event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
                                                     </Button>
                                                 </InputGroup.Append>
                                             </InputGroup>
@@ -445,13 +466,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             <InputGroup className='mb-3'>
                                                 <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
                                                 <InputGroup.Append>
-                                                    <Button id='copyBtn' variant='outline-secondary'>
-                                                        <Image
-                                                            src={copyImage}
-                                                            alt='copy icon'
-                                                            onClick={event => this._copyText(this.state.apiKey, event)}
-                                                            fluid
-                                                        />
+                                                    <Button
+                                                        name='API Key'
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyText(this.state.apiKey, event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
                                                     </Button>
                                                 </InputGroup.Append>
                                             </InputGroup>
@@ -464,6 +485,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                                 />
                                                 <InputGroup.Append>
                                                     <Button
+                                                        name='JSON Body'
                                                         id='copyBtn'
                                                         variant='outline-secondary'
                                                         onClick={event => this._copyJson(event)}
@@ -477,6 +499,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                                 <TextareaAutosize readOnly className='curl' value={this.state.curlRequest} />
                                                 <InputGroup.Append>
                                                     <Button
+                                                        name='Full cURL Request'
                                                         id='copyBtn'
                                                         variant='outline-secondary'
                                                         onClick={event => this._copyCurl(event)}
