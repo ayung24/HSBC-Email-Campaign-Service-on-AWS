@@ -207,22 +207,22 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             console.log('hi');
         } else {
             this._templateService
-            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-            .then((t: ITemplate) => {
-                return new Promise<void>(resolve => {
-                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
-                    setTimeout(() => {
-                        EventEmitter.getInstance().dispatch('refreshGrid');
-                        this._addToast(this._createUploadSuccessToast(t.templateName));
-                        this._closeModal();
-                        resolve();
-                    }, 3000);
-                });
-            })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+                .then((t: ITemplate) => {
+                    return new Promise<void>(resolve => {
+                        // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
+                        setTimeout(() => {
+                            EventEmitter.getInstance().dispatch('refreshGrid');
+                            this._addToast(this._createUploadSuccessToast(t.templateName));
+                            this._closeModal();
+                            resolve();
+                        }, 3000);
+                    });
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+                })
+                .finally(() => this.setState({ isLoading: false }));
         }
     }
 
