@@ -13,7 +13,7 @@ import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
 import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
-import * as Logger from '../../../logger';
+import * as Logger from '../logger';
 import { ErrorCode, ESCError } from '../ESCError';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
