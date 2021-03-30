@@ -56,9 +56,9 @@ const replaceFields = function (srcHTML: string, fields: ISendEmailFields): stri
  */
 const getHTML = function (templateId: string, htmlCache: Map<string, string>): Promise<string> {
     if (htmlCache.has(templateId)) {
-        return Promise.resolve(htmlCache.get(templateId));
+        return Promise.resolve(htmlCache.get(templateId)!);
     } else {
-        return db.GetHTMLById(templateId, PROCESSED_HTML_PATH).then(html => {
+        return db.GetHTMLById(templateId, PROCESSED_HTML_PATH!).then(html => {
             htmlCache.set(templateId, html);
             return Promise.resolve(html);
         });
@@ -102,7 +102,7 @@ const sendEmail = function (record: SQSRecord, htmlCache: Map<string, string>): 
             // dequeue sent email manually from email queue
             Logger.info({ message: 'Email sent successfully for record', additionalInfo: record.messageId });
             const params = {
-                QueueUrl: EMAIL_QUEUE_URL,
+                QueueUrl: EMAIL_QUEUE_URL!,
                 ReceiptHandle: record.receiptHandle,
             };
             return new Promise(resolve => {
@@ -129,7 +129,7 @@ const handleError = function (err: Error) {
         Logger.info({ message: 'Handle non-retriable send', additionalInfo: err.message });
         const record: SQSRecord = JSON.parse(err.message);
         const params = {
-            QueueUrl: EMAIL_DLQ_URL,
+            QueueUrl: EMAIL_DLQ_URL!,
             MessageBody: err.message,
             MessageGroupId: '0', // id doesn't matter, we are not grouping records
         };
@@ -139,7 +139,7 @@ const handleError = function (err: Error) {
             .then((data: SendMessageResult) => {
                 Logger.info({ message: 'Sent to DLQ', additionalInfo: data });
                 const deleteParams = {
-                    QueueUrl: EMAIL_QUEUE_URL,
+                    QueueUrl: EMAIL_QUEUE_URL!,
                     ReceiptHandle: record.receiptHandle,
                 };
                 return sqs.deleteMessage(deleteParams).promise();
@@ -159,7 +159,7 @@ const handleError = function (err: Error) {
  * Timeout for t seconds
  * @param t delay seconds
  */
-const delay = t => new Promise(resolve => setTimeout(resolve, t));
+const delay = (t: number) => new Promise(resolve => setTimeout(resolve, t));
 
 export const handler = async function (event: SQSEvent) {
     Logger.info({ message: 'Received SQS event', additionalInfo: event });
@@ -168,7 +168,7 @@ export const handler = async function (event: SQSEvent) {
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.ES8,
+                code: ErrorCode.ES14,
             }),
         };
     } else if (nonEmptyArray(event.Records)) {
@@ -181,7 +181,7 @@ export const handler = async function (event: SQSEvent) {
             return chain
                 .then(info => {
                     sent.push(info);
-                    return delay(1000 / parseInt(MAX_SEND_RATE, 10)).then(() => nextSend());
+                    return delay(1000 / parseInt(MAX_SEND_RATE!, 10)).then(() => nextSend());
                 })
                 .catch(err => {
                     return handleError(err).then(() => nextSend());
@@ -195,7 +195,7 @@ export const handler = async function (event: SQSEvent) {
                 if (sent.length < event.Records.length) {
                     // at least one record failed to be sent,
                     // return error to keep failed messages on email queue
-                    const batchError = new ESCError(ErrorCode.ES9, `Partial batch failure: ${sent.length}/${event.Records.length} sent`);
+                    const batchError = new ESCError(ErrorCode.ES15, `Partial batch failure: ${sent.length}/${event.Records.length} sent`);
                     Logger.logError(batchError);
                     return {
                         statusCode: batchError.getStatusCode(),

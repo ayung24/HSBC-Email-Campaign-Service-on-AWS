@@ -102,13 +102,16 @@ export class EmailService {
             environment: {
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 EMAIL_QUEUE_URL: this._emailQueue.queueUrl,
                 VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
+                SQS_VERSION: config.sqs.VERSION,
             },
             timeout: cdk.Duration.seconds(10),
             functionName: this._processSendLambdaName,
         });
         database.metadataTable().grantReadData(this._process); // READ template metadata table
+        database.htmlBucket().grantRead(this._process);
         this._emailQueue.grantSendMessages(this._process);
 
         this._execute = new NodejsFunction(scope, 'ExecuteSendHandler', {

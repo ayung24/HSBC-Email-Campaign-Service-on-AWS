@@ -9,6 +9,7 @@ let stack: Stack;
 let emailService: EmailService;
 let api: RestApi;
 let database: Database;
+const EXECUTE_LAMBDA_TIMEOUT = 20;
 
 beforeAll(() => {
     stack = new Stack();
@@ -116,7 +117,48 @@ describe('email service tests', () => {
         });
     });
 
-    describe('send lambda tests', () => {
+    describe('email queue tests', () => {
+        it('has a SQS FIFO Email queue', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::SQS::Queue', {
+                    QueueName: stringLike('EmailQueue*'),
+                    FifoQueue: true,
+                    ContentBasedDeduplication: true,
+                }),
+            );
+        });
+
+        it('has correct redrive policy and visibility timeout', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::SQS::Queue', {
+                    QueueName: stringLike('EmailQueue*'),
+                    RedrivePolicy: objectLike({
+                        deadLetterTargetArn: objectLike({
+                            'Fn::GetAtt': arrayWith(stringLike('EmailDLQ*')),
+                        }),
+                        maxReceiveCount: 5,
+                    }),
+                    VisibilityTimeout: 6 * EXECUTE_LAMBDA_TIMEOUT,
+                }),
+            );
+        });
+
+        it('has event source mapping to execute send lambda', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::Lambda::EventSourceMapping', {
+                    FunctionName: objectLike({
+                        Ref: stringLike('ExecuteSendHandler*'),
+                    }),
+                    BatchSize: 5,
+                    EventSourceArn: objectLike({
+                        'Fn::GetAtt': arrayWith(stringLike('EmailQueue*')),
+                    }),
+                }),
+            );
+        });
+    });
+
+    describe('process send lambda tests', () => {
         it('has all environment variables', () => {
             expect(stack).to(
                 haveResource('AWS::Lambda::Function', {
@@ -130,12 +172,15 @@ describe('email service tests', () => {
                             }),
                             PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                             VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
-                            VERSION: config.ses.VERSION,
+                            EMAIL_QUEUE_URL: objectLike({
+                                Ref: stringLike('EmailQueue*'),
+                            }),
+                            SQS_VERSION: config.sqs.VERSION,
                         }),
                     },
                     Runtime: 'nodejs12.x',
                     Timeout: 10,
-                    FunctionName: stringLike('SendEmailHandler*'),
+                    FunctionName: stringLike('ProcessSendHandler*'),
                 }),
             );
         });
@@ -151,7 +196,117 @@ describe('email service tests', () => {
                             }),
                         ),
                     }),
-                    PolicyName: stringLike('SendEmailHandler*'),
+                    PolicyName: stringLike('ProcessSendHandler*'),
+                }),
+            );
+        });
+
+        it('has READ permission on Metadata table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('dynamodb:Query', 'dynamodb:GetItem', 'dynamodb:Scan', 'dynamodb:ConditionCheckItem'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessSendHandler*'),
+                }),
+            );
+        });
+
+        it('has SendMessage permission on Email queue', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:SendMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessSendHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('execute send lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            HTML_BUCKET_NAME: objectLike({
+                                Ref: stringLike('HTMLBucket*'),
+                            }),
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                            EMAIL_QUEUE_URL: objectLike({
+                                Ref: stringLike('EmailQueue*'),
+                            }),
+                            EMAIL_DLQ_URL: objectLike({
+                                Ref: stringLike('EmailDLQ*'),
+                            }),
+                            MAX_SEND_RATE: config.ses.MAX_SEND_RATE.toString(),
+                            SES_VERSION: config.ses.VERSION,
+                            SQS_VERSION: config.sqs.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: EXECUTE_LAMBDA_TIMEOUT,
+                    ReservedConcurrentExecutions: 5,
+                    FunctionName: stringLike('ExecuteSendHandler*'),
+                }),
+            );
+        });
+
+        it('has READ permission on HTML bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('s3:GetBucket*', 's3:GetObject*'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessSendHandler*'),
+                }),
+            );
+        });
+
+        it('has Receive and DeleteMessage permission on Email queue', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:ReceiveMessage', 'sqs:DeleteMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ExecuteSendHandler*'),
+                }),
+            );
+        });
+
+        it('has SendMessage permission on Email DLQ', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:SendMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ExecuteSendHandler*'),
                 }),
             );
         });
@@ -167,7 +322,30 @@ describe('email service tests', () => {
                             }),
                         ),
                     }),
-                    PolicyName: stringLike('SendEmailHandler*'),
+                    PolicyName: stringLike('ExecuteSendHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('email service log tests', () => {
+        it('has log groups for all service lambdas', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*EmailAPIAuthorizer*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*ProcessSendHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*ExecuteSendHandler*'),
+                    RetentionInDays: 180,
                 }),
             );
         });
