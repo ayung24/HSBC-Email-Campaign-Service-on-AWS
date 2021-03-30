@@ -7,7 +7,7 @@ import * as AWS from 'aws-sdk';
 import { AWSError, KMS } from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const SRC_HTML_PATH = process.env.SRC_HTML_PATH;

@@ -5,7 +5,7 @@ import { ISendEmailFields, ISendEmailReqBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
 const VERSION = process.env.VERSION || '2010-12-01';

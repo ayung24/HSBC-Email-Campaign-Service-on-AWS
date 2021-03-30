@@ -2,7 +2,7 @@ import { APIGatewayRequestAuthorizerEvent, Context } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { AWSError, KMS } from 'aws-sdk';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 import { ErrorCode, ESCError } from '../../ESCError';
 
 const KMS_REGION = process.env.KMS_REGION;
