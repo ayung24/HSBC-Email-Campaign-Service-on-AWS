@@ -2,7 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateWithHTML } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
