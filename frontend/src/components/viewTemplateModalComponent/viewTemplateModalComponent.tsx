@@ -9,14 +9,16 @@ import { config } from '../../config';
 import { KMS, AWSError } from 'aws-sdk';
 import { awsEndpoints } from '../../awsEndpoints';
 import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
-import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form } from 'react-bootstrap/';
+import { Image, Button, Modal, Tabs, Tab, InputGroup, FormControl, Form, Spinner } from 'react-bootstrap/';
 import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
-import { ITemplate } from '../../models/templateInterfaces';
+import { ITemplateWithHTML } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
+import { EmailService } from '../../services/emailService';
+import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -35,17 +37,22 @@ interface ViewModalState extends SpinnerState {
     apiKey: string;
     jsonBody: ISendEmailReqBody;
     fieldNames: string[];
+    html: string;
+    curlRequest: string;
+    isEmailLoading: boolean;
 }
 
 interface ViewTemplateModalProperties extends ToastFunctionProperties {
     templateId: string;
     templateName: string;
     timeCreated: string;
+    addToast: (t: ToastInterface) => void;
 }
 
 export class ViewTemplateModalComponent extends React.Component<ViewTemplateModalProperties, ViewModalState> {
     private _addToast: (t: ToastInterface) => void;
     private _templateService: TemplateService;
+    private _emailService: EmailService;
     private _keyManagementService: KMS;
     private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
 
@@ -57,10 +64,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
         this._uploadModalComponent = React.createRef();
+        this._emailService = new EmailService();
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
-            url: this._getUrl(props.templateId),
+            url: this._getTemplateUrl(props.templateId),
             apiKey: '',
             jsonBody: {
                 subject: '',
@@ -69,6 +77,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             },
             fieldNames: [],
             isLoading: false,
+            html: '',
+            curlRequest: '',
+            isEmailLoading: false,
         };
 
         this._inputFormNameRecipient = 'form-control-recipient';
@@ -97,7 +108,15 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.setState({ isDeletePromptOpen: true });
     }
 
-    private _getUrl(templateId: string): string {
+    private _handlePreview(): void {
+        const newWindow = window.open();
+        if (newWindow) {
+            newWindow.document.title = this.props.templateName;
+            newWindow.document.body.innerHTML = this.state.html;
+        }
+    }
+
+    private _getTemplateUrl(templateId: string): string {
         const productionEndpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
         if (productionEndpoint) {
             return `${productionEndpoint.endpoint}/email/?templateid=${templateId}`;
@@ -111,6 +130,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             this._addToast(toast);
             return 'url config not set';
         }
+    }
+
+    private _getCurlRequest(url: string, apiKey: string, jsonBody: string): string {
+        return `curl -X POST ${url} -H "APIKey:${apiKey}" -H "Content-Type: application/json" --data-raw '${jsonBody}'`;
     }
 
     private _getTemplateMetadata(): Promise<void> {
@@ -130,7 +153,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountID}:key/${kmsKeyId}`,
                             CiphertextBlob: apiKeyBuffer,
                         };
-                        return new Promise<ITemplate>((resolve, reject) => {
+                        return new Promise<ITemplateWithHTML>((resolve, reject) => {
                             this._keyManagementService.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
                                 if (err) {
                                     reject(err);
@@ -143,10 +166,12 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             });
                         });
                     })
-                    .then((response: ITemplate) => {
+                    .then((response: ITemplateWithHTML) => {
                         this.setState({
                             fieldNames: response.fieldNames,
                             apiKey: response.apiKey,
+                            html: response.html,
+                            curlRequest: this._getCurlRequest(this.state.url, response.apiKey, JSON.stringify(this.state.jsonBody)),
                         });
                         resolve();
                     })
@@ -179,10 +204,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.removeChild(textArea);
     }
 
-    private _copyJson(event: any): any {
-        // https://regexr.com/3e48o
-        const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-        if (!this._isCompleteJson(this.state.jsonBody)) {
+    private _validateEmailRequest(): boolean {
+        const isJsonComplete = this._isCompleteJson(this.state.jsonBody);
+        if (!isJsonComplete) {
             const TOAST_INCOMPLETE = {
                 id: 'copyJsonFailed',
                 body: 'Incomplete parameters for JSON. Please fill in all fields',
@@ -190,7 +214,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 open: true,
             };
             this._addToast(TOAST_INCOMPLETE);
-        } else if (!REGEX.test(this.state.jsonBody.recipient)) {
+        }
+        const isEmailValid = this._isEmailValid(this.state.jsonBody.recipient);
+        if (!isEmailValid) {
             const TOAST_INVALID_EMAIL = {
                 id: 'copyJsonFailed',
                 body: `[${this.state.jsonBody.recipient}] is not a valid email.`,
@@ -198,9 +224,26 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 open: true,
             };
             this._addToast(TOAST_INVALID_EMAIL);
-        } else {
+        }
+        return isJsonComplete && isEmailValid;
+    }
+
+    private _copyJson(event: any): any {
+        if (this._validateEmailRequest()) {
             this._copyText(JSON.stringify(this.state.jsonBody), event);
         }
+    }
+
+    private _copyCurl(event: any): any {
+        if (this._validateEmailRequest()) {
+            this._copyText(this.state.curlRequest, event);
+        }
+    }
+
+    private _isEmailValid(email: string): boolean {
+        // https://regexr.com/3e48o
+        const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+        return REGEX.test(email);
     }
 
     private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
@@ -264,6 +307,44 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _sendEmail(): void {
+        this.setState({ isEmailLoading: true }, () => {
+            if (this._validateEmailRequest()) {
+                const emailParams: IEmailParameters = {
+                    templateId: this.props.templateId,
+                    apiKey: this.state.apiKey,
+                    subject: this.state.jsonBody.subject,
+                    recipient: this.state.jsonBody.recipient,
+                    fields: this.state.jsonBody.fields,
+                };
+                this._emailService
+                    .sendEmail(emailParams)
+                    .then((response: ISendEmailResponse) => {
+                        const toast = {
+                            id: 'sendEmailSuccess',
+                            body: `Successfully sent email with id [${response.messageId}] to ${response.recipient}].`,
+                            type: ToastType.SUCCESS,
+                            open: true,
+                        };
+                        this._addToast(toast);
+                    })
+                    .catch((err: IErrorReturnResponse) => {
+                        const body = createErrorMessage(err.response.data, `Could not send email to [${this.state.jsonBody.recipient}].`);
+                        const toast = {
+                            id: 'sendEmailError',
+                            body: body,
+                            type: ToastType.ERROR,
+                            open: true,
+                        };
+                        this._addToast(toast);
+                    })
+                    .finally(() => this.setState({ isEmailLoading: false }));
+            } else {
+                this.setState({ isEmailLoading: false });
+            }
+        });
+    }
+
     private _onParamChange(event: React.SyntheticEvent): void {
         this.setState((state: ViewModalState) => {
             const formControl: HTMLInputElement = event.target as HTMLInputElement;
@@ -283,6 +364,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             const newJsonBody = state.jsonBody;
             return {
                 jsonBody: newJsonBody,
+                curlRequest: this._getCurlRequest(this.state.url, this.state.apiKey, JSON.stringify(newJsonBody)),
             };
         });
     }
@@ -303,13 +385,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button id='arrow' variant='outline-dark' onClick={() => this._handleModalClose()}>
                                 <Image src={arrowIcon} alt='arrow icon' fluid />
                             </Button>
-                            <Button
-                                variant='outline-dark'
-                                className='float-right'
-                                onClick={this._handleDeletePromptOpen.bind(this)}
-                                style={{ marginTop: '12px' }}
-                            >
+                            <Button className='delete float-right' onClick={this._handleDeletePromptOpen.bind(this)}>
                                 Delete
+                            </Button>
+                            <Button className='float-right' onClick={this._handlePreview.bind(this)}>
+                                Preview
                             </Button>
                             <Modal.Title>{this.props.templateName}</Modal.Title>
                             <span>Created at {this.props.timeCreated}</span>
@@ -337,51 +417,86 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </InputGroup>
                                 </div>
                                 <div className='dynamicParameters'>{this._renderFieldNames('single')}</div>
-                                <div className='sendFields'>
-                                    <Form.Label>URL</Form.Label>
-                                    <InputGroup className='mb-3'>
-                                        <FormControl disabled placeholder='URL' value={this.state.url} />
-                                        <InputGroup.Append>
-                                            <Button id='copyBtn' variant='outline-secondary'>
-                                                <Image
-                                                    src={copyImage}
-                                                    alt='copy icon'
-                                                    onClick={event => this._copyText(this.state.url, event)}
-                                                    fluid
+                                <Tabs defaultActiveKey='ui'>
+                                    <Tab id='ui' eventKey='ui' title='UI'>
+                                        <Button
+                                            size='lg'
+                                            variant='outline-dark'
+                                            className='send-button'
+                                            onClick={this._sendEmail.bind(this)}
+                                            style={{ marginTop: '12px' }}
+                                        >
+                                            {!this.state.isEmailLoading && <span>Send Email</span>}
+                                            {this.state.isEmailLoading && (
+                                                <Spinner as='span' animation='border' role='status' aria-hidden='true' />
+                                            )}
+                                        </Button>
+                                    </Tab>
+                                    <Tab id='cli' eventKey='cli' title='CLI'>
+                                        <div className='cli-div'>
+                                            <Form.Label>URL</Form.Label>
+                                            <InputGroup className='mb-3'>
+                                                <FormControl disabled placeholder='URL' value={this.state.url} />
+                                                <InputGroup.Append>
+                                                    <Button id='copyBtn' variant='outline-secondary'>
+                                                        <Image
+                                                            src={copyImage}
+                                                            alt='copy icon'
+                                                            onClick={event => this._copyText(this.state.url, event)}
+                                                            fluid
+                                                        />
+                                                    </Button>
+                                                </InputGroup.Append>
+                                            </InputGroup>
+                                            <Form.Label>API Key</Form.Label>
+                                            <InputGroup className='mb-3'>
+                                                <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
+                                                <InputGroup.Append>
+                                                    <Button id='copyBtn' variant='outline-secondary'>
+                                                        <Image
+                                                            src={copyImage}
+                                                            alt='copy icon'
+                                                            onClick={event => this._copyText(this.state.apiKey, event)}
+                                                            fluid
+                                                        />
+                                                    </Button>
+                                                </InputGroup.Append>
+                                            </InputGroup>
+                                            <Form.Label>JSON Body</Form.Label>
+                                            <InputGroup className='mb-3'>
+                                                <TextareaAutosize
+                                                    readOnly
+                                                    className='jsonBody'
+                                                    value={JSON.stringify(this.state.jsonBody, null, '\t')}
                                                 />
-                                            </Button>
-                                        </InputGroup.Append>
-                                    </InputGroup>
-                                    <Form.Label>API Key</Form.Label>
-                                    <InputGroup className='mb-3'>
-                                        <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
-                                        <InputGroup.Append>
-                                            <Button id='copyBtn' variant='outline-secondary'>
-                                                <Image
-                                                    src={copyImage}
-                                                    alt='copy icon'
-                                                    onClick={event => this._copyText(this.state.apiKey, event)}
-                                                    fluid
-                                                />
-                                            </Button>
-                                        </InputGroup.Append>
-                                    </InputGroup>
-                                    <Form.Label>JSON Body</Form.Label>
-                                    <InputGroup className='mb-3'>
-                                        <TextareaAutosize
-                                            readOnly
-                                            className='jsonBody'
-                                            value={JSON.stringify(this.state.jsonBody, null, '\t')}
-                                        />
-                                        <InputGroup.Append>
-                                            <Button id='copyBtn' variant='outline-secondary' onClick={event => this._copyJson(event)}>
-                                                <Image src={copyImage} alt='copy icon' fluid />
-                                            </Button>
-                                        </InputGroup.Append>
-                                    </InputGroup>
-                                </div>
+                                                <InputGroup.Append>
+                                                    <Button
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyJson(event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
+                                                    </Button>
+                                                </InputGroup.Append>
+                                            </InputGroup>
+                                            <Form.Label>Full cURL Request</Form.Label>
+                                            <InputGroup className='mb-3'>
+                                                <TextareaAutosize readOnly className='curl' value={this.state.curlRequest} />
+                                                <InputGroup.Append>
+                                                    <Button
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyCurl(event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
+                                                    </Button>
+                                                </InputGroup.Append>
+                                            </InputGroup>
+                                        </div>
+                                    </Tab>
+                                </Tabs>
                             </Tab>
-                            <Tab id='batch' eventKey='batch' title='Batch'>
+                            <Tab id='batch' disabled eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
                                     <p className='uploadCsvText'>Upload CSV here:</p>
                                     <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>

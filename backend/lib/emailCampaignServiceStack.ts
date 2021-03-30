@@ -4,6 +4,7 @@ import { TemplateService } from './services/templateService';
 import { EmailService } from './services/emailService';
 import { Database } from './constructs/database';
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
+import { ResponseType } from '@aws-cdk/aws-apigateway';
 
 /**
  * Main backend stack
@@ -34,9 +35,23 @@ export class EmailCampaignServiceStack extends cdk.Stack {
     }
 
     private _initApi(): void {
+        const headers = apiGateway.Cors.DEFAULT_HEADERS;
+        headers.push('APIKey');
         this._api = new apiGateway.RestApi(this, 'RestApi', {
             defaultCorsPreflightOptions: {
                 allowOrigins: apiGateway.Cors.ALL_ORIGINS,
+                allowHeaders: headers,
+            },
+        });
+        this._api.addGatewayResponse('Unauthorized', {
+            type: ResponseType.UNAUTHORIZED,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': "'*'",
+                'Access-Control-Allow-Headers': "'*'",
+            },
+            templates: {
+                'application/json':
+                    '{ "message": "Authorization error. Check your chosen template exists, or API key is correct for the chosen template.", "statusCode": "401" }',
             },
         });
     }

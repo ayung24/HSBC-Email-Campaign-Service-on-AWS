@@ -111,22 +111,38 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         }
     }
 
+    private _isEmptyFile(file: any): boolean {
+        const isEmpty = !file || file.size === 0;
+        if (isEmpty) {
+            this._addToast({
+                id: 'emptyDocxError',
+                body: 'Cannot upload an empty template.',
+                type: ToastType.ERROR,
+                open: true,
+            });
+        }
+        return isEmpty;
+    }
+
     private _handleUploadWordFile(file: File): void {
         if (this._isValidFileType(file.type)) {
-            this.setState({ file: file });
-            this._templateService
-                .parseDocx(file)
-                .then(([htmlFile, fieldNames]) => {
-                    this.setState({ htmlFile: htmlFile, fieldNames: fieldNames });
-                })
-                .catch(err => {
-                    this._addToast({
-                        id: 'parseDocxError',
-                        body: `Could not parse word document file. Error: ${err}`,
-                        type: ToastType.ERROR,
-                        open: true,
+            if (!this._isEmptyFile(file)) {
+                this._templateService
+                    .parseDocx(file)
+                    .then(([htmlFile, fieldNames]) => {
+                        if (!this._isEmptyFile(htmlFile)) {
+                            this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
+                        }
+                    })
+                    .catch(err => {
+                        this._addToast({
+                            id: 'parseDocxError',
+                            body: `Could not parse word document file. Error: ${err}`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        });
                     });
-                });
+            }
         } else {
             this._addToast(this._createWordFileTypeErrorToast(file));
         }
@@ -191,16 +207,22 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             console.log('hi');
         } else {
             this._templateService
-                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-                .then((t: ITemplate) => {
-                    EventEmitter.getInstance().dispatch('refreshGrid');
-                    this._addToast(this._createUploadSuccessToast(t.templateName));
-                    this._closeModal();
-                })
-                .catch((err: IErrorReturnResponse) => {
-                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-                })
-                .finally(() => this.setState({ isLoading: false }));
+            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+            .then((t: ITemplate) => {
+                return new Promise<void>(resolve => {
+                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
+                    setTimeout(() => {
+                        EventEmitter.getInstance().dispatch('refreshGrid');
+                        this._addToast(this._createUploadSuccessToast(t.templateName));
+                        this._closeModal();
+                        resolve();
+                    }, 3000);
+                });
+            })
+            .catch((err: IErrorReturnResponse) => {
+                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+            })
+            .finally(() => this.setState({ isLoading: false }));
         }
     }
 

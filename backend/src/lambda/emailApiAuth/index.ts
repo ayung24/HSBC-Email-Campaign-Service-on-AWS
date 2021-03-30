@@ -1,14 +1,16 @@
-import { APIGatewayRequestAuthorizerHandler } from 'aws-lambda';
+import { APIGatewayRequestAuthorizerEvent, Context } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
-import { IEmailAPIAuthReqBody } from '../lambdaInterfaces';
 import { AWSError, KMS } from 'aws-sdk';
 import * as Logger from '../../../logger';
+import { ErrorCode, ESCError } from '../../ESCError';
 
 const KMS_REGION = process.env.KMS_REGION;
 const KMS_ACCOUNT_ID = process.env.KMS_ACCOUNT_ID;
 const KMS_KEY_ID = process.env.KMS_KEY_ID;
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
+const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 
 const kms: KMS = new KMS({
     region: KMS_REGION,
@@ -18,23 +20,27 @@ const kms: KMS = new KMS({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
+    return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID && !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH;
 };
 
-export const handler: APIGatewayRequestAuthorizerHandler = function (event, context, callback) {
+export const handler = async function (event: APIGatewayRequestAuthorizerEvent, context: Context) {
     Logger.info({
         message: 'Received POST /email authorization request',
         additionalInfo: event,
     });
 
     if (!validateEnv()) {
-        callback('Internal server error');
+        const error = new ESCError(ErrorCode.ES6, 'Environment variables not set');
+        Logger.logError(error);
+        return Promise.reject('Unauthorized');
     }
 
-    const apiKey = event.headers?.APIKey;
+    const apiKey = event.headers?.APIKey ?? event.headers?.apikey;
     const templateId = event.queryStringParameters?.templateid;
     if (!templateId || !apiKey) {
-        callback('Unauthorized');
+        const error = new ESCError(ErrorCode.ES7, 'Missing templateId or API key');
+        Logger.logError(error);
+        return Promise.reject('Unauthorized');
     }
 
     Logger.info({
@@ -46,7 +52,8 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
     });
 
     // Query DynamoDB to retrieve template's metadata and decrypt DB-stored API key
-    db.GetTemplateById(templateId)
+    return db
+        .GetTemplateById(templateId)
         .then((template: ITemplateFullEntry) => {
             Logger.info({
                 message: 'Retrieved template',
@@ -56,25 +63,32 @@ export const handler: APIGatewayRequestAuthorizerHandler = function (event, cont
                 KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
                 CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
             };
-            kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-                if (err || !data.Plaintext) {
-                    Logger.logError(err);
-                    callback('Unauthorized');
-                } else if (data.Plaintext.toString() === apiKey) {
-                    Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
-                    callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
-                } else {
-                    Logger.info({
-                        message: 'Authorization failure',
-                        additionalInfo: { templateId: template.templateId },
-                    });
-                    callback(null, generatePolicy(event.requestContext.identity.userAgent, 'Deny', event.methodArn));
-                }
+            return new Promise((resolve, reject) => {
+                kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+                    if (err || !data.Plaintext) {
+                        Logger.logError(err);
+                        reject(new ESCError(ErrorCode.ES8, 'KMS error'));
+                    } else if (data.Plaintext.toString() === apiKey) {
+                        Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
+                        resolve(generatePolicy(event.requestContext.identity.userAgent, 'Allow', event.methodArn));
+                    } else {
+                        Logger.err({
+                            message: 'Authorization failure',
+                            additionalInfo: {
+                                templateId: template.templateId,
+                                expectedApiKey: data.Plaintext.toString(),
+                                given: apiKey,
+                                code: ErrorCode.ES9,
+                            },
+                        });
+                        reject(new ESCError(ErrorCode.ES9, 'Invalid API Key'));
+                    }
+                });
             });
         })
         .catch(err => {
             Logger.logError(err);
-            callback('Unauthorized');
+            return Promise.reject('Unauthorized');
         });
 };
 

@@ -12,7 +12,8 @@
     "cdk:diff": "cdk diff || true",
     "cdk:deploy": "cdk deploy --require-approval never --context BUILDENV=dev",
     "cdk:deploy:prod": "cdk deploy --require-approval never --context BUILDENV=prod",
-    "lint": "eslint */**/*.ts --fix"
+    "lint": "eslint */**/*.ts --fix",
+    "test:security": "./test/postman/securityApiTesting/security_api_testing.sh"
   },
   "devDependencies": {
     "@aws-cdk/assert": "1.88.0",
@@ -39,7 +40,7 @@
     "@aws-cdk/aws-dynamodb": "1.88.0",
     "@aws-cdk/aws-iam": "1.88.0",
     "@aws-cdk/aws-lambda": "1.88.0",
-    "@aws-cdk/aws-lambda-event-sources": "1.88.0",
+    "@aws-cdk/aws-lambda-event-sources": "^1.88.0",
     "@aws-cdk/aws-lambda-nodejs": "1.88.0",
     "@aws-cdk/aws-logs": "1.88.0",
     "@aws-cdk/aws-s3": "1.88.0",
@@ -47,6 +48,7 @@
     "@aws-cdk/aws-sns": "1.88.0",
     "@aws-cdk/aws-sns-subscriptions": "1.88.0",
     "@aws-cdk/aws-sqs": "1.88.0",
-    "@aws-cdk/core": "1.88.0"
+    "@aws-cdk/core": "1.88.0",
+    "aws-sdk": "^2.873.0"
   }
 }

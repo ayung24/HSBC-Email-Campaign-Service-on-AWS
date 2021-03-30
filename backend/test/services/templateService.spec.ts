@@ -169,6 +169,10 @@ describe('template service tests', () => {
                             METADATA_TABLE_NAME: objectLike({
                                 Ref: stringLike('MetadataTable*'),
                             }),
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                            HTML_BUCKET_NAME: objectLike({
+                                Ref: stringLike('HTMLBucket*'),
+                            }),
                         }),
                     },
                     Runtime: 'nodejs12.x',
@@ -184,6 +188,22 @@ describe('template service tests', () => {
                         Statement: arrayWith(
                             objectLike({
                                 Action: arrayWith('dynamodb:Query', 'dynamodb:GetItem', 'dynamodb:Scan', 'dynamodb:ConditionCheckItem'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('GetTemplateMetadataHandler*'),
+                }),
+            );
+        });
+
+        it('has READ permission on HTML bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('s3:GetObject*', 's3:GetBucket*', 's3:List*'),
                                 Effect: 'Allow',
                             }),
                         ),
@@ -231,6 +251,22 @@ describe('template service tests', () => {
                                     'dynamodb:UpdateItem',
                                     'dynamodb:DeleteItem',
                                 ),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('DeleteTemplateHandler*'),
+                }),
+            );
+        });
+
+        it('has READ permission on HTML bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('s3:GetObject*', 's3:GetBucket*', 's3:List*'),
                                 Effect: 'Allow',
                             }),
                         ),
