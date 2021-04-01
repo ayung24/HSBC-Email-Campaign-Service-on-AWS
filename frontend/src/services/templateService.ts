@@ -11,6 +11,7 @@ import {
     ITemplateWithHTML,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
+import XLSX from 'xlsx';
 
 const mammoth = require('mammoth');
 
@@ -28,6 +29,24 @@ export class TemplateService {
         };
         return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
             this._uploadTemplateHTML(metadataResponse.imageUploadUrl, htmlFile).then(() => {
+                return {
+                    templateId: metadataResponse.templateId,
+                    apiKey: metadataResponse.apiKey,
+                    templateName: metadataResponse.templateName,
+                    fieldNames: metadataResponse.fieldNames,
+                    uploadTime: new Date(metadataResponse.timeCreated),
+                };
+            }),
+        );
+    }
+
+    public uploadCsv(name: string, csvFile: any, fieldNames: Array<string>): Promise<ITemplate> {
+        const requestBody: IUploadTemplateReqBody = {
+            templateName: name,
+            fieldNames: fieldNames,
+        };
+        return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
+            this._uploadTemplateHTML(metadataResponse.imageUploadUrl, csvFile).then(() => {
                 return {
                     templateId: metadataResponse.templateId,
                     apiKey: metadataResponse.apiKey,
@@ -102,6 +121,35 @@ export class TemplateService {
                 const html: string = resultObj.value;
                 return this._parseFieldsFromHTML(html);
             });
+    }
+
+    public parseCsv(csv: File): Promise<[jsonData: any, fieldNames: Array<string>]> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            let jsonData = {};
+            const fieldNames: any[] = [];
+            reader.onerror = () => reject({ error: reader.error, message: reader.error });
+            reader.onload = function (e: any) {
+                if (e.target) {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, {
+                        type: 'binary',
+                    });
+                    workbook.SheetNames.forEach(function (sheetName: any) {
+                        const rowObj = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        const jsonObj = JSON.stringify(rowObj);
+                        jsonData = jsonObj;
+                        Object.keys(jsonObj[0]).forEach(key => {
+                            if (key !== 'Recipient' && key !== 'Subject') {
+                                fieldNames.push(key);
+                            }
+                        });
+                    });
+                }
+            };
+            reader.readAsBinaryString(csv);
+            resolve([jsonData, fieldNames]);
+        });
     }
 
     /**

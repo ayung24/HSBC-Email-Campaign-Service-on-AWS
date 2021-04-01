@@ -496,7 +496,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </Tab>
                                 </Tabs>
                             </Tab>
-                            <Tab id='batch' disabled eventKey='batch' title='Batch'>
+                            <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
                                     <p className='uploadCsvText'>Upload CSV here:</p>
                                     <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>

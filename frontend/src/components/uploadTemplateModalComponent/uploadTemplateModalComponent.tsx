@@ -15,6 +15,7 @@ interface UploadModalState extends SpinnerState {
     isModalShown: boolean;
     templateName: string;
     htmlFile: any;
+    csvFile: any;
     fieldNames: Array<string>;
 }
 
@@ -37,6 +38,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             isModalShown: false,
             templateName: '',
             htmlFile: undefined,
+            csvFile: undefined,
             fieldNames: [],
             isLoading: false,
         };
@@ -102,15 +104,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         }
     }
 
-    private _handleUploadCsvFile(file: File): void {
-        if (this._isValidFileType(file.type)) {
-            console.log('hi');
-            this.setState({ file: file });
-        } else {
-            this._addToast(this._createCsvFileTypeErrorToast(file));
-        }
-    }
-
     private _isEmptyFile(file: any): boolean {
         const isEmpty = !file || file.size === 0;
         if (isEmpty) {
@@ -122,30 +115,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             });
         }
         return isEmpty;
-    }
-
-    private _handleUploadWordFile(file: File): void {
-        if (this._isValidFileType(file.type)) {
-            if (!this._isEmptyFile(file)) {
-                this._templateService
-                    .parseDocx(file)
-                    .then(([htmlFile, fieldNames]) => {
-                        if (!this._isEmptyFile(htmlFile)) {
-                            this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
-                        }
-                    })
-                    .catch(err => {
-                        this._addToast({
-                            id: 'parseDocxError',
-                            body: `Could not parse word document file. Error: ${err}`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        });
-                    });
-            }
-        } else {
-            this._addToast(this._createWordFileTypeErrorToast(file));
-        }
     }
 
     private _onTemplateNameChanged(event: React.ChangeEvent<HTMLInputElement>): void {
@@ -201,29 +170,94 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         };
     }
 
-    private _doUpload(): void {
-        this.setState({ isLoading: true });
-        if (this.props.fileTypeAcceptance === '.xlsx') {
-            console.log('hi');
-        } else {
-            this._templateService
-                .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
-                .then((t: ITemplate) => {
-                    return new Promise<void>(resolve => {
-                        // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
-                        setTimeout(() => {
-                            EventEmitter.getInstance().dispatch('refreshGrid');
-                            this._addToast(this._createUploadSuccessToast(t.templateName));
-                            this._closeModal();
-                            resolve();
-                        }, 3000);
+    private _handleUploadCsvFile(file: File): void {
+        if (this._isValidFileType(file.type)) {
+            if (!this._isEmptyFile(file)) {
+                this._templateService
+                    .parseCsv(file)
+                    .then(([csvFile, fieldNames]) => {
+                        if (!this._isEmptyFile(csvFile)) {
+                            this.setState({ file: file, csvFile: csvFile, fieldNames: fieldNames });
+                        }
+                    })
+                    .catch(err => {
+                        this._addToast({
+                            id: 'parseCsvError',
+                            body: `Could not parse csv file. Error: ${err}`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        });
                     });
-                })
-                .catch((err: IErrorReturnResponse) => {
-                    this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-                })
-                .finally(() => this.setState({ isLoading: false }));
+            }
+        } else {
+            this._addToast(this._createCsvFileTypeErrorToast(file));
         }
+    }
+
+    private _handleUploadWordFile(file: File): void {
+        if (this._isValidFileType(file.type)) {
+            if (!this._isEmptyFile(file)) {
+                this._templateService
+                    .parseDocx(file)
+                    .then(([htmlFile, fieldNames]) => {
+                        if (!this._isEmptyFile(htmlFile)) {
+                            this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
+                        }
+                    })
+                    .catch(err => {
+                        this._addToast({
+                            id: 'parseDocxError',
+                            body: `Could not parse word document file. Error: ${err}`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        });
+                    });
+            }
+        } else {
+            this._addToast(this._createWordFileTypeErrorToast(file));
+        }
+    }
+
+    private _doUploadCsv(): void {
+        this.setState({ isLoading: true });
+        this._templateService
+            .uploadCsv(this.state.templateName, this.state.csvFile, this.state.fieldNames)
+            .then((t: ITemplate) => {
+                return new Promise<void>(resolve => {
+                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
+                    setTimeout(() => {
+                        EventEmitter.getInstance().dispatch('refreshGrid');
+                        this._addToast(this._createUploadSuccessToast(t.templateName));
+                        this._closeModal();
+                        resolve();
+                    }, 3000);
+                });
+            })
+            .catch((err: IErrorReturnResponse) => {
+                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+            })
+            .finally(() => this.setState({ isLoading: false }));
+    }
+
+    private _doUploadWord(): void {
+        this.setState({ isLoading: true });
+        this._templateService
+            .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
+            .then((t: ITemplate) => {
+                return new Promise<void>(resolve => {
+                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
+                    setTimeout(() => {
+                        EventEmitter.getInstance().dispatch('refreshGrid');
+                        this._addToast(this._createUploadSuccessToast(t.templateName));
+                        this._closeModal();
+                        resolve();
+                    }, 3000);
+                });
+            })
+            .catch((err: IErrorReturnResponse) => {
+                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+            })
+            .finally(() => this.setState({ isLoading: false }));
     }
 
     private _requireNameCreation() {
@@ -281,7 +315,13 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                                 onFileChanged={this._onFileChanged.bind(this)}
                             />
                             {this._requireNameCreation()}
-                            <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUpload.bind(this)}>
+                            <Button
+                                className='create-template-button'
+                                disabled={this._disableCreate()}
+                                onClick={
+                                    this.props.fileTypeAcceptance === '.xlsx' ? this._doUploadWord.bind(this) : this._doUploadCsv.bind(this)
+                                }
+                            >
                                 {this.props.fileTypeAcceptance === '.xlsx' ? 'Upload' : 'Create'}
                             </Button>
                             {this.state.isLoading && <SpinnerComponent />}
