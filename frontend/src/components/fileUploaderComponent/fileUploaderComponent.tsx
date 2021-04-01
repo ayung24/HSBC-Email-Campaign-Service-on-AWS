@@ -23,7 +23,7 @@ export class FileUploaderComponent extends React.Component<PresentationalProps> 
 
     private _getClasses(): string {
         const uploaderClasses = 'file-uploader';
-        return this.props.dragging ? uploaderClasses + 'file-uploader--dragging' : uploaderClasses;
+        return this.props.dragging ? uploaderClasses + '--dragging' : uploaderClasses;
     }
 
     private _getFileName(): string {

@@ -26,9 +26,3 @@
     border-color: black;
     background-color: #f0eff0;
 }
-
-.drop-area-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
