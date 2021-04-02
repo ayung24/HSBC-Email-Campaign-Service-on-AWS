@@ -57,8 +57,9 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 ExpressionAttributeValues: {
                     ':proposedName': { S: name },
                     ':inService': { S: EntryStatus.IN_SERVICE },
+                    ':notReady': { S: EntryStatus.NOT_READY },
                 },
-                KeyConditionExpression: 'templateStatus = :inService AND templateName = :proposedName',
+                KeyConditionExpression: '(templateStatus = :notReady OR templateStatus = :uploading) AND templateName = :proposedName',
             };
             ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
                 if (err) {
@@ -82,7 +83,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 Item: {
                     templateId: { S: uuid() }, // time based
                     timeCreated: { N: `${new Date().getTime()}` },
-                    templateStatus: { S: EntryStatus.IN_SERVICE },
+                    templateStatus: { S: EntryStatus.NOT_READY },
                     templateName: { S: name },
                     apiKey: { S: apiKey },
                     fieldNames: { SS: toSS(fieldNames) }, // dynamoDB disallows empty Set
@@ -114,13 +115,55 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
         .then(metadataEntry =>
             Promise.resolve({
                 templateId: metadataEntry.templateId.S,
-                templateStatus: EntryStatus.IN_SERVICE,
+                templateStatus: metadataEntry.templateStatus.S,
                 templateName: metadataEntry.templateName.S,
                 timeCreated: metadataEntry.timeCreated.N,
                 fieldNames: fromSS(metadataEntry.fieldNames.SS),
                 apiKey: metadataEntry.apiKey.S,
             }),
         );
+}
+
+
+export function EnableTemplate(templateId: string): Promise<ITemplateBase> {
+    const ddb = getDynamo();
+    Logger.info({ message: `Updating status of template to be in service`, additionalInfo: { templateId: templateId } });
+    if (isEmpty(templateId)) {
+        const templateIdEmptyError = new ESCError(ErrorCode.TS19, 'Template id is empty');
+        Logger.logError(templateIdEmptyError);
+        return Promise.reject(templateIdEmptyError);
+    }
+    const enableEntryParams: DynamoDB.UpdateItemInput = {
+        TableName: METADATA_TABLE_NAME!,
+        Key: {
+            templateId: {
+                S: templateId,
+            },
+        },
+        UpdateExpression: 'set templateStatus = :status',
+        ExpressionAttributeValues: {
+            ':status': { S: EntryStatus.IN_SERVICE },
+        },
+        ReturnValues: 'ALL_NEW',
+    };
+    return ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
+        if (err) {
+            Logger.logError(err);
+            const updateTemplateStatusError = new ESCError(
+                ErrorCode.TS21,
+                `Update template status error: ${JSON.stringify(enableEntryParams)}`,
+            );
+            return Promise.reject(updateTemplateStatusError);
+        } else {
+            const item: DynamoDB.AttributeMap = data.Attributes;
+            return {
+                templateId: item.templateId.S!,
+                timeCreated: Number.parseInt(item.timeCreated.N!),
+                templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                templateName: item.templateName.S!,
+            };
+        }
+    });
 }
 
 export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {

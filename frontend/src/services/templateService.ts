@@ -36,7 +36,12 @@ export class TemplateService {
                     uploadTime: new Date(metadataResponse.timeCreated),
                 };
             }),
-        );
+        )
+        .then(template => {
+            return this._requestService.PUT('/templates/' + template.templateId, (r) => {
+                return Promise.resolve(template);
+            });
+        });
     }
 
     private _uploadTemplateHTML(presignedPost: PresignedPost, htmlFile: any): Promise<void> {

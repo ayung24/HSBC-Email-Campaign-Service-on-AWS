@@ -1,5 +1,4 @@
-import { S3CreateEvent } from 'aws-lambda';
-import { isEmptyArray } from '../../commonFunctions';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
@@ -11,6 +10,12 @@ const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
 const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 
+const headers = {
+    'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+    'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+    'Content-Type': 'application/json',
+};
+
 const dataURIRegex = /\s*data:(?<mime>[a-z-]+\/[a-z\-+]+);(?<encoding>base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@/?%\s]*\s*)/i;
 
 /**
@@ -20,31 +25,29 @@ const validateEnv = function (): boolean {
     return !!HTML_BUCKET_NAME && !!IMAGE_BUCKET_NAME && !!SRC_HTML_PATH && !!PROCESSED_HTML_PATH;
 };
 
-export const handler = async function (event: S3CreateEvent) {
+export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!validateEnv()) {
         return {
+            headers: headers,
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.TS10,
+                code: ErrorCode.TS0,
             }),
         };
-    } else if (!Array.isArray(event.Records) || isEmptyArray(event.Records)) {
+    } else if (!event.pathParameters || !event.pathParameters.id) {
         return {
-            statusCode: 500,
+            headers: headers,
+            statusCode: 400,
             body: JSON.stringify({
-                message: 'No S3 create event',
-                code: ErrorCode.TS9,
+                message: ErrorMessages.INVALID_REQUEST_FORMAT,
+                code: ErrorCode.TS6,
             }),
         };
     }
-    const uploadEvent = event.Records[0];
-    const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH!, '');
-    Logger.info({
-        message: `Post-processing HTML for template with id ${templateId}`,
-        additionalInfo: uploadEvent,
-    });
 
+    const templateId = event.pathParameters.id;
     return db
         .GetHTMLById(templateId, SRC_HTML_PATH!)
         .then((html: string) => {
@@ -75,6 +78,10 @@ export const handler = async function (event: S3CreateEvent) {
         })
         .then(() => {
             Logger.info({ message: `Updated html for template ${templateId}` });
+            return db.EnableTemplate(templateId);
+        })
+        .then((template) => {
+            Logger.info({ message: `Template marked as in service ${template.templateId}`, additionalInfo: template});
             return {
                 statusCode: 200,
             };

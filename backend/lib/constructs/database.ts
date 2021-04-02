@@ -15,8 +15,6 @@ export class Database extends cdk.Construct {
     private _metadata: dynamodb.Table;
     private _htmlBucket: s3.Bucket;
     private _imageBucket: s3.Bucket;
-    private _processHTML: lambda.Function;
-    private _removeImages: lambda.Function;
 
     private readonly _processHTMLLambdaName: string;
     private readonly _removeImagesLambdaName: string;
@@ -30,8 +28,7 @@ export class Database extends cdk.Construct {
         this._removeImagesLambdaName = `RemoveImagesHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
-        this._initFunctions(scope);
-        this._initLogGroups(scope);
+        // this._initLogGroups(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -126,70 +123,25 @@ export class Database extends cdk.Construct {
         });
     }
 
-    private _initFunctions(scope: cdk.Construct) {
-        // HTML on create lambda
-        this._processHTML = new NodejsFunction(scope, 'ProcessHTMLHandler', {
-            runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
-            bundling: {
-                nodeModules: ['cheerio'],
-                target: config.lambda.BUILD_TARGET,
-            },
-            environment: {
-                HTML_BUCKET_NAME: this._htmlBucket.bucketName,
-                SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
-                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
-                IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
-            },
-            timeout: cdk.Duration.seconds(10),
-            functionName: this._processHTMLLambdaName,
-        });
-        this._processHTML.addEventSource(
-            new S3EventSource(this._htmlBucket, {
-                events: [s3.EventType.OBJECT_CREATED],
-                filters: [{ prefix: config.s3.SRC_HTML_PATH }],
-            }),
-        );
-        this._htmlBucket.grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
-        this._htmlBucket.grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
-        this._htmlBucket.grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
-        this._imageBucket.grantPut(this._processHTML);
-
-        // HTML on delete lambda
-        this._removeImages = new NodejsFunction(scope, 'RemoveImagesHandler', {
-            runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/removeImages/index.ts`,
-            environment: {
-                IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
-                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
-            },
-            functionName: this._removeImagesLambdaName,
-        });
-        this._removeImages.addEventSource(
-            new S3EventSource(this._htmlBucket, {
-                events: [s3.EventType.OBJECT_REMOVED],
-                filters: [{ prefix: config.s3.PROCESSED_HTML_PATH }],
-            }),
-        );
-        this._imageBucket.grantRead(this._removeImages);
-        this._imageBucket.grantDelete(this._removeImages);
-    }
-
-    private _initLogGroups(scope: cdk.Construct) {
-        new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
-            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
-            retention: RetentionDays.SIX_MONTHS,
-            removalPolicy: this.REMOVAL_POLICY,
-        });
-        new LogGroup(scope, 'RemoveImagesHandlerLogs', {
-            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
-            retention: RetentionDays.SIX_MONTHS,
-            removalPolicy: this.REMOVAL_POLICY,
-        });
-    }
+    // private _initLogGroups(scope: cdk.Construct) {
+    //     new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
+    //         logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
+    //         retention: RetentionDays.SIX_MONTHS,
+    //         removalPolicy: this.REMOVAL_POLICY,
+    //     });
+    //     new LogGroup(scope, 'RemoveImagesHandlerLogs', {
+    //         logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
+    //         retention: RetentionDays.SIX_MONTHS,
+    //         removalPolicy: this.REMOVAL_POLICY,
+    //     });
+    // }
 
     public htmlBucket(): s3.Bucket {
         return this._htmlBucket;
+    }
+
+    public imageBucket(): s3.Bucket {
+        return this._imageBucket;
     }
 
     public metadataTable(): dynamodb.Table {
