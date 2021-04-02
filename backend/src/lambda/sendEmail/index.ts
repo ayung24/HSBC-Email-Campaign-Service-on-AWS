@@ -5,7 +5,7 @@ import { ISendEmailFields, ISendEmailReqBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
 const VERSION = process.env.VERSION || '2010-12-01';
@@ -92,7 +92,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
 
-    return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH)])
+    return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH!)])
         .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
             const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
             if (!html) {
@@ -112,8 +112,6 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             };
             return transporter.sendMail(params).catch(err => {
                 Logger.logError(err);
-                const condensedParams = Object.assign({}, params);
-                delete condensedParams.html;
                 const sendMailError = new ESCError(ErrorCode.ES5, `Send email error: { to: ${params.to}, subject: ${params.subject} }`);
                 return Promise.reject(sendMailError);
             });

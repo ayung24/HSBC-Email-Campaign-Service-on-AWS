@@ -7,7 +7,7 @@ import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType 
 import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
-import { IError, IErrorReturnResponse } from '../../models/iError';
+import { IErrorReturnResponse } from '../../models/iError';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;

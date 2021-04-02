@@ -35,8 +35,8 @@
 
 .modal.fade {
     background: rgba(0, 0, 0, 0.2);
-  }
+}
 
-  .modal-backdrop.fade {
+.modal-backdrop.fade {
     opacity: 0;
-  }
+}
