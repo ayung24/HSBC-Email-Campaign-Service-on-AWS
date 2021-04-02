@@ -16,10 +16,8 @@ export class Database extends cdk.Construct {
     private _htmlBucket: s3.Bucket;
     private _imageBucket: s3.Bucket;
     private _processHTML: lambda.Function;
-    private _removeImages: lambda.Function;
 
     private readonly _processHTMLLambdaName: string;
-    private readonly _removeImagesLambdaName: string;
 
     constructor(scope: cdk.Construct, id: string, buildEnv: string) {
         super(scope, id);
@@ -27,7 +25,6 @@ export class Database extends cdk.Construct {
         this.REMOVAL_POLICY = isDev ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this.AUTO_DELETE_OBJECTS = isDev;
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
-        this._removeImagesLambdaName = `RemoveImagesHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
         this._initFunctions(scope);
@@ -154,35 +151,11 @@ export class Database extends cdk.Construct {
         this._htmlBucket.grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
         this._htmlBucket.grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
         this._imageBucket.grantPut(this._processHTML);
-
-        // HTML on delete lambda
-        this._removeImages = new NodejsFunction(scope, 'RemoveImagesHandler', {
-            runtime: lambda.Runtime.NODEJS_12_X,
-            entry: `${config.lambda.LAMBDA_ROOT}/removeImages/index.ts`,
-            environment: {
-                IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
-                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
-            },
-            functionName: this._removeImagesLambdaName,
-        });
-        this._removeImages.addEventSource(
-            new S3EventSource(this._htmlBucket, {
-                events: [s3.EventType.OBJECT_REMOVED],
-                filters: [{ prefix: config.s3.PROCESSED_HTML_PATH }],
-            }),
-        );
-        this._imageBucket.grantRead(this._removeImages);
-        this._imageBucket.grantDelete(this._removeImages);
     }
 
     private _initLogGroups(scope: cdk.Construct) {
         new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
-            retention: RetentionDays.SIX_MONTHS,
-            removalPolicy: this.REMOVAL_POLICY,
-        });
-        new LogGroup(scope, 'RemoveImagesHandlerLogs', {
-            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });

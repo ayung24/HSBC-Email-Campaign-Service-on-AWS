@@ -122,6 +122,23 @@ describe('template service tests', () => {
                 }),
             );
         });
+
+        it('can encrypt with kms key', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: 'kms:Encrypt',
+                                Effect: 'Allow',
+                                Resource: stringLike(`arn:aws:kms:${config.KMS.REGION}:${config.KMS.ACCOUNT_ID}:key/${config.KMS.KEY_ID}`),
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('UploadTemplateHandler*'),
+                }),
+            );
+        });
     });
 
     describe('list template lambda tests', () => {
@@ -288,6 +305,35 @@ describe('template service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('DeleteTemplateHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('template service log tests', () => {
+        it('has log groups for all service lambdas', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*UploadTemplateHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*GetTemplateMetadataHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*ListTemplatesHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*DeleteTemplateHandler*'),
+                    RetentionInDays: 180,
                 }),
             );
         });
