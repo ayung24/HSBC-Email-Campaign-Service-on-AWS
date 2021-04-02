@@ -6,8 +6,8 @@ export const config = {
         IDENTITY_POOL_ID: 'ca-central-1:097f9420-9dbf-4ee9-a9f6-f4ed5c610e10',
     },
     api: {
-        REGION_DEV: 'us-west-2',
-        DEPLOYMENT_ID_DEV: 'cvmtdo18w4',
+        REGION_DEV: 'ca-central-1',
+        DEPLOYMENT_ID_DEV: 'b3qkb2l59g',
         REGION_PROD: 'ca-central-1',
         DEPLOYMENT_ID_PROD: 'z2prvy0ul7',
     },
