@@ -15,8 +15,9 @@ interface UploadModalState extends SpinnerState {
     isModalShown: boolean;
     templateName: string;
     htmlFile: any;
-    csvFile: any;
     fieldNames: Array<string>;
+    csvFile: any;
+    csvFieldNames: Array<string>;
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
@@ -38,8 +39,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             isModalShown: false,
             templateName: '',
             htmlFile: undefined,
-            csvFile: undefined,
             fieldNames: [],
+            csvFile: undefined,
+            csvFieldNames: [],
             isLoading: false,
         };
         this._templateService = new TemplateService();
@@ -175,9 +177,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             if (!this._isEmptyFile(file)) {
                 this._templateService
                     .parseCsv(file)
-                    .then(([csvFile, fieldNames]) => {
+                    .then(([csvFile, csvFieldNames]) => {
                         if (!this._isEmptyFile(csvFile)) {
-                            this.setState({ file: file, csvFile: csvFile, fieldNames: fieldNames });
+                            this.setState({ csvFile: csvFile, csvFieldNames: csvFieldNames });
                         }
                     })
                     .catch(err => {
@@ -304,6 +306,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                             <FileUploaderComponent
                                 dragging={this.state.dragging}
                                 file={this.state.file}
+                                csvFile={this.state.csvFile}
                                 fileTypeAcceptance={this.props.fileTypeAcceptance}
                                 onDrag={this._overrideEventDefaults.bind(this)}
                                 onDragStart={this._overrideEventDefaults.bind(this)}

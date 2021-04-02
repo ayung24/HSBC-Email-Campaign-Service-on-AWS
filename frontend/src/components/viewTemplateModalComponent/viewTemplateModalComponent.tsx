@@ -345,6 +345,10 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _sendBatch(): void {
+        //TODO
+    }
+
     private _onParamChange(event: React.SyntheticEvent): void {
         this.setState((state: ViewModalState) => {
             const formControl: HTMLInputElement = event.target as HTMLInputElement;

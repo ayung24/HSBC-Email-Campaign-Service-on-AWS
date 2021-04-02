@@ -4,6 +4,7 @@ import './fileUploadComponent.css';
 type PresentationalProps = {
     dragging: boolean;
     file: File | null;
+    csvFile: File | null;
     fileTypeAcceptance: string;
     onDrag: (event: React.DragEvent<HTMLDivElement>) => void;
     onDragStart: (event: React.DragEvent<HTMLDivElement>) => void;
@@ -28,7 +29,11 @@ export class FileUploaderComponent extends React.Component<PresentationalProps> 
     }
 
     private _getFileName(): string {
-        return this.props.file ? this.props.file.name : 'No File Uploaded!';
+        if (this.props.fileTypeAcceptance === '.xlsx') {
+            return this.props.csvFile ? this.props.csvFile.name : 'No CSV Uploaded!';
+        } else {
+            return this.props.file ? this.props.file.name : 'No File Uploaded!';
+        }
     }
 
     private _getDropAreaContent(): JSX.Element {

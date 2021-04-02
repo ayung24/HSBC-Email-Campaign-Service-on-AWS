@@ -40,6 +40,7 @@ export class TemplateService {
         );
     }
 
+    // Copy of uploadTemplate as placeholder function
     public uploadCsv(name: string, csvFile: any, fieldNames: Array<string>): Promise<ITemplate> {
         const requestBody: IUploadTemplateReqBody = {
             templateName: name,
@@ -123,32 +124,31 @@ export class TemplateService {
             });
     }
 
-    public parseCsv(csv: File): Promise<[jsonData: any, fieldNames: Array<string>]> {
+    public parseCsv(csv: File): Promise<[jsonData: any, csvFieldNames: Array<string>]> {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            let jsonData = {};
-            const fieldNames: any[] = [];
             reader.onerror = () => reject({ error: reader.error, message: reader.error });
-            reader.onload = function (e: any) {
-                if (e.target) {
-                    const data = e.target.result;
+            reader.onload = function (event: any) {
+                if (event.target) {
+                    const data = event.target.result;
                     const workbook = XLSX.read(data, {
                         type: 'binary',
                     });
+                    let jsonData = {};
+                    const csvFieldNames: any[] = [];
                     workbook.SheetNames.forEach(function (sheetName: any) {
-                        const rowObj = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                        const jsonObj = JSON.stringify(rowObj);
-                        jsonData = jsonObj;
-                        Object.keys(jsonObj[0]).forEach(key => {
+                        const rowObj: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        jsonData = rowObj;
+                        Object.keys(rowObj[0]).forEach(key => {
                             if (key !== 'Recipient' && key !== 'Subject') {
-                                fieldNames.push(key);
+                                csvFieldNames.push(key);
                             }
                         });
                     });
+                    resolve([jsonData, csvFieldNames]);
                 }
             };
             reader.readAsBinaryString(csv);
-            resolve([jsonData, fieldNames]);
         });
     }
 
