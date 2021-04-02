@@ -16,7 +16,6 @@ interface UploadModalState extends SpinnerState {
     templateName: string;
     htmlFile: any;
     fieldNames: Array<string>;
-    csvFile: any;
     csvFieldNames: Array<string>;
 }
 
@@ -40,7 +39,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             templateName: '',
             htmlFile: undefined,
             fieldNames: [],
-            csvFile: undefined,
             csvFieldNames: [],
             isLoading: false,
         };
@@ -179,7 +177,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                     .parseCsv(file)
                     .then(([csvFile, csvFieldNames]) => {
                         if (!this._isEmptyFile(csvFile)) {
-                            this.setState({ csvFile: csvFile, csvFieldNames: csvFieldNames });
+                            this.setState({ file: file, csvFieldNames: csvFieldNames });
                         }
                     })
                     .catch(err => {
@@ -223,7 +221,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     private _doUploadCsv(): void {
         this.setState({ isLoading: true });
         this._templateService
-            .uploadCsv(this.state.templateName, this.state.csvFile, this.state.fieldNames)
+            .uploadCsv(this.state.templateName, this.state.file, this.state.csvFieldNames)
             .then((t: ITemplate) => {
                 return new Promise<void>(resolve => {
                     // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
@@ -306,7 +304,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                             <FileUploaderComponent
                                 dragging={this.state.dragging}
                                 file={this.state.file}
-                                csvFile={this.state.csvFile}
                                 fileTypeAcceptance={this.props.fileTypeAcceptance}
                                 onDrag={this._overrideEventDefaults.bind(this)}
                                 onDragStart={this._overrideEventDefaults.bind(this)}
