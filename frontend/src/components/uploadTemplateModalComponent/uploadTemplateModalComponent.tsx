@@ -18,9 +18,11 @@ interface UploadModalState extends SpinnerState {
     fieldNames: Array<string>;
     csvFieldNames: Array<string>;
     csvData: any;
+    templateFieldNames: any;
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
+    templateFieldNames: any;
     requireTemplateName: boolean;
     fileType: string;
 }
@@ -33,6 +35,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     constructor(props: UploadTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
+
         this.state = {
             dragging: false,
             file: null,
@@ -41,6 +44,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             htmlFile: undefined,
             fieldNames: [],
             csvFieldNames: [],
+            templateFieldNames: this.props.templateFieldNames,
             csvData: undefined,
             isLoading: false,
         };
@@ -178,8 +182,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                 this._templateService
                     .parseCsv(file)
                     .then(([csvData, csvFieldNames]) => {
-                        this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
-                        console.log(this.state);
+                        if (this._validateCsvFieldNames(csvFieldNames)) {
+                            this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
+                        }
                     })
                     .catch(err => {
                         this._addToast({
@@ -217,6 +222,19 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         } else {
             this._addToast(this._createWordFileTypeErrorToast(file));
         }
+    }
+
+    private _validateCsvFieldNames(csvFieldNames: any): boolean {
+        const isMatching = this.state.templateFieldNames.toString().toLowerCase() === csvFieldNames.toString().toLowerCase();
+        if (!isMatching) {
+            this._addToast({
+                id: 'fieldNamesMismatchError',
+                body: 'Field names in CSV file does not match the ones for the template',
+                type: ToastType.ERROR,
+                open: true,
+            });
+        }
+        return isMatching;
     }
 
     private _doUploadCsv(): void {

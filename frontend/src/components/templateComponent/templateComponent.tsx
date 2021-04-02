@@ -49,6 +49,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                     requireTemplateName={true}
                     fileType={'.docx'}
                     addToast={this._addToast.bind(this)}
+                    templateFieldNames={null}
                 />
                 <div className='template-container'>
                     <TemplateGridComponent addToast={this._addToast.bind(this)} />

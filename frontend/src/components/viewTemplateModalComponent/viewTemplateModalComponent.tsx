@@ -55,7 +55,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _emailService: EmailService;
     private _keyManagementService: KMS;
     private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
-
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
 
@@ -65,6 +64,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._templateService = new TemplateService();
         this._uploadModalComponent = React.createRef();
         this._emailService = new EmailService();
+
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
@@ -534,6 +534,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         requireTemplateName={false}
                                         fileType={'.xlsx'}
                                         addToast={this._addToast.bind(this)}
+                                        templateFieldNames={this.state.fieldNames}
                                     />
                                 </div>
                                 <div className='sendButton'>
