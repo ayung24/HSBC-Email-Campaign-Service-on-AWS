@@ -22,6 +22,7 @@ const headers = {
 };
 
 const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
+
 /**
  * Validates lambda's runtime env variables
  */
@@ -30,10 +31,9 @@ const validateEnv = function (): boolean {
 };
 
 /**
- * @param srcHTML HTML with dynamic fields
  * @param fields dynamic field values
  * @param fieldNames required dynamic fields
- * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
+ * @returns false if missing required fields, otherwise true
  */
 const checkFields = function (fields: ISendEmailFields, fieldNames: string[]): boolean {
     const keys = Object.keys(fields);

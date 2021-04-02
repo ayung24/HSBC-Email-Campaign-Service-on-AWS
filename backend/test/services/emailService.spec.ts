@@ -9,7 +9,6 @@ let stack: Stack;
 let emailService: EmailService;
 let api: RestApi;
 let database: Database;
-const EXECUTE_LAMBDA_TIMEOUT = 20;
 
 beforeAll(() => {
     stack = new Stack();
@@ -136,9 +135,9 @@ describe('email service tests', () => {
                         deadLetterTargetArn: objectLike({
                             'Fn::GetAtt': arrayWith(stringLike('EmailDLQ*')),
                         }),
-                        maxReceiveCount: 5,
+                        maxReceiveCount: config.sqs.MAX_RECEIVE_COUNT,
                     }),
-                    VisibilityTimeout: 6 * EXECUTE_LAMBDA_TIMEOUT,
+                    VisibilityTimeout: 6 * config.sqs.SEND_LAMBDA_TIMEOUT,
                 }),
             );
         });
@@ -149,7 +148,7 @@ describe('email service tests', () => {
                     FunctionName: objectLike({
                         Ref: stringLike('ExecuteSendHandler*'),
                     }),
-                    BatchSize: 5,
+                    BatchSize: config.sqs.BATCH_SIZE,
                     EventSourceArn: objectLike({
                         'Fn::GetAtt': arrayWith(stringLike('EmailQueue*')),
                     }),
@@ -256,8 +255,8 @@ describe('email service tests', () => {
                         }),
                     },
                     Runtime: 'nodejs12.x',
-                    Timeout: EXECUTE_LAMBDA_TIMEOUT,
-                    ReservedConcurrentExecutions: 5,
+                    Timeout: config.sqs.SEND_LAMBDA_TIMEOUT,
+                    ReservedConcurrentExecutions: config.sqs.MAX_CONCURRENT_SEND_LAMBDA_COUNT,
                     FunctionName: stringLike('ExecuteSendHandler*'),
                 }),
             );

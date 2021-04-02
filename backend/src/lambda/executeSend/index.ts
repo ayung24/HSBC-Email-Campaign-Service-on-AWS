@@ -110,8 +110,9 @@ const sendEmail = function (record: SQSRecord, htmlCache: Map<string, string>): 
                     // in case dequeue fails, we will just log it, email send succeeded regardless
                     if (err) {
                         Logger.logError(err);
+                    } else {
+                        Logger.info({ message: 'Delete record from email queue', additionalInfo: record.messageId });
                     }
-                    Logger.info({ message: 'Delete record from email queue', additionalInfo: record.messageId });
                     resolve(info);
                 });
             });

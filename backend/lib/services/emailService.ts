@@ -57,9 +57,9 @@ export class EmailService {
         this._emailQueue = new sqs.Queue(scope, 'EmailQueue', {
             queueName: `${this._emailQueueName}.fifo`,
             fifo: true,
-            visibilityTimeout: Duration.minutes(2), // recommended timeout is 6 x lambda timeout
+            visibilityTimeout: Duration.seconds(6 * config.sqs.SEND_LAMBDA_TIMEOUT), // recommended timeout is 6 x lambda timeout
             deadLetterQueue: {
-                maxReceiveCount: 5,
+                maxReceiveCount: config.sqs.MAX_RECEIVE_COUNT,
                 queue: this._emailDlq,
             },
             contentBasedDeduplication: true,
@@ -129,8 +129,8 @@ export class EmailService {
             bundling: {
                 nodeModules: ['nodemailer'],
             },
-            timeout: cdk.Duration.seconds(20),
-            reservedConcurrentExecutions: 5,
+            timeout: cdk.Duration.seconds(config.sqs.SEND_LAMBDA_TIMEOUT),
+            reservedConcurrentExecutions: config.sqs.MAX_CONCURRENT_SEND_LAMBDA_COUNT,
             functionName: this._executeSendLambdaName,
         });
         database.htmlBucket().grantRead(this._execute, `${config.s3.PROCESSED_HTML_PATH}*`); // READ access to HTML bucket
