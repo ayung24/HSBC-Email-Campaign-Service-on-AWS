@@ -41,7 +41,7 @@ export class TemplateService {
     }
 
     // Copy of uploadTemplate as placeholder function
-    public uploadCsv(name: string, csvFile: any, fieldNames: Array<string>): Promise<ITemplate> {
+    public sendBatchEmail(name: string, csvFile: any, fieldNames: Array<string>): Promise<ITemplate> {
         const requestBody: IUploadTemplateReqBody = {
             templateName: name,
             fieldNames: fieldNames,

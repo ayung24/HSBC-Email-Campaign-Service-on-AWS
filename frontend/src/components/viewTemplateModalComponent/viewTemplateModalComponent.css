@@ -148,7 +148,6 @@
     width: 100%;
     padding-top:10px;
     max-height: 245px;
-
 }
 
 div.dynamicParameters:empty {
@@ -216,6 +215,7 @@ div.dynamicParameters:empty ~ div.tab-content div.cli-div {
     border-top: 1px solid #dee2e6;
     text-align: right;
 }
+
 .delete.float-right.btn.btn-primary {
     background-color: #db0011;
     border-color: #db0011;

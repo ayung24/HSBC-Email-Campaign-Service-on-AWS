@@ -525,9 +525,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
-                                    <p className='uploadCsvText'>Upload CSV here:</p>
-                                    <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>
-                                        Upload
+                                    <p className='uploadCsvText'>Upload CSV file:</p>
+                                    <Button id='sendCsv' variant='primary' type='submit' onClick={this._toggleUploadModal.bind(this)}>
+                                        Send batch email
                                     </Button>
                                     <UploadTemplateModalComponent
                                         ref={this._uploadModalComponent}
@@ -536,11 +536,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         addToast={this._addToast.bind(this)}
                                         templateFieldNames={this.state.fieldNames}
                                     />
-                                </div>
-                                <div className='sendButton'>
-                                    <Button id='sendCsv' variant='primary' type='submit'>
-                                        Send
-                                    </Button>
                                 </div>
                             </Tab>
                         </Tabs>

@@ -8,6 +8,7 @@ import { ITemplate } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
+import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
 
 interface UploadModalState extends SpinnerState {
     dragging: boolean;
@@ -177,48 +178,44 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _handleUploadCsvFile(file: File): void {
-        if (this._isValidFileType(file.type)) {
-            if (!this._isEmptyFile(file)) {
-                this._templateService
-                    .parseCsv(file)
-                    .then(([csvData, csvFieldNames]) => {
-                        if (this._validateCsvFieldNames(csvFieldNames)) {
-                            this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
-                        }
-                    })
-                    .catch(err => {
-                        this._addToast({
-                            id: 'parseCsvError',
-                            body: `Could not parse csv file. Error: ${err}`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        });
+        if (!this._isEmptyFile(file) && this._isValidFileType(file.type)) {
+            this._templateService
+                .parseCsv(file)
+                .then(([csvData, csvFieldNames]) => {
+                    if (this._validateCsvFieldNames(csvFieldNames)) {
+                        this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
+                    }
+                })
+                .catch(err => {
+                    this._addToast({
+                        id: 'parseCsvError',
+                        body: `Could not parse csv file. Error: ${err}`,
+                        type: ToastType.ERROR,
+                        open: true,
                     });
-            }
+                });
         } else {
             this._addToast(this._createCsvFileTypeErrorToast(file));
         }
     }
 
     private _handleUploadWordFile(file: File): void {
-        if (this._isValidFileType(file.type)) {
-            if (!this._isEmptyFile(file)) {
-                this._templateService
-                    .parseDocx(file)
-                    .then(([htmlFile, fieldNames]) => {
-                        if (!this._isEmptyFile(htmlFile)) {
-                            this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
-                        }
-                    })
-                    .catch(err => {
-                        this._addToast({
-                            id: 'parseDocxError',
-                            body: `Could not parse word document file. Error: ${err}`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        });
+        if (!this._isEmptyFile(file) && this._isValidFileType(file.type)) {
+            this._templateService
+                .parseDocx(file)
+                .then(([htmlFile, fieldNames]) => {
+                    if (!this._isEmptyFile(htmlFile)) {
+                        this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
+                    }
+                })
+                .catch(err => {
+                    this._addToast({
+                        id: 'parseDocxError',
+                        body: `Could not parse word document file. Error: ${err}`,
+                        type: ToastType.ERROR,
+                        open: true,
                     });
-            }
+                });
         } else {
             this._addToast(this._createWordFileTypeErrorToast(file));
         }
@@ -229,7 +226,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         if (!isMatching) {
             this._addToast({
                 id: 'fieldNamesMismatchError',
-                body: 'Field names in CSV file does not match the ones for the template',
+                body: 'Field names in CSV file do not match the ones for the template',
                 type: ToastType.ERROR,
                 open: true,
             });
@@ -237,10 +234,10 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         return isMatching;
     }
 
-    private _doUploadCsv(): void {
+    private _doBatchSend(): void {
         this.setState({ isLoading: true });
         this._templateService
-            .uploadCsv(this.state.templateName, this.state.file, this.state.csvFieldNames)
+            .sendBatchEmail(this.state.templateName, this.state.file, this.state.csvFieldNames)
             .then((t: ITemplate) => {
                 return new Promise<void>(resolve => {
                     // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
@@ -337,9 +334,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                             <Button
                                 className='create-template-button'
                                 disabled={this._disableCreate()}
-                                onClick={this.props.fileType === '.xlsx' ? this._doUploadWord.bind(this) : this._doUploadCsv.bind(this)}
+                                onClick={this.props.fileType === '.xlsx' ? this._doUploadWord.bind(this) : this._doBatchSend.bind(this)}
                             >
-                                {this.props.fileType === '.xlsx' ? 'Upload' : 'Create'}
+                                {this.props.fileType === '.xlsx' ? 'Send Batch Email' : 'Create'}
                             </Button>
                             {this.state.isLoading && <SpinnerComponent />}
                         </div>
