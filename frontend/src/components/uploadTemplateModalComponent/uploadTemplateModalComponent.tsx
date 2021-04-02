@@ -17,6 +17,7 @@ interface UploadModalState extends SpinnerState {
     htmlFile: any;
     fieldNames: Array<string>;
     csvFieldNames: Array<string>;
+    csvData: any;
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
@@ -40,6 +41,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             htmlFile: undefined,
             fieldNames: [],
             csvFieldNames: [],
+            csvData: undefined,
             isLoading: false,
         };
         this._templateService = new TemplateService();
@@ -175,10 +177,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             if (!this._isEmptyFile(file)) {
                 this._templateService
                     .parseCsv(file)
-                    .then(([csvFile, csvFieldNames]) => {
-                        if (!this._isEmptyFile(csvFile)) {
-                            this.setState({ file: file, csvFieldNames: csvFieldNames });
-                        }
+                    .then(([csvData, csvFieldNames]) => {
+                        this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
+                        console.log(this.state);
                     })
                     .catch(err => {
                         this._addToast({
