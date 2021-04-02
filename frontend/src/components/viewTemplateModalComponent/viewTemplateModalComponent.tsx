@@ -508,8 +508,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </Button>
                                     <UploadTemplateModalComponent
                                         ref={this._uploadModalComponent}
-                                        templateNameField={false}
-                                        fileTypeAcceptance={'.xlsx'}
+                                        requireTemplateName={false}
+                                        fileType={'.xlsx'}
                                         addToast={this._addToast.bind(this)}
                                     />
                                 </div>

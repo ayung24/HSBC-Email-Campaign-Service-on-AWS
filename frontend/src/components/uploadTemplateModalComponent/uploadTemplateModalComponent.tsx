@@ -21,8 +21,8 @@ interface UploadModalState extends SpinnerState {
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
-    templateNameField: boolean;
-    fileTypeAcceptance: string;
+    requireTemplateName: boolean;
+    fileType: string;
 }
 
 export class UploadTemplateModalComponent extends React.Component<UploadTemplateModalProperties, UploadModalState> {
@@ -83,7 +83,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         this.setState({ dragging: false });
 
         if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-            if (this.props.fileTypeAcceptance === '.xlsx') {
+            if (this.props.fileType === '.xlsx') {
                 this._handleUploadCsvFile(event.dataTransfer.files[0]);
             } else {
                 this._handleUploadWordFile(event.dataTransfer.files[0]);
@@ -98,7 +98,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
 
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
-            if (this.props.fileTypeAcceptance === '.xlsx') {
+            if (this.props.fileType === '.xlsx') {
                 this._handleUploadCsvFile(event.target.files[0]);
             } else {
                 this._handleUploadWordFile(event.target.files[0]);
@@ -124,11 +124,11 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _disableCreate(): boolean {
-        return !this.state.file || (this.state.templateName.trim().length === 0 && this.props.fileTypeAcceptance === '.docx');
+        return !this.state.file || (this.state.templateName.trim().length === 0 && this.props.fileType === '.docx');
     }
 
     private _isValidFileType(fileType: string): boolean {
-        if (this.props.fileTypeAcceptance === '.xlsx') {
+        if (this.props.fileType === '.xlsx') {
             return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' === fileType;
         } else {
             return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' === fileType;
@@ -262,7 +262,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _requireNameCreation() {
-        if (this.props.templateNameField) {
+        if (this.props.requireTemplateName) {
             return (
                 <div className='name-input-container'>
                     <label htmlFor='phone'>Name</label>
@@ -298,14 +298,14 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             <div className='upload-container'>
                 <Modal show={this.state.isModalShown} onHide={this._closeModal.bind(this)} centered>
                     <Modal.Header closeButton>
-                        <Modal.Title>{this.props.fileTypeAcceptance === '.xlsx' ? 'Upload CSV' : 'Upload new template'}</Modal.Title>
+                        <Modal.Title>{this.props.fileType === '.xlsx' ? 'Upload CSV' : 'Upload new template'}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <div className='upload-modal-body'>
                             <FileUploaderComponent
                                 dragging={this.state.dragging}
                                 file={this.state.file}
-                                fileTypeAcceptance={this.props.fileTypeAcceptance}
+                                fileTypeAcceptance={this.props.fileType}
                                 onDrag={this._overrideEventDefaults.bind(this)}
                                 onDragStart={this._overrideEventDefaults.bind(this)}
                                 onDragEnd={this._overrideEventDefaults.bind(this)}
@@ -319,11 +319,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                             <Button
                                 className='create-template-button'
                                 disabled={this._disableCreate()}
-                                onClick={
-                                    this.props.fileTypeAcceptance === '.xlsx' ? this._doUploadWord.bind(this) : this._doUploadCsv.bind(this)
-                                }
+                                onClick={this.props.fileType === '.xlsx' ? this._doUploadWord.bind(this) : this._doUploadCsv.bind(this)}
                             >
-                                {this.props.fileTypeAcceptance === '.xlsx' ? 'Upload' : 'Create'}
+                                {this.props.fileType === '.xlsx' ? 'Upload' : 'Create'}
                             </Button>
                             {this.state.isLoading && <SpinnerComponent />}
                         </div>
