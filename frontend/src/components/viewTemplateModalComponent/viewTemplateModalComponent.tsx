@@ -397,6 +397,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._uploadModalComponent.current?.toggleModal();
     }
 
+    private _getTemplateDetails(): any {
+        const templateDetails: any = {
+            templateId: this.props.templateId,
+            apiKey: this.state.apiKey,
+            subject: this.state.jsonBody.subject,
+            recipient: this.state.jsonBody.recipient,
+            fields: this.state.jsonBody.fields,
+            templateFields: this.state.fieldNames,
+        };
+        return templateDetails;
+    }
+
     render(): JSX.Element {
         return (
             <div>
@@ -525,16 +537,20 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
-                                    <p className='uploadCsvText'>Upload CSV file:</p>
-                                    <Button id='sendCsv' variant='primary' type='submit' onClick={this._toggleUploadModal.bind(this)}>
-                                        Send batch email
+                                    <Button
+                                        className='upload-button'
+                                        variant='primary'
+                                        type='submit'
+                                        onClick={this._toggleUploadModal.bind(this)}
+                                    >
+                                        Upload CSV file
                                     </Button>
                                     <UploadTemplateModalComponent
                                         ref={this._uploadModalComponent}
                                         requireTemplateName={false}
                                         fileType={'.xlsx'}
                                         addToast={this._addToast.bind(this)}
-                                        templateFieldNames={this.state.fieldNames}
+                                        templateDetails={this._getTemplateDetails()}
                                     />
                                 </div>
                             </Tab>

@@ -8,7 +8,12 @@ import { ITemplate } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
-import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
+import { IEmailParameters } from '../../models/emailInterfaces';
+import { EmailService } from '../../services/emailService';
+
+interface IBatchSendReqBody {
+    emails: Array<IEmailParameters>;
+}
 
 interface UploadModalState extends SpinnerState {
     dragging: boolean;
@@ -19,11 +24,11 @@ interface UploadModalState extends SpinnerState {
     fieldNames: Array<string>;
     csvFieldNames: Array<string>;
     csvData: any;
-    templateFieldNames: any;
+    templateDetails: any;
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
-    templateFieldNames: any;
+    templateDetails: any;
     requireTemplateName: boolean;
     fileType: string;
 }
@@ -32,10 +37,12 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     private _templateService: TemplateService;
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;
+    private _emailService: EmailService;
 
     constructor(props: UploadTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
+        this._emailService = new EmailService();
 
         this.state = {
             dragging: false,
@@ -45,8 +52,8 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             htmlFile: undefined,
             fieldNames: [],
             csvFieldNames: [],
-            templateFieldNames: this.props.templateFieldNames,
-            csvData: undefined,
+            templateDetails: this.props.templateDetails,
+            csvData: null,
             isLoading: false,
         };
         this._templateService = new TemplateService();
@@ -183,7 +190,24 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                 .parseCsv(file)
                 .then(([csvData, csvFieldNames]) => {
                     if (this._validateCsvFieldNames(csvFieldNames)) {
-                        this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: csvData });
+                        const batchSendParams: IBatchSendReqBody = {
+                            emails: [],
+                        };
+                        csvData.forEach((row: any) => {
+                            const fieldObj: any = {};
+                            csvFieldNames.forEach((fieldName: any) => {
+                                fieldObj[fieldName] = row[fieldName];
+                            });
+                            const emailParams: IEmailParameters = {
+                                templateId: this.props.templateDetails.templateId,
+                                apiKey: this.props.templateDetails.apiKey,
+                                subject: row.Subject,
+                                recipient: row.Recipient,
+                                fields: fieldObj,
+                            };
+                            batchSendParams.emails.push(emailParams);
+                        });
+                        this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: batchSendParams });
                     }
                 })
                 .catch(err => {
@@ -222,7 +246,10 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _validateCsvFieldNames(csvFieldNames: any): boolean {
-        const isMatching = this.state.templateFieldNames.toString().toLowerCase() === csvFieldNames.toString().toLowerCase();
+        const templateFieldNames = this.state.templateDetails.templateFields;
+        const templateFieldNamesSet = new Set(templateFieldNames);
+        const csvFieldNamesSet = new Set(csvFieldNames);
+        const isMatching = templateFieldNamesSet.toString().toLowerCase() === csvFieldNamesSet.toString().toLowerCase();
         if (!isMatching) {
             this._addToast({
                 id: 'fieldNamesMismatchError',
@@ -235,24 +262,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _doBatchSend(): void {
-        this.setState({ isLoading: true });
-        this._templateService
-            .sendBatchEmail(this.state.templateName, this.state.file, this.state.csvFieldNames)
-            .then((t: ITemplate) => {
-                return new Promise<void>(resolve => {
-                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
-                    setTimeout(() => {
-                        EventEmitter.getInstance().dispatch('refreshGrid');
-                        this._addToast(this._createUploadSuccessToast(t.templateName));
-                        this._closeModal();
-                        resolve();
-                    }, 3000);
-                });
-            })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+        return;
     }
 
     private _doUploadWord(): void {
