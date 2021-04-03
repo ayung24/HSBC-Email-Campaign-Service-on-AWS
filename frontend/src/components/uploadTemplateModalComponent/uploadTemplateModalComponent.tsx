@@ -256,8 +256,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                 isMatching = templateFieldNamesSet.has(fieldName.toLowerCase()) || templateFieldNamesSet.has(fieldName.toUpperCase());
             });
         }
-        console.log(templateFieldNamesSet);
-        console.log(csvFieldNamesSet);
 
         if (!isMatching) {
             this._addToast({
