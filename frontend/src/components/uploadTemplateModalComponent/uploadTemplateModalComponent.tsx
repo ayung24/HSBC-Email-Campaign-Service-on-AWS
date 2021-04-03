@@ -255,8 +255,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         const templateFieldNamesSet = new Set(templateFieldNames);
         const csvFieldNamesSet = new Set(csvFieldNames);
         let isMatching = false;
-        console.log(templateFieldNamesSet);
-        console.log(csvFieldNamesSet);
+
         if (csvFieldNamesSet.size === templateFieldNamesSet.size) {
             csvFieldNamesSet.forEach((fieldName: any) => {
                 isMatching = templateFieldNamesSet.has(fieldName.toLowerCase()) || templateFieldNamesSet.has(fieldName.toUpperCase());
