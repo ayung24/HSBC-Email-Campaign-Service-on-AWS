@@ -116,12 +116,10 @@ export class TemplateService {
             let matches = dynamicFieldRegex.exec(html);
             const fields = [];
             while (matches) {
-                const validRegex = new RegExp(/[A-Z0-9_]+/m);
+                const validRegex = new RegExp(/[A-Za-z]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
-                if (checkMatches === null) {
-                    reject('Dynamic value cannot be empty.');
-                } else if (checkMatches[0].length !== matches[1].length) {
-                    reject('Dynamic value {' + matches[1] + '} contains non-capital letters or characters other than underscore');
+                if (checkMatches === null || checkMatches[0].length !== matches[1].length) {
+                    reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z');
                 }
                 fields.push(matches[1]);
                 matches = dynamicFieldRegex.exec(html);
