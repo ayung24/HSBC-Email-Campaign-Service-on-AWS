@@ -210,6 +210,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                             batchSendParams.emails.push(emailParams);
                         });
                         this.setState({ file: file, csvFieldNames: csvFieldNames, csvData: batchSendParams });
+                        setTimeout(() => {
+                            this.toggleModal();
+                        }, 1000);
                     }
                 })
                 .catch(err => {
@@ -271,10 +274,6 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         return isMatching;
     }
 
-    private _doBatchSend(): void {
-        return;
-    }
-
     private _doUploadWord(): void {
         this.setState({ isLoading: true });
         this._templateService
@@ -314,6 +313,15 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         }
     }
 
+    private _generateCreateButton() {
+        if (this.props.fileType === '.docx') {
+            return (
+                <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUploadWord.bind(this)}>
+                    Create
+                </Button>
+            );
+        }
+    }
     componentDidMount(): void {
         window.addEventListener('dragover', (event: Event) => {
             this._overrideEventDefaults(event);
@@ -351,13 +359,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                                 onFileChanged={this._onFileChanged.bind(this)}
                             />
                             {this._requireNameCreation()}
-                            <Button
-                                className='create-template-button'
-                                disabled={this._disableCreate()}
-                                onClick={this.props.fileType === '.csv' ? this._doUploadWord.bind(this) : this._doBatchSend.bind(this)}
-                            >
-                                {this.props.fileType === '.csv' ? 'Send Batch Email' : 'Create'}
-                            </Button>
+                            {this._generateCreateButton()}
                             {this.state.isLoading && <SpinnerComponent />}
                         </div>
                     </Modal.Body>

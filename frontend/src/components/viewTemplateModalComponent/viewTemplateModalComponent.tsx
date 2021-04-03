@@ -365,8 +365,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
-    private _sendBatch(): void {
-        //TODO
+    private _sendBatchEmail(): void {
+        // TODO
     }
 
     private _onParamChange(event: React.SyntheticEvent): void {
@@ -552,6 +552,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         addToast={this._addToast.bind(this)}
                                         templateDetails={this._getTemplateDetails()}
                                     />
+                                </div>
+                                <div className='sendButton'>
+                                    <Button id='sendCsv' variant='primary' type='submit'>
+                                        Send
+                                    </Button>
                                 </div>
                             </Tab>
                         </Tabs>

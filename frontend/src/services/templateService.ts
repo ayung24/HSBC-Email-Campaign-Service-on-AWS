@@ -40,25 +40,6 @@ export class TemplateService {
         );
     }
 
-    // Copy of uploadTemplate as placeholder function
-    public sendBatchEmail(name: string, csvFile: any, fieldNames: Array<string>): Promise<ITemplate> {
-        const requestBody: IUploadTemplateReqBody = {
-            templateName: name,
-            fieldNames: fieldNames,
-        };
-        return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
-            this._uploadTemplateHTML(metadataResponse.imageUploadUrl, csvFile).then(() => {
-                return {
-                    templateId: metadataResponse.templateId,
-                    apiKey: metadataResponse.apiKey,
-                    templateName: metadataResponse.templateName,
-                    fieldNames: metadataResponse.fieldNames,
-                    uploadTime: new Date(metadataResponse.timeCreated),
-                };
-            }),
-        );
-    }
-
     private _uploadTemplateHTML(presignedPost: PresignedPost, htmlFile: any): Promise<void> {
         const formData = new FormData();
         const typedPresignedPost: { url: string; [key: string]: any } = presignedPost;
