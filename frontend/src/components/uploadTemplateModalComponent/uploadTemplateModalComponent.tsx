@@ -23,7 +23,7 @@ interface UploadModalState extends SpinnerState {
     htmlFile: any;
     fieldNames: Array<string>;
     csvFieldNames: Array<string>;
-    csvData: any;
+    csvData: IBatchSendReqBody;
     templateDetails: any;
 }
 
@@ -53,7 +53,9 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             fieldNames: [],
             csvFieldNames: [],
             templateDetails: this.props.templateDetails,
-            csvData: null,
+            csvData: {
+                emails: [],
+            },
             isLoading: false,
         };
         this._templateService = new TemplateService();
