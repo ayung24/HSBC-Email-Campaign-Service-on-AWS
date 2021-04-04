@@ -22,3 +22,8 @@ export interface ISendEmailResponse {
     recipient: string;
     messageId: string;
 }
+
+export interface IBatchSendReqBody {
+    emails: Array<IEmailParameters>
+}
+

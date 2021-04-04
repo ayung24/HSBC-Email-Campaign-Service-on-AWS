@@ -11,6 +11,7 @@ import {
     ITemplateWithHTML,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
+import XLSX from 'xlsx';
 
 const mammoth = require('mammoth');
 
@@ -104,6 +105,34 @@ export class TemplateService {
             });
     }
 
+    public parseCsv(csv: File): Promise<[jsonData: any, csvFieldNames: Array<string>]> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject({ error: reader.error, message: reader.error });
+            reader.onload = function (event: any) {
+                if (event.target) {
+                    const data = event.target.result;
+                    const workbook = XLSX.read(data, {
+                        type: 'binary',
+                    });
+                    let jsonData = {};
+                    const csvFieldNames: any[] = [];
+                    workbook.SheetNames.forEach(function (sheetName: any) {
+                        const rowObj: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        jsonData = rowObj;
+                        Object.keys(rowObj[0]).forEach(key => {
+                            if (key !== 'Recipient' && key !== 'Subject') {
+                                csvFieldNames.push(key);
+                            }
+                        });
+                    });
+                    resolve([jsonData, csvFieldNames]);
+                }
+            };
+            reader.readAsBinaryString(csv);
+        });
+    }
+
     /**
      * Parses given html string and outputs dynamic field names in an array
      * @param html HTML string containing dynamic fields as ${...}
@@ -116,12 +145,10 @@ export class TemplateService {
             let matches = dynamicFieldRegex.exec(html);
             const fields = [];
             while (matches) {
-                const validRegex = new RegExp(/[A-Z0-9_]+/m);
+                const validRegex = new RegExp(/[A-Za-z_]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
-                if (checkMatches === null) {
-                    reject('Dynamic value cannot be empty.');
-                } else if (checkMatches[0].length !== matches[1].length) {
-                    reject('Dynamic value {' + matches[1] + '} contains non-capital letters or characters other than underscore');
+                if (checkMatches === null || checkMatches[0].length !== matches[1].length) {
+                    reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z_].');
                 }
                 fields.push(matches[1]);
                 matches = dynamicFieldRegex.exec(html);
