@@ -116,10 +116,10 @@ export class TemplateService {
             let matches = dynamicFieldRegex.exec(html);
             const fields = [];
             while (matches) {
-                const validRegex = new RegExp(/[A-Za-z]+/m);
+                const validRegex = new RegExp(/[A-Za-z_]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
                 if (checkMatches === null || checkMatches[0].length !== matches[1].length) {
-                    reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z].');
+                    reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z_].');
                 }
                 fields.push(matches[1]);
                 matches = dynamicFieldRegex.exec(html);
