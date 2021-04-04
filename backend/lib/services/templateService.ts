@@ -127,6 +127,7 @@ export class TemplateService {
                 target: config.lambda.BUILD_TARGET,
             },
             environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
                 HTML_BUCKET_NAME: database.htmlBucket().bucketName,
                 SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,

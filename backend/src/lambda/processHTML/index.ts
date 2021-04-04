@@ -4,6 +4,7 @@ import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../logger';
+import { brotliDecompress } from 'zlib';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -36,7 +37,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 code: ErrorCode.TS0,
             }),
         };
-    } else if (!event.pathParameters || !event.pathParameters.id) {
+    } else if (!event.pathParameters || !event.pathParameters.id || !event.body) {
         return {
             headers: headers,
             statusCode: 400,
@@ -46,8 +47,20 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             }),
         };
     }
+    const body = JSON.parse(event.body);
+    if (!body.uploadTime) {
+        return {
+            headers: headers,
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'body missing field "uploadTime"',
+                code: ErrorCode.TS6,
+            }),
+        };
+    }
 
     const templateId = event.pathParameters.id;
+    const timeCreated = body.uploadTime;
     return db
         .GetHTMLById(templateId, SRC_HTML_PATH!)
         .then((html: string) => {
@@ -78,11 +91,12 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         })
         .then(() => {
             Logger.info({ message: `Updated html for template ${templateId}` });
-            return db.EnableTemplate(templateId);
+            return db.EnableTemplate(templateId, timeCreated);
         })
         .then((template) => {
-            Logger.info({ message: `Template marked as in service ${template.templateId}`, additionalInfo: template});
+            Logger.info({ message: `Template marked as in service ${template.templateId}`, additionalInfo: template });
             return {
+                headers: headers,
                 statusCode: 200,
             };
         })
@@ -99,12 +113,17 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
                 code = ErrorCode.TS30;
             }
-            return {
-                statusCode: statusCode,
-                body: JSON.stringify({
-                    message: message,
-                    code: code,
-                }),
-            };
+            return db
+                .DisableTemplate(templateId, timeCreated)
+                .finally(() => {
+                    return {
+                        headers: headers,
+                        statusCode: statusCode,
+                        body: JSON.stringify({
+                            message: message,
+                            code: code,
+                        }),
+                    };
+                });
         });
-};
+}

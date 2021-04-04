@@ -6,28 +6,14 @@ export class RequestService {
     private _apiName = this._endpoint?.name;
 
     public GET<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
-        return this._requestWithOnlyPath(path, API.get, handler);
-    }
-
-    public PUT<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
-        return this._requestWithOnlyPath(path, API.put, handler);
-    }
-
-    public DELETE<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
-        return this._requestWithOnlyPath(path, API.del, handler);
-    }
-
-    private _requestWithOnlyPath<T>(path: string,
-        apiCall: (apiName: any, path: any, init: any) => Promise<any>, 
-        handler: (r: any) => Promise<T>): Promise<T> {
-            return RequestService._getToken()
+        return RequestService._getToken()
             .then((token: string) => {
                 const request = {
                     headers: {
                         Authorization: token,
                     },
                 };
-                return apiCall(this._apiName, path, request);
+                return API.get(this._apiName, path, request);
             })
             .then(response => handler(response));
     }
@@ -42,6 +28,33 @@ export class RequestService {
                     body: params,
                 };
                 return API.post(this._apiName, path, request);
+            })
+            .then(response => handler(response));
+    }
+
+    public PUT<T>(path: string, params: any, handler: (r: any) => Promise<T>): Promise<T> {
+        return RequestService._getToken()
+            .then((token: string) => {
+                const request = {
+                    headers: {
+                        Authorization: token,
+                    },
+                    body: params,
+                };
+                return API.put(this._apiName, path, request);
+            })
+            .then(response => handler(response));
+    }
+
+    public DELETE<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
+        return RequestService._getToken()
+            .then((token: string) => {
+                const request = {
+                    headers: {
+                        Authorization: token,
+                    },
+                };
+                return API.del(this._apiName, path, request);
             })
             .then(response => handler(response));
     }

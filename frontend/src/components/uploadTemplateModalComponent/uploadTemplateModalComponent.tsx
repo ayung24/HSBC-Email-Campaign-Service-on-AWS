@@ -182,6 +182,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                 });
             })
             .catch((err: IErrorReturnResponse) => {
+                console.log(err);
                 this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
             })
             .finally(() => this.setState({ isLoading: false }));

@@ -51,28 +51,34 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             reject(fieldsEmptyError);
         } else {
             // check name uniqueness
-            const isNameTakenQuery = {
+            let isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
                 IndexName: 'name-and-status-index',
                 ExpressionAttributeValues: {
                     ':proposedName': { S: name },
-                    ':inService': { S: EntryStatus.IN_SERVICE },
-                    ':notReady': { S: EntryStatus.NOT_READY },
+                    ':status': {}, // can't use OR in expression
                 },
-                KeyConditionExpression: '(templateStatus = :notReady OR templateStatus = :uploading) AND templateName = :proposedName',
+                KeyConditionExpression: 'templateStatus = :status AND templateName = :proposedName',
             };
-            ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
-                if (err) {
-                    Logger.logError(err, 'Name validation failure');
-                    const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
-                    reject(nameValidationError);
-                } else if (data.Count && data.Count > 0) {
-                    const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
-                    Logger.logError(nameNotUniqueError);
-                    reject(nameNotUniqueError);
-                } else {
-                    resolve(data);
-                }
+
+            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE }
+            ddb.query(isNameTakenQuery, (err1: AWSError, data1: DynamoDB.QueryOutput) => {
+                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY }
+                ddb.query(isNameTakenQuery, (err2: AWSError, data2: DynamoDB.QueryOutput) => {
+
+                    const err = err1 ? err1 : err2;
+                    if (err) {
+                        Logger.logError(err, 'Name validation failure');
+                        const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
+                        reject(nameValidationError);
+                    } else if (data1.Count && data1.Count > 0 && data2.Count && data2.Count > 0) {
+                        const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
+                        Logger.logError(nameNotUniqueError);
+                        reject(nameNotUniqueError);
+                    } else {
+                        resolve(0);
+                    }
+                });
             });
         }
     })
@@ -124,10 +130,15 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
         );
 }
 
-
-export function EnableTemplate(templateId: string): Promise<ITemplateBase> {
+export function EnableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
+    return _updateTemplateStatus(templateId, timeCreated, EntryStatus.IN_SERVICE);
+}
+export function DisableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
+    return _updateTemplateStatus(templateId, timeCreated, EntryStatus.DELETED);
+}
+function _updateTemplateStatus(templateId: string, timeCreated: number, status: EntryStatus): Promise<ITemplateBase> {
     const ddb = getDynamo();
-    Logger.info({ message: `Updating status of template to be in service`, additionalInfo: { templateId: templateId } });
+    Logger.info({ message: `Updating status of template to be ${status}`, additionalInfo: { templateId: templateId } });
     if (isEmpty(templateId)) {
         const templateIdEmptyError = new ESCError(ErrorCode.TS19, 'Template id is empty');
         Logger.logError(templateIdEmptyError);
@@ -139,30 +150,36 @@ export function EnableTemplate(templateId: string): Promise<ITemplateBase> {
             templateId: {
                 S: templateId,
             },
+            timeCreated: {
+                N: `${timeCreated}`,
+            },
         },
         UpdateExpression: 'set templateStatus = :status',
         ExpressionAttributeValues: {
-            ':status': { S: EntryStatus.IN_SERVICE },
+            ':status': { S: status },
         },
         ReturnValues: 'ALL_NEW',
     };
-    return ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
-        if (err) {
-            Logger.logError(err);
-            const updateTemplateStatusError = new ESCError(
-                ErrorCode.TS21,
-                `Update template status error: ${JSON.stringify(enableEntryParams)}`,
-            );
-            return Promise.reject(updateTemplateStatusError);
-        } else {
-            const item: DynamoDB.AttributeMap = data.Attributes;
-            return {
-                templateId: item.templateId.S!,
-                timeCreated: Number.parseInt(item.timeCreated.N!),
-                templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
-                templateName: item.templateName.S!,
-            };
-        }
+    return new Promise((resolve, reject) => {
+        ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
+            if (err) {
+                Logger.logError(err);
+                const updateTemplateStatusError = new ESCError(
+                    ErrorCode.TS21,
+                    `Update template status error: ${JSON.stringify(enableEntryParams)}`,
+                );
+                reject(updateTemplateStatusError);
+            } else {
+                const item = data.Attributes;
+                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity } )
+                resolve({
+                    templateId: item?.templateId.S!,
+                    timeCreated: Number.parseInt(item?.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item?.templateStatus.S!],
+                    templateName: item?.templateName.S!,
+                });
+            }
+        });
     });
 }
 
@@ -194,47 +211,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 });
             });
         })
-        .then((entry: ITemplateFullEntry) => {
-            Logger.info({ message: 'Setting metadata status to Deleted', additionalInfo: { templateId: templateId } });
-            return new Promise<any>((resolve, reject) => {
-                const deleteEntry: DynamoDB.UpdateItemInput = {
-                    TableName: METADATA_TABLE_NAME!,
-                    Key: {
-                        templateId: {
-                            S: templateId,
-                        },
-                        timeCreated: {
-                            N: `${entry.timeCreated}`,
-                        },
-                    },
-                    UpdateExpression: 'set templateStatus = :status',
-                    ExpressionAttributeValues: {
-                        ':status': { S: EntryStatus.DELETED },
-                    },
-                    ReturnValues: 'ALL_NEW',
-                };
-                ddb.updateItem(deleteEntry, (err: AWSError, data: UpdateItemOutput) => {
-                    if (err) {
-                        Logger.logError(err);
-                        const updateTemplateStatusError = new ESCError(
-                            ErrorCode.TS21,
-                            `Update template status error: ${JSON.stringify(deleteEntry)}`,
-                        );
-                        reject(updateTemplateStatusError);
-                    } else {
-                        resolve(data.Attributes);
-                    }
-                });
-            });
-        })
-        .then(attributeMap =>
-            Promise.resolve<ITemplateBase>({
-                templateId: attributeMap.templateId.S,
-                templateStatus: attributeMap.templateStatus.S,
-                templateName: attributeMap.templateName.S,
-                timeCreated: attributeMap.timeCreated.N,
-            }),
-        );
+        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated)});
 }
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {
