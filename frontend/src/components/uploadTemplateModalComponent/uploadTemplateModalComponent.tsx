@@ -23,7 +23,7 @@ interface UploadModalState extends SpinnerState {
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
-    templateDetails: any;
+    templateDetails: IUploadCsvData;
     requireTemplateName: boolean;
     fileType: string;
 }

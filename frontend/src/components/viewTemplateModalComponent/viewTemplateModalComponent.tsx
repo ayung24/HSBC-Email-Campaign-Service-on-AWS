@@ -14,7 +14,7 @@ import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
-import { ITemplateWithHTML } from '../../models/templateInterfaces';
+import { ITemplateWithHTML, IUploadCsvData } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
 import { EmailService } from '../../services/emailService';
@@ -397,8 +397,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._uploadModalComponent.current?.toggleModal();
     }
 
-    private _getTemplateDetails(): any {
-        const templateDetails: any = {
+    private _getTemplateDetails(): IUploadCsvData {
+        const templateDetails: IUploadCsvData = {
             templateId: this.props.templateId,
             apiKey: this.state.apiKey,
             subject: this.state.jsonBody.subject,
