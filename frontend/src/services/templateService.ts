@@ -11,6 +11,7 @@ import {
     ITemplateWithHTML,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
+import XLSX from 'xlsx';
 
 const mammoth = require('mammoth');
 
@@ -102,6 +103,34 @@ export class TemplateService {
                 const html: string = resultObj.value;
                 return this._parseFieldsFromHTML(html);
             });
+    }
+
+    public parseCsv(csv: File): Promise<[jsonData: any, csvFieldNames: Array<string>]> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject({ error: reader.error, message: reader.error });
+            reader.onload = function (event: any) {
+                if (event.target) {
+                    const data = event.target.result;
+                    const workbook = XLSX.read(data, {
+                        type: 'binary',
+                    });
+                    let jsonData = {};
+                    const csvFieldNames: any[] = [];
+                    workbook.SheetNames.forEach(function (sheetName: any) {
+                        const rowObj: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        jsonData = rowObj;
+                        Object.keys(rowObj[0]).forEach(key => {
+                            if (key !== 'Recipient' && key !== 'Subject') {
+                                csvFieldNames.push(key);
+                            }
+                        });
+                    });
+                    resolve([jsonData, csvFieldNames]);
+                }
+            };
+            reader.readAsBinaryString(csv);
+        });
     }
 
     /**

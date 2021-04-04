@@ -14,8 +14,9 @@ import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
-import { ITemplateWithHTML } from '../../models/templateInterfaces';
+import { ITemplateWithHTML, IUploadCsvData } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
+import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
 import { EmailService } from '../../services/emailService';
 import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
 
@@ -53,7 +54,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _templateService: TemplateService;
     private _emailService: EmailService;
     private _keyManagementService: KMS;
-
+    private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
 
@@ -61,7 +62,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         super(props);
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
+        this._uploadModalComponent = React.createRef();
         this._emailService = new EmailService();
+
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
@@ -386,6 +389,22 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _toggleUploadModal(): void {
+        this._uploadModalComponent.current?.toggleModal();
+    }
+
+    private _getTemplateDetails(): IUploadCsvData {
+        const templateDetails: IUploadCsvData = {
+            templateId: this.props.templateId,
+            apiKey: this.state.apiKey,
+            subject: this.state.jsonBody.subject,
+            recipient: this.state.jsonBody.recipient,
+            fields: this.state.jsonBody.fields,
+            templateFields: this.state.fieldNames,
+        };
+        return templateDetails;
+    }
+
     render(): JSX.Element {
         return (
             <div>
@@ -512,18 +531,24 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </Tab>
                                 </Tabs>
                             </Tab>
-                            <Tab id='batch' disabled eventKey='batch' title='Batch'>
-                                <div className='sendParameters'>
-                                    <Form.Label>Recipients</Form.Label>
-                                    <InputGroup id='recipient' className='mb-3'>
-                                        <FormControl placeholder='Recipient' />
-                                    </InputGroup>
-                                    <Form.Label>Subject</Form.Label>
-                                    <InputGroup id='subject' className='mb-3'>
-                                        <FormControl placeholder='Subject' />
-                                    </InputGroup>
+                            <Tab id='batch' eventKey='batch' title='Batch'>
+                                <div className='uploadCsv'>
+                                    <Button
+                                        className='upload-button'
+                                        variant='primary'
+                                        type='submit'
+                                        onClick={this._toggleUploadModal.bind(this)}
+                                    >
+                                        Upload CSV file
+                                    </Button>
+                                    <UploadTemplateModalComponent
+                                        ref={this._uploadModalComponent}
+                                        requireTemplateName={false}
+                                        fileType={'.csv,.xlsx'}
+                                        addToast={this._addToast.bind(this)}
+                                        templateDetails={this._getTemplateDetails()}
+                                    />
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('batch')}</div>
                             </Tab>
                         </Tabs>
                     </Modal.Body>

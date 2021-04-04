@@ -23,4 +23,8 @@ export class EmailService {
             },
         );
     }
+
+    public sendBatchEmail() {
+        // TODO
+    }
 }
