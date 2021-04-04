@@ -35,6 +35,23 @@ describe('email service tests', () => {
         );
     });
 
+    it('adds email batch endpoint to API gateway with correct authorization type and query param', () => {
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Resource', {
+                PathPart: 'emailBatch',
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'POST',
+                AuthorizationType: 'CUSTOM',
+                RequestParameters: {
+                    'method.request.querystring.templateid': true,
+                },
+            }),
+        );
+    })
+
     it('has request authorizer with correct identity sources', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Authorizer', {
@@ -233,6 +250,43 @@ describe('email service tests', () => {
         });
     });
 
+    describe('process batch send lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
+                            EMAIL_QUEUE_URL: objectLike({
+                                Ref: stringLike('EmailQueue*'),
+                            }),
+                            SQS_VERSION: config.sqs.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 10,
+                    FunctionName: stringLike('ProcessBatchSendHandler*'),
+                }),
+            );
+        });
+
+        it('has SendMessage permission on Email queue', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:SendMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessBatchSendHandler*'),
+                }),
+            );
+        });
+    });
+
     describe('execute send lambda tests', () => {
         it('has all environment variables', () => {
             expect(stack).to(
@@ -338,6 +392,12 @@ describe('email service tests', () => {
             expect(stack).to(
                 haveResourceLike('AWS::Logs::LogGroup', {
                     LogGroupName: stringLike('*ProcessSendHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*ProcessBatchSendHandler*'),
                     RetentionInDays: 180,
                 }),
             );
