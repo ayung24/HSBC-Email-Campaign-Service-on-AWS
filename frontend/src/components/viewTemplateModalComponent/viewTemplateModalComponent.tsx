@@ -319,7 +319,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     .then((response: ISendEmailResponse) => {
                         const toast = {
                             id: 'sendEmailSuccess',
-                            body: `Successfully sent email with id [${response.messageId}] to ${response.recipient}].`,
+                            body: `Successfully sent email to ${response.recipient}].`,
                             type: ToastType.SUCCESS,
                             open: true,
                         };
