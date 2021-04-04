@@ -144,7 +144,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS33;
+                code = ErrorCode.TS32;
             }
             return {
                 headers: headers,

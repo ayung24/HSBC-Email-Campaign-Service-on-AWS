@@ -24,6 +24,14 @@ export const config = {
     },
     ses: {
         VERSION: '2010-12-01',
-        VERIFIED_EMAIL_ADDRESS: 'shizuko@student.ubc.ca',
+        VERIFIED_EMAIL_ADDRESS: 'makebank.testmain@gmail.com',
+        MAX_SEND_RATE: 1, // email per second
+    },
+    sqs: {
+        VERSION: '2012-11-05',
+        BATCH_SIZE: 5,
+        MAX_RECEIVE_COUNT: 5,
+        MAX_CONCURRENT_SEND_LAMBDA_COUNT: 5,
+        SEND_LAMBDA_TIMEOUT: 20,
     },
 };
