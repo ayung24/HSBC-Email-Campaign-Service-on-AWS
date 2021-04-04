@@ -50,7 +50,7 @@ describe('email service tests', () => {
                 },
             }),
         );
-    })
+    });
 
     it('has request authorizer with correct identity sources', () => {
         expect(stack).to(
