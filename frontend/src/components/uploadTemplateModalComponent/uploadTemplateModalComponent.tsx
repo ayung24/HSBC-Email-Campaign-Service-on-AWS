@@ -4,16 +4,11 @@ import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComp
 import { Button, Modal } from 'react-bootstrap';
 import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
-import { ITemplate } from '../../models/templateInterfaces';
+import { ITemplate, IUploadCsvData } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
-import { IEmailParameters } from '../../models/emailInterfaces';
-import { EmailService } from '../../services/emailService';
-
-interface IBatchSendReqBody {
-    emails: Array<IEmailParameters>;
-}
+import { IEmailParameters, IBatchSendReqBody } from '../../models/emailInterfaces';
 
 interface UploadModalState extends SpinnerState {
     dragging: boolean;
@@ -24,7 +19,7 @@ interface UploadModalState extends SpinnerState {
     fieldNames: Array<string>;
     csvFieldNames: Array<string>;
     csvData: IBatchSendReqBody;
-    templateDetails: any;
+    templateDetails: IUploadCsvData;
 }
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
@@ -37,12 +32,10 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     private _templateService: TemplateService;
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;
-    private _emailService: EmailService;
 
     constructor(props: UploadTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
-        this._emailService = new EmailService();
 
         this.state = {
             dragging: false,
@@ -66,7 +59,16 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _closeModal(): void {
-        this.setState({ file: null, templateName: '', htmlFile: undefined, fieldNames: [] });
+        this.setState({
+            file: null,
+            templateName: '',
+            htmlFile: undefined,
+            fieldNames: [],
+            csvFieldNames: [],
+            csvData: {
+                emails: [],
+            },
+        });
         this.toggleModal();
     }
 
@@ -254,12 +256,16 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         const templateFieldNames = this.state.templateDetails.templateFields;
         const templateFieldNamesSet = new Set(templateFieldNames);
         const csvFieldNamesSet = new Set(csvFieldNames);
-        let isMatching = false;
+        let isMatching = true;
 
         if (csvFieldNamesSet.size === templateFieldNamesSet.size) {
             csvFieldNamesSet.forEach((fieldName: any) => {
-                isMatching = templateFieldNamesSet.has(fieldName.toLowerCase()) || templateFieldNamesSet.has(fieldName.toUpperCase());
+                isMatching =
+                    isMatching &&
+                    (templateFieldNamesSet.has(fieldName.toLowerCase()) || templateFieldNamesSet.has(fieldName.toUpperCase()));
             });
+        } else {
+            isMatching = false;
         }
 
         if (!isMatching) {
@@ -321,6 +327,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             );
         }
     }
+
     componentDidMount(): void {
         window.addEventListener('dragover', (event: Event) => {
             this._overrideEventDefaults(event);

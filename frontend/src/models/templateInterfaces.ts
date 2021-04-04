@@ -33,6 +33,19 @@ export interface IUploadTemplateReqBody {
     fieldNames: Array<string>;
 }
 
+export interface IUploadCsvData {
+    templateId: string;
+    apiKey: string;
+    subject: string;
+    recipient: string;
+    fields: IUploadCsvFields;
+    templateFields: Array<string>;
+}
+
+export interface IUploadCsvFields {
+    [key: string]: string;
+}
+
 export interface IGetTemplatesReqBody {
     start: string;
     limit: number;
