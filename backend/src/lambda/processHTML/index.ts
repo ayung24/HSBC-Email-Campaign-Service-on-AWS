@@ -4,7 +4,7 @@ import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
@@ -52,14 +52,16 @@ export const handler = async function (event: S3CreateEvent) {
             const $ = cheerio.load(html);
             $('img').each((index, element) => {
                 const dataURI = $(element).attr('src');
-                const groups = dataURIRegex.exec(dataURI).groups;
-                const image: ITemplateImage = {
-                    contentType: groups.mime,
-                    content: Buffer.from(groups.data, groups.encoding),
-                    key: `image${index}`,
-                };
-                $(element).attr('src', image.key);
-                images.push(image);
+                const groups = dataURI ? dataURIRegex.exec(dataURI)?.groups : undefined;
+                if (groups) {
+                    const image: ITemplateImage = {
+                        contentType: groups.mime,
+                        content: Buffer.from(groups.data, groups.encoding),
+                        key: `image${index}`,
+                    };
+                    $(element).attr('src', image.key);
+                    images.push(image);
+                }
             });
             return Promise.all([Promise.resolve($.html()), db.UploadImages(templateId, images)]);
         })

@@ -13,7 +13,7 @@ import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
 import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
-import * as Logger from '../../logger';
+import * as Logger from '../logger';
 import { ErrorCode, ESCError } from '../ESCError';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -66,11 +66,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                     const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
                     reject(nameValidationError);
                 } else if (data.Count && data.Count > 0) {
-                    const nameNotUniqueError = new ESCError(
-                        ErrorCode.TS17,
-                        `Template name [${name}] is not unique.`,
-                        true,
-                    );
+                    const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
                     Logger.logError(nameNotUniqueError);
                     reject(nameNotUniqueError);
                 } else {

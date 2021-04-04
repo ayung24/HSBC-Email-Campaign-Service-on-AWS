@@ -7,7 +7,7 @@ import * as AWS from 'aws-sdk';
 import { AWSError, KMS } from 'aws-sdk';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
 
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
@@ -76,7 +76,7 @@ async function generateEncryptedApiKey(): Promise<string> {
 
     return new Promise((resolve, reject) => {
         kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
-            if (err) {
+            if (err || !data.CiphertextBlob) {
                 Logger.logError(err);
                 const encryptError = new ESCError(ErrorCode.TS14, 'API key encryption failed');
                 reject(encryptError);
@@ -144,7 +144,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS33;
+                code = ErrorCode.TS32;
             }
             return {
                 headers: headers,

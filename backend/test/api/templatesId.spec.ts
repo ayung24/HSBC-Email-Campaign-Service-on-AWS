@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as getTemplateMetadataHandler from '../../src/lambda/getTemplateMetadata';
 import * as getDeleteTemplateHandler from '../../src/lambda/deleteTemplate';
-import { EntryStatus, ITemplateWithHTML, ITemplateBase} from '../../src/database/dbInterfaces';
+import { EntryStatus, ITemplateWithHTML, ITemplateBase } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { ErrorCode, ESCError } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
@@ -20,7 +20,7 @@ describe('GET /templates/:id', () => {
             templateName: 'test template',
             apiKey: 'API-KEY',
             fieldNames: ['test-field1'],
-            html: '<h1>test html</h1>'
+            html: '<h1>test html</h1>',
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             pathParameters: {
@@ -70,7 +70,7 @@ describe('DELETE /templates/:id', () => {
             templateId: 'valid-test-id',
             timeCreated: 9999,
             templateStatus: EntryStatus.IN_SERVICE,
-            templateName: 'templateId1'
+            templateName: 'templateId1',
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             pathParameters: {
@@ -127,4 +127,3 @@ describe('DELETE /templates/:id', () => {
         expect(retrieveDataSpy).toBeCalledWith(testEvent.pathParameters!.id);
     });
 });
-

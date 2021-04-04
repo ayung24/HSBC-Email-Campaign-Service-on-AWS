@@ -1,25 +1,19 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as AWS from 'aws-sdk';
-import { createTransport, SentMessageInfo } from 'nodemailer';
 import { ISendEmailFields, ISendEmailReqBody } from '../lambdaInterfaces';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
-import * as Logger from '../../../logger';
+import * as Logger from '../../logger';
+import { AWSError } from 'aws-sdk';
+import { SendMessageResult } from 'aws-sdk/clients/sqs';
 
-const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
-const VERSION = process.env.VERSION || '2010-12-01';
+const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
-const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
-
-const ses = new AWS.SES({
-    apiVersion: VERSION,
-});
-
-const transporter = createTransport({
-    SES: ses,
-});
+const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
+const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
+const SQS_VERSION = process.env.SQS_VERSION || '2012-11-15';
 
 const headers = {
     'Access-Control-Allow-Origin': '*', // Required for CORS support to work
@@ -27,31 +21,23 @@ const headers = {
     'Content-Type': 'application/json',
 };
 
+const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
+
 /**
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS;
+    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS && !!EMAIL_QUEUE_URL;
 };
 
 /**
- * @param srcHTML HTML with dynamic fields
  * @param fields dynamic field values
  * @param fieldNames required dynamic fields
- * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
+ * @returns false if missing required fields, otherwise true
  */
-const replaceFields = function (srcHTML: string, fields: ISendEmailFields, fieldNames: string[]): string | undefined {
+const checkFields = function (fields: ISendEmailFields, fieldNames: string[]): boolean {
     const keys = Object.keys(fields);
-    const isValid = fieldNames.every(field => keys.includes(field));
-    if (!isValid) {
-        return undefined;
-    } else {
-        const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
-        const html = srcHTML.replace(regex, (_, field) => {
-            return fields[field];
-        });
-        return html;
-    }
+    return fieldNames.every(field => keys.includes(field));
 };
 
 export const handler = async function (event: APIGatewayProxyEvent) {
@@ -92,10 +78,11 @@ export const handler = async function (event: APIGatewayProxyEvent) {
         };
     }
 
-    return Promise.all([db.GetTemplateById(templateId), db.GetHTMLById(templateId, PROCESSED_HTML_PATH)])
-        .then(([metadata, srcHTML]: [ITemplateFullEntry, string]) => {
-            const html: string | undefined = replaceFields(srcHTML, req.fields, metadata.fieldNames);
-            if (!html) {
+    return db
+        .GetTemplateById(templateId)
+        .then((metadata: ITemplateFullEntry) => {
+            const validFields: boolean = checkFields(req.fields, metadata.fieldNames);
+            if (!validFields) {
                 const missingFieldsError = new ESCError(
                     ErrorCode.ES2,
                     `Missing required dynamic fields for template ${metadata.templateId}`,
@@ -105,28 +92,37 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 return Promise.reject(missingFieldsError);
             }
             const params = {
-                from: VERIFIED_EMAIL_ADDRESS,
-                to: req.recipient,
-                subject: req.subject,
-                html: html,
+                MessageBody: JSON.stringify({
+                    templateId: templateId,
+                    subject: req.subject,
+                    from: VERIFIED_EMAIL_ADDRESS,
+                    to: req.recipient,
+                    fields: req.fields,
+                }),
+                QueueUrl: EMAIL_QUEUE_URL!,
+                MessageGroupId: '0', // id does not matter since we're not grouping
             };
-            return transporter.sendMail(params).catch(err => {
-                Logger.logError(err);
-                const condensedParams = Object.assign({}, params);
-                delete condensedParams.html;
-                const sendMailError = new ESCError(ErrorCode.ES5, `Send email error: { to: ${params.to}, subject: ${params.subject} }`);
-                return Promise.reject(sendMailError);
+            return new Promise((resolve, reject) => {
+                sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
+                    if (err) {
+                        Logger.logError(err);
+                        const queueError = new ESCError(ErrorCode.ES12, `Send to queue error: ${JSON.stringify(params)}`);
+                        reject(queueError);
+                    } else {
+                        resolve(data.MessageId);
+                    }
+                });
             });
         })
-        .then((res: SentMessageInfo) => {
+        .then(messageId => {
             return {
                 headers: headers,
                 statusCode: 200,
                 body: JSON.stringify({
                     templateId: templateId,
-                    sender: res.envelope.from,
-                    recipient: req.recipient,
-                    messageId: res.messageId,
+                    from: VERIFIED_EMAIL_ADDRESS,
+                    to: req.recipient,
+                    queueMessageId: messageId,
                 }),
             };
         })
@@ -141,7 +137,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS32;
+                code = ErrorCode.ES13;
             }
             return {
                 headers: headers,
