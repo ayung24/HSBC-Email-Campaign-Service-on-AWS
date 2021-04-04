@@ -19,11 +19,13 @@ export class EmailService {
     private _authorizer: agw.Authorizer;
     private _execute: lambda.Function;
     private _process: lambda.Function;
+    private _processBatch: lambda.Function;
     private _emailQueue: sqs.Queue;
     private _emailDlq: sqs.Queue;
 
     private readonly _emailApiAuthorizerLambdaName: string;
     private readonly _processSendLambdaName: string;
+    private readonly _processBatchSendLambdaName: string;
     private readonly _executeSendLambdaName: string;
     private readonly _emailQueueName: string;
     private readonly _emailQueueDlqName: string;
@@ -34,6 +36,7 @@ export class EmailService {
         this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._emailApiAuthorizerLambdaName = `EmailAPIAuthorizer-${buildEnv}`;
         this._processSendLambdaName = `ProcessSendHandler-${buildEnv}`;
+        this._processBatchSendLambdaName = `ProcessBatchSendHandler-${buildEnv}`;
         this._executeSendLambdaName = `ExecuteSendHandler-${buildEnv}`;
         this._emailQueueName = `EmailQueue-${buildEnv}`;
         this._emailQueueDlqName = `EmailDLQ-${buildEnv}`;
@@ -114,6 +117,19 @@ export class EmailService {
         database.htmlBucket().grantRead(this._process);
         this._emailQueue.grantSendMessages(this._process);
 
+        this._processBatch = new NodejsFunction(scope, 'ProcessBatchSendHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/processBatchSend/index.ts`,
+            environment: {
+                EMAIL_QUEUE_URL: this._emailQueue.queueUrl,
+                VERIFIED_EMAIL_ADDRESS: config.ses.VERIFIED_EMAIL_ADDRESS,
+                SQS_VERSION: config.sqs.VERSION,
+            },
+            timeout: cdk.Duration.seconds(10),
+            functionName: this._processBatchSendLambdaName,
+        });
+        this._emailQueue.grantSendMessages(this._processBatch);
+
         this._execute = new NodejsFunction(scope, 'ExecuteSendHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/executeSend/index.ts`,
@@ -141,7 +157,6 @@ export class EmailService {
                 batchSize: config.sqs.BATCH_SIZE,
             }),
         );
-
         this._execute.addToRolePolicy(
             new iam.PolicyStatement({
                 // SEND permission using SES
@@ -199,6 +214,46 @@ export class EmailService {
             requestValidator: emailReqValidator,
             requestModels: { 'application/json': emailReqModel },
         });
+
+        const emailBatchReqModel = new agw.Model(scope, 'SendEmailBatchReqModel', {
+            restApi: api,
+            contentType: 'application/json',
+            description: 'Send batch email request payload',
+            schema: {
+                type: agw.JsonSchemaType.ARRAY,
+                items: {
+                    minItems: 1,
+                    type: agw.JsonSchemaType.OBJECT,
+                    properties: {
+                        subject: {
+                            type: agw.JsonSchemaType.STRING,
+                        },
+                        recipient: {
+                            type: agw.JsonSchemaType.STRING,
+                        },
+                        fields: {
+                            type: agw.JsonSchemaType.OBJECT,
+                            additionalProperties: {
+                                type: agw.JsonSchemaType.STRING,
+                            },
+                        },
+                    },
+                    required: ['subject', 'recipient', 'fields'],
+                },
+            },
+        });
+
+        const emailBatchResource = api.root.addResource('emailBatch');
+        const processBatchIntegration = new agw.LambdaIntegration(this._processBatch);
+        emailBatchResource.addMethod('POST', processBatchIntegration, {
+            requestParameters: {
+                'method.request.querystring.templateid': true,
+            },
+            authorizer: this._authorizer,
+            authorizationType: AuthorizationType.CUSTOM,
+            requestValidator: emailReqValidator,
+            requestModels: { 'application/json': emailBatchReqModel },
+        });
     }
 
     /**
@@ -218,6 +273,11 @@ export class EmailService {
         });
         new LogGroup(scope, 'ProcessSendHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processSendLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
+        });
+        new LogGroup(scope, 'ProcessBatchSendHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processBatchSendLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
