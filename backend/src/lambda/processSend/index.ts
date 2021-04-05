@@ -120,8 +120,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 statusCode: 200,
                 body: JSON.stringify({
                     templateId: templateId,
-                    from: VERIFIED_EMAIL_ADDRESS,
-                    to: req.recipient,
+                    sender: VERIFIED_EMAIL_ADDRESS,
+                    recipient: req.recipient,
                     queueMessageId: messageId,
                 }),
             };

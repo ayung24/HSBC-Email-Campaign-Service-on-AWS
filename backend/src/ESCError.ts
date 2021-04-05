@@ -55,6 +55,9 @@ export enum ErrorCode {
     ES13 = 'ES13',
     ES14 = 'ES14',
     ES15 = 'ES15',
+    ES16 = 'ES16',
+    ES17 = 'ES17',
+    ES18 = 'ES18',
 }
 
 /**

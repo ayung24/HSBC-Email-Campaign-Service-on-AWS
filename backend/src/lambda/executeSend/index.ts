@@ -36,15 +36,22 @@ const validateEnv = function (): boolean {
 };
 
 /**
+ * Escape any angled brackets in string
+ */
+const applyXSSProtection = function (str: string) {
+    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+};
+
+/**
  * @param srcHTML HTML with dynamic fields
  * @param fields dynamic field values
- * @returns HTML with dynamic fields replaced with their values, or null if missing required fields
+ * @returns HTML with dynamic fields replaced with their values, applies XSS protection
  */
 const replaceFields = function (srcHTML: string, fields: ISendEmailFields): string {
     const fieldNames = Object.keys(fields);
     const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
     const html = srcHTML.replace(regex, (_, field) => {
-        return fields[field];
+        return applyXSSProtection(fields[field]);
     });
     return html;
 };
