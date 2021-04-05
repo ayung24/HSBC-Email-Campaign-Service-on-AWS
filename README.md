@@ -86,6 +86,8 @@ To be updated with every push to main
 #### ***April 5, 2021***
 - UI bug fixes
 - Email send now uses a queue to handle concurrency and prepare for batch send
-- Batch send UI
-    - Upload CSV modal added
-    - CSV validation added
+- Sender email now uses `makebank.testmain@gmail.com`
+- Batch send now available
+    - Batch send UI
+        - Upload CSV modal added
+        - CSV validation added
