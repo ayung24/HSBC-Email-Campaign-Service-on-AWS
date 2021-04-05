@@ -27,8 +27,6 @@ export class Database extends cdk.Construct {
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
-        this._initFunctions(scope);
-        this._initLogGroups(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -163,6 +161,10 @@ export class Database extends cdk.Construct {
 
     public htmlBucket(): s3.Bucket {
         return this._htmlBucket;
+    }
+
+    public imageBucket(): s3.Bucket {
+        return this._imageBucket;
     }
 
     public metadataTable(): dynamodb.Table {

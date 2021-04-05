@@ -17,11 +17,13 @@ export class TemplateService {
     private _templateMetadata: lambda.Function;
     private _authorizer: CognitoUserPoolsAuthorizer;
     private _delete: lambda.Function;
+    private _processHTML: lambda.Function;
 
     private readonly _uploadTemplateLambdaName: string;
     private readonly _getTemplateMetadataLambdaName: string;
     private readonly _listTemplatesLambdaName: string;
     private readonly _deleteTemplateLambdaName: string;
+    private readonly _processHTMLLambdaName: string;
 
     private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
 
@@ -31,6 +33,7 @@ export class TemplateService {
         this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
         this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
         this._deleteTemplateLambdaName = `DeleteTemplateHandler-${buildEnv}`;
+        this._processHTMLLambdaName = `ProcessHtmlHandler-${buildEnv}`;
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api);
@@ -115,6 +118,31 @@ export class TemplateService {
         database.metadataTable().grantReadWriteData(this._delete);
         database.htmlBucket().grantRead(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
         database.htmlBucket().grantDelete(this._delete, `${config.s3.PROCESSED_HTML_PATH}*`);
+
+        this._processHTML = new NodejsFunction(scope, 'ProcessHTMLHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/processHTML/index.ts`,
+            bundling: {
+                nodeModules: ['cheerio'],
+                target: config.lambda.BUILD_TARGET,
+            },
+            environment: {
+                METADATA_TABLE_NAME: database.metadataTable().tableName,
+                HTML_BUCKET_NAME: database.htmlBucket().bucketName,
+                SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
+                PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                IMAGE_BUCKET_NAME: database.imageBucket().bucketName,
+            },
+            timeout: cdk.Duration.seconds(10),
+            functionName: this._processHTMLLambdaName,
+        });
+-
+        // configure process HTML lambda permissions
+        database.metadataTable().grantReadWriteData(this._processHTML);
+        database.htmlBucket().grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
+        database.htmlBucket().grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
+        database.htmlBucket().grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
+        database.imageBucket().grantPut(this._processHTML);
     }
 
     /**
@@ -162,9 +190,11 @@ export class TemplateService {
         const templateResource = templatesResource.addResource('{id}');
         const getMetadataIntegration = new agw.LambdaIntegration(this._templateMetadata);
         const deleteIntegration = new agw.LambdaIntegration(this._delete);
+        const processHtmlIntegration = new agw.LambdaIntegration(this._processHTML);
 
         templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
         templateResource.addMethod('DELETE', deleteIntegration, { authorizer: this._authorizer });
+        templateResource.addMethod('PUT', processHtmlIntegration, { authorizer: this._authorizer });
     }
 
     /**
@@ -189,6 +219,11 @@ export class TemplateService {
         });
         new LogGroup(scope, 'DeleteTemplateHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._deleteTemplateLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
+        });
+        new LogGroup(scope, 'ProcessHtmlHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });

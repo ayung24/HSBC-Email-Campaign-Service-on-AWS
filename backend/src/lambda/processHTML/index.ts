@@ -1,15 +1,21 @@
-import { S3CreateEvent } from 'aws-lambda';
-import { isEmptyArray } from '../../commonFunctions';
+import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import cheerio from 'cheerio';
 import { ITemplateImage } from '../../database/dbInterfaces';
 import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../logger';
+import { brotliDecompress } from 'zlib';
 
 const IMAGE_BUCKET_NAME = process.env.IMAGE_BUCKET_NAME;
 const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
 const SRC_HTML_PATH = process.env.SRC_HTML_PATH;
 const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
+
+const headers = {
+    'Access-Control-Allow-Origin': '*', // Required for CORS support to work
+    'Access-Control-Allow-Credentials': true, // Required for cookies, authorization headers with HTTPS
+    'Content-Type': 'application/json',
+};
 
 const dataURIRegex = /\s*data:(?<mime>[a-z-]+\/[a-z\-+]+);(?<encoding>base64)?,(?<data>[a-z0-9!$&',()*+;=\-._~:@/?%\s]*\s*)/i;
 
@@ -20,31 +26,41 @@ const validateEnv = function (): boolean {
     return !!HTML_BUCKET_NAME && !!IMAGE_BUCKET_NAME && !!SRC_HTML_PATH && !!PROCESSED_HTML_PATH;
 };
 
-export const handler = async function (event: S3CreateEvent) {
+export const handler = async function (event: APIGatewayProxyEvent) {
+    Logger.logRequestInfo(event);
     if (!validateEnv()) {
         return {
+            headers: headers,
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
                 code: ErrorCode.TS10,
             }),
         };
-    } else if (!Array.isArray(event.Records) || isEmptyArray(event.Records)) {
+    } else if (!event.pathParameters || !event.pathParameters.id || !event.body) {
         return {
-            statusCode: 500,
+            headers: headers,
+            statusCode: 400,
             body: JSON.stringify({
-                message: 'No S3 create event',
+                message: ErrorMessages.INVALID_REQUEST_FORMAT,
                 code: ErrorCode.TS9,
             }),
         };
     }
-    const uploadEvent = event.Records[0];
-    const templateId = decodeURIComponent(uploadEvent.s3.object.key.replace(/\+/g, ' ')).replace(SRC_HTML_PATH!, '');
-    Logger.info({
-        message: `Post-processing HTML for template with id ${templateId}`,
-        additionalInfo: uploadEvent,
-    });
+    const body = JSON.parse(event.body);
+    if (!body.uploadTime) {
+        return {
+            headers: headers,
+            statusCode: 400,
+            body: JSON.stringify({
+                message: 'body missing field "uploadTime"',
+                code: ErrorCode.TS9,
+            }),
+        };
+    }
 
+    const templateId = event.pathParameters.id;
+    const timeCreated = body.uploadTime;
     return db
         .GetHTMLById(templateId, SRC_HTML_PATH!)
         .then((html: string) => {
@@ -75,7 +91,12 @@ export const handler = async function (event: S3CreateEvent) {
         })
         .then(() => {
             Logger.info({ message: `Updated html for template ${templateId}` });
+            return db.EnableTemplate(templateId, timeCreated);
+        })
+        .then((template) => {
+            Logger.info({ message: `Template marked as in service ${template.templateId}`, additionalInfo: template });
             return {
+                headers: headers,
                 statusCode: 200,
             };
         })
@@ -92,12 +113,17 @@ export const handler = async function (event: S3CreateEvent) {
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
                 code = ErrorCode.TS30;
             }
-            return {
-                statusCode: statusCode,
-                body: JSON.stringify({
-                    message: message,
-                    code: code,
-                }),
-            };
+            return db
+                .DisableTemplate(templateId, timeCreated)
+                .finally(() => {
+                    return {
+                        headers: headers,
+                        statusCode: statusCode,
+                        body: JSON.stringify({
+                            message: message,
+                            code: code,
+                        }),
+                    };
+                });
         });
-};
+}
