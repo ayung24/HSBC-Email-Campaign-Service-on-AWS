@@ -62,7 +62,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 400,
             body: JSON.stringify({
                 message: ErrorMessages.INVALID_REQUEST_FORMAT,
-                code: ErrorCode.ES17,
+                code: ErrorCode.ES18,
             }),
         };
     }
