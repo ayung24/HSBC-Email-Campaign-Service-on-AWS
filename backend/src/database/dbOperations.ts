@@ -67,16 +67,18 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 ddb.query(isNameTakenQuery, (notReadyQErr: AWSError, notReadyQ: DynamoDB.QueryOutput) => {
                     if (inServiceQErr) {
                         Logger.logError(inServiceQErr, 'Name validation failure - in service');
-                        const nameValidationError = new ESCError(ErrorCode.TS16A, 'Name validation failure among in service templates');
+                        const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure among in service templates');
                         reject(nameValidationError);
-                    } else if(notReadyQErr) {
+                    } else if (notReadyQErr) {
                         Logger.logError(notReadyQErr, 'Name validation failure - not ready');
-                        const nameValidationError = new ESCError(ErrorCode.TS16B, 'Name validation failure among not ready templates');
+                        const nameValidationError = new ESCError(ErrorCode.TS33, 'Name validation failure among not ready templates');
                         reject(nameValidationError);
-                    } else if (inServiceQ.Count && inServiceQ.Count > 0 && notReadyQ.Count && notReadyQ.Count > 0) {
-                        const message = inServiceQ.Count > 0 ? `Template name [${name}] is not unique.`: `Another template with name [${name}] is currently being uploaded.`;
-                        const code = inServiceQ.Count > 0 ? ErrorCode.TS17A : ErrorCode.TS17B
-                        const nameNotUniqueError = new ESCError(code, message, true);
+                    } else if (inServiceQ.Count && inServiceQ.Count > 0) {
+                        const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
+                        Logger.logError(nameNotUniqueError);
+                        reject(nameNotUniqueError);
+                    } else if (notReadyQ.Count && notReadyQ.Count > 0) {
+                        const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else {
@@ -137,9 +139,11 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
 export function EnableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
     return _updateTemplateStatus(templateId, timeCreated, EntryStatus.IN_SERVICE);
 }
+
 export function DisableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
     return _updateTemplateStatus(templateId, timeCreated, EntryStatus.DELETED);
 }
+
 function _updateTemplateStatus(templateId: string, timeCreated: number, status: EntryStatus): Promise<ITemplateBase> {
     const ddb = getDynamo();
     Logger.info({ message: `Updating status of template to be ${status}`, additionalInfo: { templateId: templateId } });
