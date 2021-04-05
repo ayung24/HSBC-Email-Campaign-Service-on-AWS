@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import * as processEmailHandler from '../../src/lambda/processSend';
-import { EntryStatus, ITemplateFullEntry, ITemplateWithHTML } from '../../src/database/dbInterfaces';
+import { EntryStatus, ITemplateWithHTML } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { ErrorCode, ESCError, ErrorMessages } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
@@ -24,7 +24,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -41,8 +41,8 @@ describe('POST /email', () => {
             templateStatus: EntryStatus.IN_SERVICE,
             templateName: 'test template',
             apiKey: 'API-KEY',
-            fieldNames: ['test-field1'],
-            html: '<p>${test-field1}</p>',
+            fieldNames: ['test_field'],
+            html: '<p>${test_field}</p>',
         };
 
         const mData: SendMessageResult = {
@@ -76,7 +76,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test-field1': 'value1', 'test-field2': 'value2' },
+            fields: { 'test_field': 'value1', 'test_field_two': 'value2' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -93,8 +93,8 @@ describe('POST /email', () => {
             templateStatus: EntryStatus.IN_SERVICE,
             templateName: 'test template',
             apiKey: 'API-KEY',
-            fieldNames: ['test-field1'],
-            html: '<p>${test-field1}</p>',
+            fieldNames: ['test_field'],
+            html: '<p>${test_field}</p>',
         };
 
         const mData: SendMessageResult = {
@@ -127,7 +127,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -144,8 +144,8 @@ describe('POST /email', () => {
             templateStatus: EntryStatus.IN_SERVICE,
             templateName: 'test template',
             apiKey: 'API-KEY',
-            fieldNames: ['test-field2'],
-            html: '<p>${test-field2}</p>',
+            fieldNames: ['test_field_two'],
+            html: '<p>${test_field_two}</p>',
         };
 
         jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
@@ -190,7 +190,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -214,7 +214,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -246,7 +246,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             recipient: 'test@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -262,8 +262,8 @@ describe('POST /email', () => {
             templateStatus: EntryStatus.IN_SERVICE,
             templateName: 'test template',
             apiKey: 'API-KEY',
-            fieldNames: ['test-field1'],
-            html: '<p>${test-field1}</p>',
+            fieldNames: ['test_field'],
+            html: '<p>${test_field}</p>',
         };
 
         jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
@@ -283,32 +283,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             subject: 'test subject',
-            fields: { 'test-field1': 'value1' },
-        };
-        const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
-            body: JSON.stringify(reqBody),
-            queryStringParameters: {
-                templateid: 'invalid-test-id',
-            },
-        });
-
-        const mResponse = {
-            message: `Recipient email address is not a valid email.`,
-            code: ErrorCode.ES11,
-        };
-        jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
-
-        const result = await processEmailHandler.handler(testEvent);
-        expect(result.statusCode).toEqual(400);
-        expect(result.body).toEqual(JSON.stringify(mResponse));
-    });
-
-    it('Send email: INVALID multiple recipients', async () => {
-        const reqBody = {
-            // Some dummy values
-            subject: 'test subject',
-            recipient: 'bademail@',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -332,8 +307,33 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             subject: 'test subject',
+            recipient: 'bademail@',
+            fields: { 'test_field': 'value1' },
+        };
+        const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
+            body: JSON.stringify(reqBody),
+            queryStringParameters: {
+                templateid: 'invalid-test-id',
+            },
+        });
+
+        const mResponse = {
+            message: `Recipient email address is not a valid email.`,
+            code: ErrorCode.ES11,
+        };
+        jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
+
+        const result = await processEmailHandler.handler(testEvent);
+        expect(result.statusCode).toEqual(400);
+        expect(result.body).toEqual(JSON.stringify(mResponse));
+    });
+
+    it('Send email: INVALID multiple recipients', async () => {
+        const reqBody = {
+            // Some dummy values
+            subject: 'test subject',
             recipient: 'one@email.com;two@email.com',
-            fields: { 'test-field1': 'value1' },
+            fields: { 'test_field': 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
