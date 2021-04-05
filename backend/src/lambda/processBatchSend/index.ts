@@ -47,7 +47,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
 
     Logger.logCURLInfo(event);
-    if (validateEnv([VERIFIED_EMAIL_ADDRESS, EMAIL_QUEUE_URL])) {
+    if (!validateEnv([VERIFIED_EMAIL_ADDRESS, EMAIL_QUEUE_URL])) {
         return {
             headers: headers,
             statusCode: 500,
