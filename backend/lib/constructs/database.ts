@@ -28,7 +28,6 @@ export class Database extends cdk.Construct {
         this._removeImagesLambdaName = `RemoveImagesHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
-        // this._initLogGroups(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -122,19 +121,6 @@ export class Database extends cdk.Construct {
             ],
         });
     }
-
-    // private _initLogGroups(scope: cdk.Construct) {
-    //     new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
-    //         logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
-    //         retention: RetentionDays.SIX_MONTHS,
-    //         removalPolicy: this.REMOVAL_POLICY,
-    //     });
-    //     new LogGroup(scope, 'RemoveImagesHandlerLogs', {
-    //         logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._removeImagesLambdaName,
-    //         retention: RetentionDays.SIX_MONTHS,
-    //         removalPolicy: this.REMOVAL_POLICY,
-    //     });
-    // }
 
     public htmlBucket(): s3.Bucket {
         return this._htmlBucket;

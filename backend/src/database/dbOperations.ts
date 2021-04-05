@@ -62,17 +62,21 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             };
 
             isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE }
-            ddb.query(isNameTakenQuery, (err1: AWSError, data1: DynamoDB.QueryOutput) => {
+            ddb.query(isNameTakenQuery, (inServiceQErr: AWSError, inServiceQ: DynamoDB.QueryOutput) => {
                 isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY }
-                ddb.query(isNameTakenQuery, (err2: AWSError, data2: DynamoDB.QueryOutput) => {
-
-                    const err = err1 ? err1 : err2;
-                    if (err) {
-                        Logger.logError(err, 'Name validation failure');
-                        const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
+                ddb.query(isNameTakenQuery, (notReadyQErr: AWSError, notReadyQ: DynamoDB.QueryOutput) => {
+                    if (inServiceQErr) {
+                        Logger.logError(inServiceQErr, 'Name validation failure - in service');
+                        const nameValidationError = new ESCError(ErrorCode.TS16A, 'Name validation failure among in service templates');
                         reject(nameValidationError);
-                    } else if (data1.Count && data1.Count > 0 && data2.Count && data2.Count > 0) {
-                        const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
+                    } else if(notReadyQErr) {
+                        Logger.logError(notReadyQErr, 'Name validation failure - not ready');
+                        const nameValidationError = new ESCError(ErrorCode.TS16B, 'Name validation failure among not ready templates');
+                        reject(nameValidationError);
+                    } else if (inServiceQ.Count && inServiceQ.Count > 0 && notReadyQ.Count && notReadyQ.Count > 0) {
+                        const message = inServiceQ.Count > 0 ? `Template name [${name}] is not unique.`: `Another template with name [${name}] is currently being uploaded.`;
+                        const code = inServiceQ.Count > 0 ? ErrorCode.TS17A : ErrorCode.TS17B
+                        const nameNotUniqueError = new ESCError(code, message, true);
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else {

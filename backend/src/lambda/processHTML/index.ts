@@ -34,7 +34,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 500,
             body: JSON.stringify({
                 message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.TS0,
+                code: ErrorCode.TS10,
             }),
         };
     } else if (!event.pathParameters || !event.pathParameters.id || !event.body) {
@@ -43,7 +43,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 400,
             body: JSON.stringify({
                 message: ErrorMessages.INVALID_REQUEST_FORMAT,
-                code: ErrorCode.TS6,
+                code: ErrorCode.TS9,
             }),
         };
     }
@@ -54,7 +54,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             statusCode: 400,
             body: JSON.stringify({
                 message: 'body missing field "uploadTime"',
-                code: ErrorCode.TS6,
+                code: ErrorCode.TS9,
             }),
         };
     }
