@@ -20,7 +20,7 @@ const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (variables: Array<string | undefined>): boolean {
-    return variables.some(v => !v);
+    return !variables.some(v => !v);
 };
 
 const sendMessage: (params: SendMessageRequest) => Promise<string> = (params: SendMessageRequest) => {
@@ -68,7 +68,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     }
 
     const templateId: string = event.queryStringParameters.templateid;
-    const emails: ISendEmailReqBody[] = JSON.parse(event.body);
+    const emails: ISendEmailReqBody[] = JSON.parse(event.body).emails;
 
     const queuePromises: Promise<string>[] = emails.map(email => {
         const params = {
