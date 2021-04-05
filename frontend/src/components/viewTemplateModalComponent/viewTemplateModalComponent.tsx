@@ -18,13 +18,7 @@ import { ITemplateWithHTML } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
 import { UploadCsvComponent } from '../uploadCsvComponent/uploadCsvComponent';
 import { EmailService } from '../../services/emailService';
-import {
-    IEmailParameters,
-    ISendParameters,
-    ISendEmailResponse,
-    IBatchSendParameters,
-    IBatchSendResponse,
-} from '../../models/emailInterfaces';
+import { ISendParameters, ISendEmailResponse } from '../../models/emailInterfaces';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -363,48 +357,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
-    private _batchSend(emailParams: IEmailParameters[]): void {
-        this.setState({ isEmailLoading: true }, () => {
-            const batchEmailParams: IBatchSendParameters = {
-                templateId: this.props.templateId,
-                apiKey: this.state.apiKey,
-                emails: emailParams,
-            };
-            this._emailService
-                .sendBatchEmail(batchEmailParams)
-                .then((response: IBatchSendResponse) => {
-                    let toast: ToastInterface;
-                    if (response.failed === 0) {
-                        toast = {
-                            id: 'sendBatchEmailSuccess',
-                            body: `Successfully processed ${response.processed} emails`,
-                            type: ToastType.SUCCESS,
-                            open: true,
-                        };
-                    } else {
-                        toast = {
-                            id: 'sendBatchEmailError',
-                            body: `Failed to process ${response.failed}/${emailParams.length} emails`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        };
-                    }
-                    this._addToast(toast);
-                })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
-                    const toast = {
-                        id: 'sendBatchEmailError',
-                        body: body,
-                        type: ToastType.ERROR,
-                        open: true,
-                    };
-                    this._addToast(toast);
-                })
-                .finally(() => this.setState({ isEmailLoading: false }));
-        });
-    }
-
     private _onParamChange(event: React.SyntheticEvent): void {
         this.setState((state: ViewModalState) => {
             const formControl: HTMLInputElement = event.target as HTMLInputElement;
@@ -558,10 +510,11 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
                                     <UploadCsvComponent
+                                        templateId={this.props.templateId}
+                                        apiKey={this.state.apiKey}
                                         fileType={'.csv,.xlsx'}
                                         addToast={this._addToast.bind(this)}
                                         requiredFieldNames={this.state.fieldNames}
-                                        onSend={this._batchSend.bind(this)}
                                         service={this._emailService}
                                     />
                                 </div>

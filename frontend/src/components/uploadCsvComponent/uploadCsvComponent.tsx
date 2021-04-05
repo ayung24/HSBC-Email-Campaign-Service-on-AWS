@@ -1,23 +1,26 @@
 import React from 'react';
 import './uploadCsvComponent.css';
 import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComponent';
-import { Button } from 'react-bootstrap';
-import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { Button, Spinner } from 'react-bootstrap';
+import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { EmailService } from '../../services/emailService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
-import { IEmailParameters } from '../../models/emailInterfaces';
+import { IBatchSendParameters, IBatchSendResponse, IEmailParameters } from '../../models/emailInterfaces';
+import { IErrorReturnResponse } from '../../models/iError';
 
 interface UploadCsvState extends SpinnerState {
     dragging: boolean;
     file: File | null;
     emailParams: IEmailParameters[];
+    isEmailLoading: boolean;
 }
 
 interface UploadCsvProperties extends ToastFunctionProperties {
+    templateId: string;
+    apiKey: string;
     requiredFieldNames: string[];
     service: EmailService;
     fileType: string;
-    onSend: (emailParams: IEmailParameters[]) => void;
 }
 
 export class UploadCsvComponent extends React.Component<UploadCsvProperties, UploadCsvState> {
@@ -33,6 +36,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
             file: null,
             emailParams: [],
             isLoading: false,
+            isEmailLoading: false,
         };
     }
 
@@ -91,12 +95,16 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
         return isEmpty;
     }
 
-    private _disableCreate(): boolean {
+    private _sendDisabled(): boolean {
         return !this.state.emailParams || this.state.emailParams.length === 0;
     }
 
     private _isValidFileType(fileType: string): boolean {
-        return 'text/csv' === fileType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' === fileType;
+        return (
+            'text/csv' === fileType ||
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' === fileType ||
+            'application/vnd.ms-excel' === fileType
+        );
     }
 
     private _createCsvFileTypeErrorToast(file: File): ToastInterface {
@@ -145,9 +153,9 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
 
     private _validateCsv(csvData: any[], csvFieldNames: string[]): boolean {
         const templateFieldNamesSet = new Set(this.props.requiredFieldNames);
-        const csvFieldNamesSet = new Set(csvFieldNames);
+        const csvFieldNamesSet = new Set(csvFieldNames.map(name => name.toUpperCase()));
 
-        let isValid = csvData.some((row: any) => {
+        let isValid = !csvData.some((row: any) => {
             return !row.Subject || !row.Recipient || !EmailService.isEmailValid(row.Recipient);
         });
         if (!isValid) {
@@ -162,7 +170,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
 
         if (csvFieldNamesSet.size === templateFieldNamesSet.size) {
             templateFieldNamesSet.forEach((fieldName: string) => {
-                isValid = isValid && (csvFieldNamesSet.has(fieldName.toLowerCase()) || csvFieldNamesSet.has(fieldName.toUpperCase()));
+                isValid = isValid && csvFieldNamesSet.has(fieldName.toUpperCase());
             });
         } else {
             isValid = false;
@@ -182,13 +190,54 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
     private _getSendButtonText(): string {
         if (!this.state.emailParams || this.state.emailParams.length === 0) {
             return 'Send Batch Email';
+        } else if (this.state.emailParams.length === 1) {
+            return `Send 1 Email`;
         } else {
             return `Send ${this.state.emailParams.length} Emails`;
         }
     }
 
-    private _sendCallback(): void {
-        this.props.onSend(this.state.emailParams);
+    private _batchSend(): void {
+        this.setState({ isEmailLoading: true }, () => {
+            const emailParams = this.state.emailParams;
+            const batchEmailParams: IBatchSendParameters = {
+                templateId: this.props.templateId,
+                apiKey: this.props.apiKey,
+                emails: emailParams,
+            };
+            this.props.service
+                .sendBatchEmail(batchEmailParams)
+                .then((response: IBatchSendResponse) => {
+                    let toast: ToastInterface;
+                    if (response.failed === 0) {
+                        toast = {
+                            id: 'sendBatchEmailSuccess',
+                            body: `Successfully processed ${response.processed} emails`,
+                            type: ToastType.SUCCESS,
+                            open: true,
+                        };
+                    } else {
+                        toast = {
+                            id: 'sendBatchEmailError',
+                            body: `Failed to process ${response.failed}/${emailParams.length} emails`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        };
+                    }
+                    this._addToast(toast);
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    const body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                    const toast = {
+                        id: 'sendBatchEmailError',
+                        body: body,
+                        type: ToastType.ERROR,
+                        open: true,
+                    };
+                    this._addToast(toast);
+                })
+                .finally(() => this.setState({ isEmailLoading: false }));
+        });
     }
 
     componentDidMount(): void {
@@ -223,8 +272,15 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                         onDrop={this._dropListener.bind(this)}
                         onFileChanged={this._onFileChanged.bind(this)}
                     />
-                    <Button className='batch-send-button' disabled={this._disableCreate()} onClick={this._sendCallback.bind(this)}>
-                        {this._getSendButtonText()}
+                    <Button
+                        size='lg'
+                        variant='outline-dark'
+                        className='batch-send-button'
+                        onClick={this._batchSend.bind(this)}
+                        disabled={this.state.isEmailLoading || this._sendDisabled()}
+                    >
+                        {!this.state.isEmailLoading && <span>{this._getSendButtonText()}</span>}
+                        {this.state.isEmailLoading && <Spinner as='span' animation='border' role='status' aria-hidden='true' />}
                     </Button>
                     {this.state.isLoading && <SpinnerComponent />}
                 </div>

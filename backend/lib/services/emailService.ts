@@ -220,25 +220,30 @@ export class EmailService {
             contentType: 'application/json',
             description: 'Send batch email request payload',
             schema: {
-                type: agw.JsonSchemaType.ARRAY,
-                items: {
-                    minItems: 1,
-                    type: agw.JsonSchemaType.OBJECT,
-                    properties: {
-                        subject: {
-                            type: agw.JsonSchemaType.STRING,
-                        },
-                        recipient: {
-                            type: agw.JsonSchemaType.STRING,
-                        },
-                        fields: {
+                type: agw.JsonSchemaType.OBJECT,
+                properties: {
+                    emails: {
+                        type: agw.JsonSchemaType.ARRAY,
+                        items: {
+                            minItems: 1,
                             type: agw.JsonSchemaType.OBJECT,
-                            additionalProperties: {
-                                type: agw.JsonSchemaType.STRING,
+                            properties: {
+                                subject: {
+                                    type: agw.JsonSchemaType.STRING,
+                                },
+                                recipient: {
+                                    type: agw.JsonSchemaType.STRING,
+                                },
+                                fields: {
+                                    type: agw.JsonSchemaType.OBJECT,
+                                    additionalProperties: {
+                                        type: agw.JsonSchemaType.STRING,
+                                    },
+                                },
                             },
+                            required: ['subject', 'recipient', 'fields'],
                         },
                     },
-                    required: ['subject', 'recipient', 'fields'],
                 },
             },
         });

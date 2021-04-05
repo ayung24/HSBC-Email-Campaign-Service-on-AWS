@@ -54,6 +54,7 @@ export class EmailService {
                     const data = event.target.result;
                     const workbook = XLSX.read(data, {
                         type: 'binary',
+                        raw: true,
                     });
                     let jsonData: any[] = [];
                     const csvFieldNames: string[] = [];

@@ -14,9 +14,12 @@
     align-items: center;
 }
 
-.batch-send-button.btn.btn-primary {
+.batch-send-button {
+    width: 100%;
     margin-top: 15px;
-    font-weight: bold;
+}
+
+.batch-send-button.btn.btn-primary {
     color: black;
     border-color: black;
     background-color: #f0eff0;
