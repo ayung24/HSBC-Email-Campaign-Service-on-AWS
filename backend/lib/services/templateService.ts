@@ -136,7 +136,7 @@ export class TemplateService {
             timeout: cdk.Duration.seconds(10),
             functionName: this._processHTMLLambdaName,
         });
--
+        
         // configure process HTML lambda permissions
         database.metadataTable().grantReadWriteData(this._processHTML);
         database.htmlBucket().grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
