@@ -1,0 +1,234 @@
+import React from 'react';
+import './uploadCsvComponent.css';
+import { FileUploaderComponent } from '../fileUploaderComponent/fileUploaderComponent';
+import { Button } from 'react-bootstrap';
+import { ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
+import { EmailService } from '../../services/emailService';
+import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
+import { IEmailParameters } from '../../models/emailInterfaces';
+
+interface UploadCsvState extends SpinnerState {
+    dragging: boolean;
+    file: File | null;
+    emailParams: IEmailParameters[];
+}
+
+interface UploadCsvProperties extends ToastFunctionProperties {
+    requiredFieldNames: string[];
+    service: EmailService;
+    fileType: string;
+    onSend: (emailParams: IEmailParameters[]) => void;
+}
+
+export class UploadCsvComponent extends React.Component<UploadCsvProperties, UploadCsvState> {
+    private _dragEventCounter = 0;
+    private _addToast: (t: ToastInterface) => void;
+
+    constructor(props: UploadCsvProperties) {
+        super(props);
+        this._addToast = props.addToast;
+
+        this.state = {
+            dragging: false,
+            file: null,
+            emailParams: [],
+            isLoading: false,
+        };
+    }
+
+    private _dragEnterListener(event: React.DragEvent<HTMLDivElement>): void {
+        this._overrideEventDefaults(event);
+        this._dragEventCounter++;
+        if (event.dataTransfer.items && event.dataTransfer.items[0]) {
+            this.setState({ dragging: true });
+        } else if (event.dataTransfer.types && event.dataTransfer.types[0] === 'Files') {
+            // This block handles support for IE - if you're not worried about
+            // that, you can omit this
+            this.setState({ dragging: true });
+        }
+    }
+
+    private _dragleaveListener(event: React.DragEvent<HTMLDivElement>): void {
+        this._overrideEventDefaults(event);
+        this._dragEventCounter--;
+
+        if (this._dragEventCounter === 0) {
+            this.setState({ dragging: false });
+        }
+    }
+
+    private _dropListener(event: React.DragEvent<HTMLDivElement>): void {
+        this._overrideEventDefaults(event);
+        this._dragEventCounter = 0;
+        this.setState({ dragging: false });
+
+        if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+            this._handleUploadCsvFile(event.dataTransfer.files[0]);
+        }
+    }
+
+    private _overrideEventDefaults(event: Event | React.DragEvent<HTMLDivElement>): void {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
+        if (event.target.files && event.target.files[0]) {
+            this._handleUploadCsvFile(event.target.files[0]);
+        }
+    }
+
+    private _isEmptyFile(file: any): boolean {
+        const isEmpty = !file || file.size === 0;
+        if (isEmpty) {
+            this._addToast({
+                id: 'emptyCsvError',
+                body: 'Cannot upload an empty csv',
+                type: ToastType.ERROR,
+                open: true,
+            });
+        }
+        return isEmpty;
+    }
+
+    private _disableCreate(): boolean {
+        return !this.state.emailParams || this.state.emailParams.length === 0;
+    }
+
+    private _isValidFileType(fileType: string): boolean {
+        return 'text/csv' === fileType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' === fileType;
+    }
+
+    private _createCsvFileTypeErrorToast(file: File): ToastInterface {
+        return {
+            id: 'wrongFileType',
+            body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.csv]`,
+            type: ToastType.ERROR,
+            open: true,
+        };
+    }
+
+    private _handleUploadCsvFile(file: File): void {
+        if (!this._isEmptyFile(file) && this._isValidFileType(file.type)) {
+            this.props.service
+                .parseCsv(file)
+                .then(([csvData, csvFieldNames]) => {
+                    if (this._validateCsv(csvData, csvFieldNames)) {
+                        const emailParams: IEmailParameters[] = [];
+                        csvData.forEach((row: any) => {
+                            const fieldObj: any = {};
+                            csvFieldNames.forEach((fieldName: string) => {
+                                fieldObj[fieldName.toUpperCase()] = row[fieldName];
+                            });
+                            const params: IEmailParameters = {
+                                subject: row.Subject,
+                                recipient: row.Recipient,
+                                fields: fieldObj,
+                            };
+                            emailParams.push(params);
+                        });
+                        this.setState({ file: file, emailParams: emailParams });
+                    }
+                })
+                .catch(err => {
+                    this._addToast({
+                        id: 'parseCsvError',
+                        body: `Could not parse csv file. Error: ${err}`,
+                        type: ToastType.ERROR,
+                        open: true,
+                    });
+                });
+        } else {
+            this._addToast(this._createCsvFileTypeErrorToast(file));
+        }
+    }
+
+    private _validateCsv(csvData: any[], csvFieldNames: string[]): boolean {
+        const templateFieldNamesSet = new Set(this.props.requiredFieldNames);
+        const csvFieldNamesSet = new Set(csvFieldNames);
+
+        let isValid = csvData.some((row: any) => {
+            return !row.Subject || !row.Recipient || !EmailService.isEmailValid(row.Recipient);
+        });
+        if (!isValid) {
+            this._addToast({
+                id: 'missingSubjectOrRecipientError',
+                body: 'Some rows contain invalid Subject or Recipient',
+                type: ToastType.ERROR,
+                open: true,
+            });
+            return isValid;
+        }
+
+        if (csvFieldNamesSet.size === templateFieldNamesSet.size) {
+            templateFieldNamesSet.forEach((fieldName: string) => {
+                isValid = isValid && (csvFieldNamesSet.has(fieldName.toLowerCase()) || csvFieldNamesSet.has(fieldName.toUpperCase()));
+            });
+        } else {
+            isValid = false;
+        }
+
+        if (!isValid) {
+            this._addToast({
+                id: 'fieldNamesMismatchError',
+                body: 'Field names in CSV file do not match the ones for the template',
+                type: ToastType.ERROR,
+                open: true,
+            });
+        }
+        return isValid;
+    }
+
+    private _getSendButtonText(): string {
+        if (!this.state.emailParams || this.state.emailParams.length === 0) {
+            return 'Send Batch Email';
+        } else {
+            return `Send ${this.state.emailParams.length} Emails`;
+        }
+    }
+
+    private _sendCallback(): void {
+        this.props.onSend(this.state.emailParams);
+    }
+
+    componentDidMount(): void {
+        window.addEventListener('dragover', (event: Event) => {
+            this._overrideEventDefaults(event);
+        });
+        window.addEventListener('drop', (event: Event) => {
+            this._overrideEventDefaults(event);
+        });
+    }
+
+    componentWillUnmount(): void {
+        window.removeEventListener('dragover', this._overrideEventDefaults);
+        window.removeEventListener('drop', this._overrideEventDefaults);
+    }
+
+    render(): JSX.Element {
+        return (
+            <div className='upload-modal-container'>
+                <h4 className='upload-modal-title'>Upload CSV</h4>
+                <div className='upload-modal-body'>
+                    <FileUploaderComponent
+                        dragging={this.state.dragging}
+                        file={this.state.file}
+                        fileTypeAcceptance={this.props.fileType}
+                        onDrag={this._overrideEventDefaults.bind(this)}
+                        onDragStart={this._overrideEventDefaults.bind(this)}
+                        onDragEnd={this._overrideEventDefaults.bind(this)}
+                        onDragOver={this._overrideEventDefaults.bind(this)}
+                        onDragEnter={this._dragEnterListener.bind(this)}
+                        onDragLeave={this._dragleaveListener.bind(this)}
+                        onDrop={this._dropListener.bind(this)}
+                        onFileChanged={this._onFileChanged.bind(this)}
+                    />
+                    <Button className='batch-send-button' disabled={this._disableCreate()} onClick={this._sendCallback.bind(this)}>
+                        {this._getSendButtonText()}
+                    </Button>
+                    {this.state.isLoading && <SpinnerComponent />}
+                </div>
+            </div>
+        );
+    }
+}

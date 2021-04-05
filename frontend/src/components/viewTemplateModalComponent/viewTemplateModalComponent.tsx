@@ -14,11 +14,17 @@ import { TemplateService } from '../../services/templateService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
-import { ITemplateWithHTML, IUploadCsvData } from '../../models/templateInterfaces';
+import { ITemplateWithHTML } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
-import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
+import { UploadCsvComponent } from '../uploadCsvComponent/uploadCsvComponent';
 import { EmailService } from '../../services/emailService';
-import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
+import {
+    IEmailParameters,
+    ISendParameters,
+    ISendEmailResponse,
+    IBatchSendParameters,
+    IBatchSendResponse,
+} from '../../models/emailInterfaces';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -54,7 +60,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _templateService: TemplateService;
     private _emailService: EmailService;
     private _keyManagementService: KMS;
-    private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
 
@@ -62,7 +67,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         super(props);
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
-        this._uploadModalComponent = React.createRef();
         this._emailService = new EmailService();
 
         this.state = {
@@ -235,7 +239,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             };
             this._addToast(TOAST_INCOMPLETE);
         }
-        const isEmailValid = this._isEmailValid(this.state.jsonBody.recipient);
+        const isEmailValid = EmailService.isEmailValid(this.state.jsonBody.recipient);
         if (!isEmailValid) {
             const TOAST_INVALID_EMAIL = {
                 id: 'copyJsonFailed',
@@ -258,12 +262,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (this._validateEmailRequest()) {
             this._copyText(this.state.curlRequest, event);
         }
-    }
-
-    private _isEmailValid(email: string): boolean {
-        // https://regexr.com/3e48o
-        const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-        return REGEX.test(email);
     }
 
     private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
@@ -330,7 +328,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _sendEmail(): void {
         this.setState({ isEmailLoading: true }, () => {
             if (this._validateEmailRequest()) {
-                const emailParams: IEmailParameters = {
+                const emailParams: ISendParameters = {
                     templateId: this.props.templateId,
                     apiKey: this.state.apiKey,
                     subject: this.state.jsonBody.subject,
@@ -365,6 +363,48 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
+    private _batchSend(emailParams: IEmailParameters[]): void {
+        this.setState({ isEmailLoading: true }, () => {
+            const batchEmailParams: IBatchSendParameters = {
+                templateId: this.props.templateId,
+                apiKey: this.state.apiKey,
+                emails: emailParams,
+            };
+            this._emailService
+                .sendBatchEmail(batchEmailParams)
+                .then((response: IBatchSendResponse) => {
+                    let toast: ToastInterface;
+                    if (response.failed === 0) {
+                        toast = {
+                            id: 'sendBatchEmailSuccess',
+                            body: `Successfully processed ${response.processed} emails`,
+                            type: ToastType.SUCCESS,
+                            open: true,
+                        };
+                    } else {
+                        toast = {
+                            id: 'sendBatchEmailError',
+                            body: `Failed to process ${response.failed}/${emailParams.length} emails`,
+                            type: ToastType.ERROR,
+                            open: true,
+                        };
+                    }
+                    this._addToast(toast);
+                })
+                .catch((err: IErrorReturnResponse) => {
+                    const body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                    const toast = {
+                        id: 'sendBatchEmailError',
+                        body: body,
+                        type: ToastType.ERROR,
+                        open: true,
+                    };
+                    this._addToast(toast);
+                })
+                .finally(() => this.setState({ isEmailLoading: false }));
+        });
+    }
+
     private _onParamChange(event: React.SyntheticEvent): void {
         this.setState((state: ViewModalState) => {
             const formControl: HTMLInputElement = event.target as HTMLInputElement;
@@ -387,22 +427,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                 curlRequest: this._getCurlRequest(this.state.url, this.state.apiKey, JSON.stringify(newJsonBody)),
             };
         });
-    }
-
-    private _toggleUploadModal(): void {
-        this._uploadModalComponent.current?.toggleModal();
-    }
-
-    private _getTemplateDetails(): IUploadCsvData {
-        const templateDetails: IUploadCsvData = {
-            templateId: this.props.templateId,
-            apiKey: this.state.apiKey,
-            subject: this.state.jsonBody.subject,
-            recipient: this.state.jsonBody.recipient,
-            fields: this.state.jsonBody.fields,
-            templateFields: this.state.fieldNames,
-        };
-        return templateDetails;
     }
 
     render(): JSX.Element {
@@ -533,20 +557,12 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             </Tab>
                             <Tab id='batch' eventKey='batch' title='Batch'>
                                 <div className='uploadCsv'>
-                                    <Button
-                                        className='upload-button'
-                                        variant='primary'
-                                        type='submit'
-                                        onClick={this._toggleUploadModal.bind(this)}
-                                    >
-                                        Upload CSV file
-                                    </Button>
-                                    <UploadTemplateModalComponent
-                                        ref={this._uploadModalComponent}
-                                        requireTemplateName={false}
+                                    <UploadCsvComponent
                                         fileType={'.csv,.xlsx'}
                                         addToast={this._addToast.bind(this)}
-                                        templateDetails={this._getTemplateDetails()}
+                                        requiredFieldNames={this.state.fieldNames}
+                                        onSend={this._batchSend.bind(this)}
+                                        service={this._emailService}
                                     />
                                 </div>
                             </Tab>
