@@ -360,7 +360,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                                 className='create-template-button'
                                 disabled={this._disableCreate()}
                                 onClick={
-                                    this.props.fileType === '.csv,.xlsx' ? this._doUploadWord.bind(this) : this._doBatchSend.bind(this)
+                                    this.props.fileType === '.csv,.xlsx' ? this._doBatchSend.bind(this) : this._doUploadWord.bind(this)
                                 }
                             >
                                 {this.props.fileType === '.csv,.xlsx' ? 'Send Batch Email' : 'Create'}
