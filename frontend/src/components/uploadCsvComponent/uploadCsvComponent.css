@@ -1,0 +1,32 @@
+.upload-modal-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-modal-title {
+    align-self: flex-start;
+    line-height: 1.5em;
+}
+
+.upload-modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.batch-send-button {
+    width: 100%;
+    margin-top: 15px;
+}
+
+.batch-send-button.btn.btn-outline-dark {
+    background-color: #f0eff0;
+    border-color: black;
+    color: black;
+}
+
+.drop-area-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
