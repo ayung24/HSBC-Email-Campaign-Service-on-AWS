@@ -85,9 +85,10 @@ To be updated with every push to main
 - Non-functional: Added security and service tests
 #### ***April 5, 2021***
 - UI bug fixes
-- Email send now uses a queue to handle concurrency and prepare for batch send
+- Email send now uses a SQS queue to handle concurrent send requests
 - Sender email now uses `makebank.testmain@gmail.com`
-- Batch send now available
-    - Batch send UI
-        - Upload CSV modal added
-        - CSV validation added
+- Batch send now available:
+    1. In template details side panel, switch to `Batch` tab
+    2. Drag & Drop a .csv/.xlsx file to upload area<br>
+      - Example valid CSV for a template with dynamic fields ${AMOUNT}, ${NAME}, ${PROMO_CODE}: [csv_sample.xlsx](https://github.com/CPSC319-HSBC/4-MakeBank/files/6260830/csv_sample.xlsx)
+    4. Click send button
