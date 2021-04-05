@@ -19,10 +19,10 @@
     margin-top: 15px;
 }
 
-.batch-send-button.btn.btn-primary {
-    color: black;
-    border-color: black;
+.batch-send-button.btn.btn-outline-dark {
     background-color: #f0eff0;
+    border-color: black;
+    color: black;
 }
 
 .drop-area-content {

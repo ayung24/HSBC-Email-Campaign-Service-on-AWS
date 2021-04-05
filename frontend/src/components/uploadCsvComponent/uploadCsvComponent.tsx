@@ -19,13 +19,13 @@ interface UploadCsvProperties extends ToastFunctionProperties {
     templateId: string;
     apiKey: string;
     requiredFieldNames: string[];
-    service: EmailService;
     fileType: string;
 }
 
 export class UploadCsvComponent extends React.Component<UploadCsvProperties, UploadCsvState> {
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;
+    private _emailService: EmailService = new EmailService();
 
     constructor(props: UploadCsvProperties) {
         super(props);
@@ -118,7 +118,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
 
     private _handleUploadCsvFile(file: File): void {
         if (!this._isEmptyFile(file) && this._isValidFileType(file.type)) {
-            this.props.service
+            this._emailService
                 .parseCsv(file)
                 .then(([csvData, csvFieldNames]) => {
                     if (this._validateCsv(csvData, csvFieldNames)) {
@@ -205,7 +205,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                 apiKey: this.props.apiKey,
                 emails: emailParams,
             };
-            this.props.service
+            this._emailService
                 .sendBatchEmail(batchEmailParams)
                 .then((response: IBatchSendResponse) => {
                     let toast: ToastInterface;

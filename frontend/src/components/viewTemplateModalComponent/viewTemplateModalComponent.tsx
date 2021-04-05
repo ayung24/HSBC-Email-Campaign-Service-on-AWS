@@ -515,7 +515,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                         fileType={'.csv,.xlsx'}
                                         addToast={this._addToast.bind(this)}
                                         requiredFieldNames={this.state.fieldNames}
-                                        service={this._emailService}
                                     />
                                 </div>
                             </Tab>

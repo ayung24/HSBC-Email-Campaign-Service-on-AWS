@@ -8,6 +8,7 @@ import {
     IBatchSendResponse,
 } from '../models/emailInterfaces';
 import XLSX from 'xlsx';
+
 export class EmailService {
     private _requestService: RequestService;
 

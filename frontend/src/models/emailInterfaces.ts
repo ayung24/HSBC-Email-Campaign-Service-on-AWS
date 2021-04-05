@@ -8,6 +8,7 @@ export interface ISendParameters extends IEmailParameters {
     templateId: string;
     apiKey: string;
 }
+
 export interface IBatchSendParameters {
     templateId: string;
     apiKey: string;
