@@ -84,7 +84,7 @@ To be updated with every push to main
 - Previous build cURL requests fail. This is fixed in this build
 - Non-functional: Added security and service tests
 #### ***April 5, 2021***
-- UI bug fixes
+- UI bug fixes and error message improvements
 - Email send now uses a SQS queue to handle concurrent send requests
 - Sender email now uses `makebank.testmain@gmail.com`
 - Batch send now available:
