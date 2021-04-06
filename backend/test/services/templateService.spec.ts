@@ -38,6 +38,11 @@ describe('template service tests', () => {
                 HttpMethod: 'DELETE',
             }),
         );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'PUT',
+            }),
+        );
     });
 
     it('creates template endpoint cognito authorizer', () => {

@@ -27,8 +27,6 @@ export class Database extends cdk.Construct {
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
         this._initTable(scope);
         this._initBuckets(scope);
-        this._initFunctions(scope);
-        this._initLogGroups(scope);
     }
 
     private _initTable(scope: cdk.Construct) {
@@ -138,7 +136,7 @@ export class Database extends cdk.Construct {
                 PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
                 IMAGE_BUCKET_NAME: this._imageBucket.bucketName,
             },
-            timeout: cdk.Duration.seconds(10),
+            timeout: cdk.Duration.seconds(30),
             functionName: this._processHTMLLambdaName,
         });
         this._processHTML.addEventSource(
@@ -163,6 +161,10 @@ export class Database extends cdk.Construct {
 
     public htmlBucket(): s3.Bucket {
         return this._htmlBucket;
+    }
+
+    public imageBucket(): s3.Bucket {
+        return this._imageBucket;
     }
 
     public metadataTable(): dynamodb.Table {
