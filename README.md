@@ -85,6 +85,7 @@ To be updated with every push to main
 - Non-functional: Added security and service tests
 #### ***April 5, 2021***
 - UI bug fixes and error message improvements
+- Upload template performance enhancements
 - Email send now uses a SQS queue to handle concurrent send requests
 - Sender email now uses `makebank.testmain@gmail.com`
 - Batch send now available:
