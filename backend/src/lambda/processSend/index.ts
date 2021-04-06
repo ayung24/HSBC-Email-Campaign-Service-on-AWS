@@ -22,7 +22,7 @@ const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
  * Validates lambda's runtime env variables
  */
  export const validateEnv = function (variables: Array<string|undefined>): boolean {
-    return variables.some(v => !v)
+    return !variables.some(v => !v)
 };
 
 /**
