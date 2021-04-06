@@ -110,9 +110,7 @@ describe('database tests', () => {
         it('has public read access policy', () => {
             expect(stack).to(
                 haveResource('AWS::S3::Bucket', {
-                    Properties: objectLike({
-                        AccessControl: 'PublicRead',
-                    }),
+                    AccessControl: 'PublicRead',
                 }),
             );
         });
