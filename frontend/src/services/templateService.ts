@@ -26,17 +26,26 @@ export class TemplateService {
             templateName: name,
             fieldNames: fieldNames,
         };
-        return this._requestService.POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
-            this._uploadTemplateHTML(metadataResponse.imageUploadUrl, htmlFile).then(() => {
-                return {
-                    templateId: metadataResponse.templateId,
-                    apiKey: metadataResponse.apiKey,
-                    templateName: metadataResponse.templateName,
-                    fieldNames: metadataResponse.fieldNames,
-                    uploadTime: new Date(metadataResponse.timeCreated),
-                };
-            }),
-        );
+
+        return this._requestService
+            .POST('/templates', requestBody, (metadataResponse: ITemplateMetadataUploadResponse) =>
+                this._uploadTemplateHTML(metadataResponse.imageUploadUrl, htmlFile).then(() => {
+                    const timeCreated = parseInt(`${metadataResponse.timeCreated}`); // metadataResponse.timeCreated was actually a string...
+                    return {
+                        templateId: metadataResponse.templateId,
+                        apiKey: metadataResponse.apiKey,
+                        templateName: metadataResponse.templateName,
+                        fieldNames: metadataResponse.fieldNames,
+                        uploadTime: new Date(timeCreated),
+                    };
+                }),
+            )
+            .then(template => {
+                const uploadTime = template.uploadTime.getTime();
+                return this._requestService.PUT('/templates/' + template.templateId, { uploadTime: uploadTime }, r => {
+                    return Promise.resolve(template);
+                });
+            });
     }
 
     private _uploadTemplateHTML(presignedPost: PresignedPost, htmlFile: any): Promise<void> {
@@ -116,12 +125,10 @@ export class TemplateService {
             let matches = dynamicFieldRegex.exec(html);
             const fields = [];
             while (matches) {
-                const validRegex = new RegExp(/[A-Z0-9_]+/m);
+                const validRegex = new RegExp(/[A-Za-z_]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
-                if (checkMatches === null) {
-                    reject('Dynamic value cannot be empty.');
-                } else if (checkMatches[0].length !== matches[1].length) {
-                    reject('Dynamic value {' + matches[1] + '} contains non-capital letters or characters other than underscore');
+                if (checkMatches === null || checkMatches[0].length !== matches[1].length) {
+                    reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z_].');
                 }
                 fields.push(matches[1]);
                 matches = dynamicFieldRegex.exec(html);

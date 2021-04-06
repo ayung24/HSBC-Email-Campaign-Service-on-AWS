@@ -1,5 +1,6 @@
 // a Entry is either deleted or not
 export enum EntryStatus {
+    NOT_READY = 'Not Ready',
     IN_SERVICE = 'In Service',
     DELETED = 'Deleted',
 }

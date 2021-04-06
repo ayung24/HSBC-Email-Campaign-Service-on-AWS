@@ -16,8 +16,9 @@ import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplateWithHTML } from '../../models/templateInterfaces';
 import { IError, IErrorReturnResponse } from '../../models/iError';
+import { UploadCsvComponent } from '../uploadCsvComponent/uploadCsvComponent';
 import { EmailService } from '../../services/emailService';
-import { IEmailParameters, ISendEmailResponse } from '../../models/emailInterfaces';
+import { ISendParameters, ISendEmailResponse } from '../../models/emailInterfaces';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -53,7 +54,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _templateService: TemplateService;
     private _emailService: EmailService;
     private _keyManagementService: KMS;
-
     private readonly _inputFormNameRecipient: string;
     private readonly _inputFormNameSubject: string;
 
@@ -62,6 +62,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
         this._emailService = new EmailService();
+
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
@@ -90,7 +91,15 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     }
 
     private _handleModalClose(): void {
-        this.setState({ isViewOpen: false });
+        this.setState({
+            isViewOpen: false,
+            jsonBody: {
+                subject: '',
+                recipient: '',
+                fields: {},
+            },
+            curlRequest: '',
+        });
     }
 
     private _handleModalOpen(): void {
@@ -197,8 +206,20 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
-        event.target.src = copiedImage;
         document.body.removeChild(textArea);
+        if (event.target.className === 'img-fluid') {
+            event.target.src = copiedImage;
+        } else {
+            event.target.firstChild.src = copiedImage;
+        }
+        const fieldName = event.target.getAttribute('name') ?? event.target.parentNode.getAttribute('name');
+        const copiedToast = {
+            id: `copyToast-${fieldName}`,
+            body: `Copied ${fieldName} to clipboard`,
+            type: ToastType.NOTIFICATION,
+            open: true,
+        };
+        this._addToast(copiedToast);
     }
 
     private _validateEmailRequest(): boolean {
@@ -212,7 +233,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             };
             this._addToast(TOAST_INCOMPLETE);
         }
-        const isEmailValid = this._isEmailValid(this.state.jsonBody.recipient);
+        const isEmailValid = EmailService.isEmailValid(this.state.jsonBody.recipient);
         if (!isEmailValid) {
             const TOAST_INVALID_EMAIL = {
                 id: 'copyJsonFailed',
@@ -235,12 +256,6 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         if (this._validateEmailRequest()) {
             this._copyText(this.state.curlRequest, event);
         }
-    }
-
-    private _isEmailValid(email: string): boolean {
-        // https://regexr.com/3e48o
-        const REGEX = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
-        return REGEX.test(email);
     }
 
     private _isCompleteJson(jsonBody: ISendEmailReqBody): boolean {
@@ -307,7 +322,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
     private _sendEmail(): void {
         this.setState({ isEmailLoading: true }, () => {
             if (this._validateEmailRequest()) {
-                const emailParams: IEmailParameters = {
+                const emailParams: ISendParameters = {
                     templateId: this.props.templateId,
                     apiKey: this.state.apiKey,
                     subject: this.state.jsonBody.subject,
@@ -319,7 +334,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     .then((response: ISendEmailResponse) => {
                         const toast = {
                             id: 'sendEmailSuccess',
-                            body: `Successfully sent email with id [${response.messageId}] to ${response.recipient}].`,
+                            body: `Successfully processed email to [${response.recipient}] and sent to queue.`,
                             type: ToastType.SUCCESS,
                             open: true,
                         };
@@ -418,6 +433,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             className='send-button'
                                             onClick={this._sendEmail.bind(this)}
                                             style={{ marginTop: '12px' }}
+                                            disabled={this.state.isEmailLoading}
                                         >
                                             {!this.state.isEmailLoading && <span>Send Email</span>}
                                             {this.state.isEmailLoading && (
@@ -431,13 +447,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             <InputGroup className='mb-3'>
                                                 <FormControl disabled placeholder='URL' value={this.state.url} />
                                                 <InputGroup.Append>
-                                                    <Button id='copyBtn' variant='outline-secondary'>
-                                                        <Image
-                                                            src={copyImage}
-                                                            alt='copy icon'
-                                                            onClick={event => this._copyText(this.state.url, event)}
-                                                            fluid
-                                                        />
+                                                    <Button
+                                                        name='URL'
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyText(this.state.url, event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
                                                     </Button>
                                                 </InputGroup.Append>
                                             </InputGroup>
@@ -445,13 +461,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                             <InputGroup className='mb-3'>
                                                 <FormControl disabled placeholder='API Key' value={this.state.apiKey} />
                                                 <InputGroup.Append>
-                                                    <Button id='copyBtn' variant='outline-secondary'>
-                                                        <Image
-                                                            src={copyImage}
-                                                            alt='copy icon'
-                                                            onClick={event => this._copyText(this.state.apiKey, event)}
-                                                            fluid
-                                                        />
+                                                    <Button
+                                                        name='API Key'
+                                                        id='copyBtn'
+                                                        variant='outline-secondary'
+                                                        onClick={event => this._copyText(this.state.apiKey, event)}
+                                                    >
+                                                        <Image src={copyImage} alt='copy icon' fluid />
                                                     </Button>
                                                 </InputGroup.Append>
                                             </InputGroup>
@@ -464,6 +480,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                                 />
                                                 <InputGroup.Append>
                                                     <Button
+                                                        name='JSON Body'
                                                         id='copyBtn'
                                                         variant='outline-secondary'
                                                         onClick={event => this._copyJson(event)}
@@ -477,6 +494,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                                 <TextareaAutosize readOnly className='curl' value={this.state.curlRequest} />
                                                 <InputGroup.Append>
                                                     <Button
+                                                        name='Full cURL Request'
                                                         id='copyBtn'
                                                         variant='outline-secondary'
                                                         onClick={event => this._copyCurl(event)}
@@ -489,18 +507,16 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                     </Tab>
                                 </Tabs>
                             </Tab>
-                            <Tab id='batch' disabled eventKey='batch' title='Batch'>
-                                <div className='sendParameters'>
-                                    <Form.Label>Recipients</Form.Label>
-                                    <InputGroup id='recipient' className='mb-3'>
-                                        <FormControl placeholder='Recipient' />
-                                    </InputGroup>
-                                    <Form.Label>Subject</Form.Label>
-                                    <InputGroup id='subject' className='mb-3'>
-                                        <FormControl placeholder='Subject' />
-                                    </InputGroup>
+                            <Tab id='batch' eventKey='batch' title='Batch'>
+                                <div className='uploadCsv'>
+                                    <UploadCsvComponent
+                                        templateId={this.props.templateId}
+                                        apiKey={this.state.apiKey}
+                                        fileType={'.csv,.xlsx'}
+                                        addToast={this._addToast.bind(this)}
+                                        requiredFieldNames={this.state.fieldNames}
+                                    />
                                 </div>
-                                <div className='dynamicParameters'> {this._renderFieldNames('batch')}</div>
                             </Tab>
                         </Tabs>
                     </Modal.Body>

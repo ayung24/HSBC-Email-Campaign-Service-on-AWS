@@ -21,7 +21,9 @@ export enum ErrorCode {
     TS14 = 'TS14',
     TS15 = 'TS15',
     TS16 = 'TS16',
+    TS33 = 'TS33',
     TS17 = 'TS17',
+    TS34 = 'TS34',
     TS18 = 'TS18',
     TS19 = 'TS19',
     TS20 = 'TS20',
@@ -37,7 +39,6 @@ export enum ErrorCode {
     TS30 = 'TS30',
     TS31 = 'TS31',
     TS32 = 'TS32',
-    TS33 = 'TS33',
 
     // Email service codes
     ES0 = 'ES0',
@@ -52,6 +53,13 @@ export enum ErrorCode {
     ES9 = 'ES9',
     ES10 = 'ES10',
     ES11 = 'ES11',
+    ES12 = 'ES12',
+    ES13 = 'ES13',
+    ES14 = 'ES14',
+    ES15 = 'ES15',
+    ES16 = 'ES16',
+    ES17 = 'ES17',
+    ES18 = 'ES18',
 }
 
 /**

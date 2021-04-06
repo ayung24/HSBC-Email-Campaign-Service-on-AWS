@@ -2,10 +2,9 @@
   "compilerOptions": {
     "target":"ES2018",
     "module": "commonjs",
-    "lib": ["es2018"],
+    "lib": ["es2018", "dom", "ES2020.Promise"],
     "declaration": true,
     "strict": true,
-    "noImplicitAny": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
@@ -18,7 +17,8 @@
     "inlineSources": true,
     "experimentalDecorators": true,
     "strictPropertyInitialization":false,
+    "esModuleInterop":true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "exclude": ["build", "cdk.out", "src"]
+  "exclude": ["build", "cdk.out"]
 }

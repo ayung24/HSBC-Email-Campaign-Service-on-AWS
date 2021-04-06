@@ -50,6 +50,17 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
         return toastIndex > -1 ? this.state.states[toastIndex].open : false;
     }
 
+    private _getDelayTime(type: ToastType): number {
+        switch (type) {
+            case ToastType.NOTIFICATION:
+                return 3000;
+            case ToastType.SUCCESS:
+                return 5000;
+            case ToastType.ERROR:
+                return 6000;
+        }
+    }
+
     render(): JSX.Element {
         return (
             <div className='toast-component'>
@@ -60,7 +71,7 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
                         onClose={() => this._closeToast(prop.id)}
                         show={this._isOpen(prop.id)}
                         animation={true}
-                        delay={prop.type !== ToastType.ERROR ? 4000 : 6000}
+                        delay={this._getDelayTime(prop.type)}
                         autohide
                     >
                         <Toast.Header className={prop.type}>

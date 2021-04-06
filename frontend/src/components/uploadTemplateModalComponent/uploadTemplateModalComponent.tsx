@@ -9,7 +9,7 @@ import { IError, IErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 
-interface UploadModalState extends SpinnerState {
+interface UploadTemplateModalState extends SpinnerState {
     dragging: boolean;
     file: File | null;
     isModalShown: boolean;
@@ -18,14 +18,19 @@ interface UploadModalState extends SpinnerState {
     fieldNames: Array<string>;
 }
 
-export class UploadTemplateModalComponent extends React.Component<ToastFunctionProperties, UploadModalState> {
+interface UploadTemplateModalProperties extends ToastFunctionProperties {
+    fileType: string;
+}
+
+export class UploadTemplateModalComponent extends React.Component<UploadTemplateModalProperties, UploadTemplateModalState> {
     private _templateService: TemplateService;
     private _dragEventCounter = 0;
     private _addToast: (t: ToastInterface) => void;
 
-    constructor(props: ToastFunctionProperties) {
+    constructor(props: UploadTemplateModalProperties) {
         super(props);
         this._addToast = props.addToast;
+
         this.state = {
             dragging: false,
             file: null,
@@ -43,7 +48,12 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
     }
 
     private _closeModal(): void {
-        this.setState({ file: null, templateName: '', htmlFile: undefined, fieldNames: [] });
+        this.setState({
+            file: null,
+            templateName: '',
+            htmlFile: undefined,
+            fieldNames: [],
+        });
         this.toggleModal();
     }
 
@@ -74,7 +84,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         this.setState({ dragging: false });
 
         if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-            this._handleUploadFile(event.dataTransfer.files[0]);
+            this._handleUploadWordFile(event.dataTransfer.files[0]);
         }
     }
 
@@ -85,7 +95,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
 
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
-            this._handleUploadFile(event.target.files[0]);
+            this._handleUploadWordFile(event.target.files[0]);
         }
     }
 
@@ -102,43 +112,19 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         return isEmpty;
     }
 
-    private _handleUploadFile(file: File): void {
-        if (this._isValidFileType(file.type)) {
-            if (!this._isEmptyFile(file)) {
-                this._templateService
-                    .parseDocx(file)
-                    .then(([htmlFile, fieldNames]) => {
-                        if (!this._isEmptyFile(htmlFile)) {
-                            this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
-                        }
-                    })
-                    .catch(err => {
-                        this._addToast({
-                            id: 'parseDocxError',
-                            body: `Could not parse word document file. Error: ${err}`,
-                            type: ToastType.ERROR,
-                            open: true,
-                        });
-                    });
-            }
-        } else {
-            this._addToast(this._createFileTypeErrorToast(file));
-        }
-    }
-
     private _onTemplateNameChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         this.setState({ templateName: event.target.value });
     }
 
     private _disableCreate(): boolean {
-        return !this.state.file || this.state.templateName.trim().length === 0;
+        return !this.state.file || (this.state.templateName.trim().length === 0 && this.props.fileType === '.docx');
     }
 
     private _isValidFileType(fileType: string): boolean {
         return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' === fileType;
     }
 
-    private _createFileTypeErrorToast(file: File): ToastInterface {
+    private _createWordFileTypeErrorToast(file: File): ToastInterface {
         return {
             id: 'wrongFileType',
             body: `Uploaded file [${file.name}] is invalid. Valid file types: [*.docx]`,
@@ -166,19 +152,38 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
         };
     }
 
-    private _doUpload(): void {
+    private _handleUploadWordFile(file: File): void {
+        if (!this._isEmptyFile(file) && this._isValidFileType(file.type)) {
+            this._templateService
+                .parseDocx(file)
+                .then(([htmlFile, fieldNames]) => {
+                    if (!this._isEmptyFile(htmlFile)) {
+                        this.setState({ file: file, htmlFile: htmlFile, fieldNames: fieldNames });
+                    }
+                })
+                .catch(err => {
+                    this._addToast({
+                        id: 'parseDocxError',
+                        body: `Could not parse word document file. Error: ${err}`,
+                        type: ToastType.ERROR,
+                        open: true,
+                    });
+                });
+        } else {
+            this._addToast(this._createWordFileTypeErrorToast(file));
+        }
+    }
+
+    private _doUploadWord(): void {
         this.setState({ isLoading: true });
         this._templateService
             .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
             .then((t: ITemplate) => {
                 return new Promise<void>(resolve => {
-                    // TODO: https://github.com/CPSC319-HSBC/4-MakeBank/issues/169
-                    setTimeout(() => {
-                        EventEmitter.getInstance().dispatch('refreshGrid');
-                        this._addToast(this._createUploadSuccessToast(t.templateName));
-                        this._closeModal();
-                        resolve();
-                    }, 3000);
+                    EventEmitter.getInstance().dispatch('refreshGrid');
+                    this._addToast(this._createUploadSuccessToast(t.templateName));
+                    this._closeModal();
+                    resolve();
                 });
             })
             .catch((err: IErrorReturnResponse) => {
@@ -213,6 +218,7 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                             <FileUploaderComponent
                                 dragging={this.state.dragging}
                                 file={this.state.file}
+                                fileTypeAcceptance={this.props.fileType}
                                 onDrag={this._overrideEventDefaults.bind(this)}
                                 onDragStart={this._overrideEventDefaults.bind(this)}
                                 onDragEnd={this._overrideEventDefaults.bind(this)}
@@ -233,7 +239,11 @@ export class UploadTemplateModalComponent extends React.Component<ToastFunctionP
                                     onChange={this._onTemplateNameChanged.bind(this)}
                                 />
                             </div>
-                            <Button className='create-template-button' disabled={this._disableCreate()} onClick={this._doUpload.bind(this)}>
+                            <Button
+                                className='create-template-button'
+                                disabled={this._disableCreate()}
+                                onClick={this._doUploadWord.bind(this)}
+                            >
                                 Create
                             </Button>
                             {this.state.isLoading && <SpinnerComponent />}

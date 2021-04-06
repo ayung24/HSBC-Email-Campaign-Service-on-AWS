@@ -13,7 +13,7 @@ import * as process from 'process';
 import { AWSError, DynamoDB, S3 } from 'aws-sdk';
 import { DeleteObjectOutput, GetObjectOutput } from 'aws-sdk/clients/s3';
 import { UpdateItemOutput } from 'aws-sdk/clients/dynamodb';
-import * as Logger from '../../logger';
+import * as Logger from '../logger';
 import { ErrorCode, ESCError } from '../ESCError';
 
 const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -51,31 +51,40 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             reject(fieldsEmptyError);
         } else {
             // check name uniqueness
-            const isNameTakenQuery = {
+            let isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
                 IndexName: 'name-and-status-index',
                 ExpressionAttributeValues: {
                     ':proposedName': { S: name },
-                    ':inService': { S: EntryStatus.IN_SERVICE },
+                    ':status': {}, // can't use OR in expression
                 },
-                KeyConditionExpression: 'templateStatus = :inService AND templateName = :proposedName',
+                KeyConditionExpression: 'templateStatus = :status AND templateName = :proposedName',
             };
-            ddb.query(isNameTakenQuery, (err: AWSError, data: DynamoDB.QueryOutput) => {
-                if (err) {
-                    Logger.logError(err, 'Name validation failure');
-                    const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure');
-                    reject(nameValidationError);
-                } else if (data.Count && data.Count > 0) {
-                    const nameNotUniqueError = new ESCError(
-                        ErrorCode.TS17,
-                        `Template name [${name}] is not unique.`,
-                        true,
-                    );
-                    Logger.logError(nameNotUniqueError);
-                    reject(nameNotUniqueError);
-                } else {
-                    resolve(data);
-                }
+
+            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE }
+            ddb.query(isNameTakenQuery, (inServiceQErr: AWSError, inServiceQ: DynamoDB.QueryOutput) => {
+                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY }
+                ddb.query(isNameTakenQuery, (notReadyQErr: AWSError, notReadyQ: DynamoDB.QueryOutput) => {
+                    if (inServiceQErr) {
+                        Logger.logError(inServiceQErr, 'Name validation failure - in service');
+                        const nameValidationError = new ESCError(ErrorCode.TS16, 'Name validation failure among in service templates');
+                        reject(nameValidationError);
+                    } else if (notReadyQErr) {
+                        Logger.logError(notReadyQErr, 'Name validation failure - not ready');
+                        const nameValidationError = new ESCError(ErrorCode.TS33, 'Name validation failure among not ready templates');
+                        reject(nameValidationError);
+                    } else if (inServiceQ.Count && inServiceQ.Count > 0) {
+                        const nameNotUniqueError = new ESCError(ErrorCode.TS17, `Template name [${name}] is not unique.`, true);
+                        Logger.logError(nameNotUniqueError);
+                        reject(nameNotUniqueError);
+                    } else if (notReadyQ.Count && notReadyQ.Count > 0) {
+                        const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
+                        Logger.logError(nameNotUniqueError);
+                        reject(nameNotUniqueError);
+                    } else {
+                        resolve(0);
+                    }
+                });
             });
         }
     })
@@ -86,7 +95,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 Item: {
                     templateId: { S: uuid() }, // time based
                     timeCreated: { N: `${new Date().getTime()}` },
-                    templateStatus: { S: EntryStatus.IN_SERVICE },
+                    templateStatus: { S: EntryStatus.NOT_READY },
                     templateName: { S: name },
                     apiKey: { S: apiKey },
                     fieldNames: { SS: toSS(fieldNames) }, // dynamoDB disallows empty Set
@@ -118,13 +127,68 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
         .then(metadataEntry =>
             Promise.resolve({
                 templateId: metadataEntry.templateId.S,
-                templateStatus: EntryStatus.IN_SERVICE,
+                templateStatus: metadataEntry.templateStatus.S,
                 templateName: metadataEntry.templateName.S,
                 timeCreated: metadataEntry.timeCreated.N,
                 fieldNames: fromSS(metadataEntry.fieldNames.SS),
                 apiKey: metadataEntry.apiKey.S,
             }),
         );
+}
+
+export function EnableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
+    return _updateTemplateStatus(templateId, timeCreated, EntryStatus.IN_SERVICE);
+}
+
+export function DisableTemplate(templateId: string, timeCreated: number): Promise<ITemplateBase> {
+    return _updateTemplateStatus(templateId, timeCreated, EntryStatus.DELETED);
+}
+
+function _updateTemplateStatus(templateId: string, timeCreated: number, status: EntryStatus): Promise<ITemplateBase> {
+    const ddb = getDynamo();
+    Logger.info({ message: `Updating status of template to be ${status}`, additionalInfo: { templateId: templateId } });
+    if (isEmpty(templateId)) {
+        const templateIdEmptyError = new ESCError(ErrorCode.TS19, 'Template id is empty');
+        Logger.logError(templateIdEmptyError);
+        return Promise.reject(templateIdEmptyError);
+    }
+    const enableEntryParams: DynamoDB.UpdateItemInput = {
+        TableName: METADATA_TABLE_NAME!,
+        Key: {
+            templateId: {
+                S: templateId,
+            },
+            timeCreated: {
+                N: `${timeCreated}`,
+            },
+        },
+        UpdateExpression: 'set templateStatus = :status',
+        ExpressionAttributeValues: {
+            ':status': { S: status },
+        },
+        ReturnValues: 'ALL_NEW',
+    };
+    return new Promise((resolve, reject) => {
+        ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
+            if (err) {
+                Logger.logError(err);
+                const updateTemplateStatusError = new ESCError(
+                    ErrorCode.TS21,
+                    `Update template status error: ${JSON.stringify(enableEntryParams)}`,
+                );
+                reject(updateTemplateStatusError);
+            } else {
+                const item = data.Attributes;
+                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity } )
+                resolve({
+                    templateId: item?.templateId.S!,
+                    timeCreated: Number.parseInt(item?.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item?.templateStatus.S!],
+                    templateName: item?.templateName.S!,
+                });
+            }
+        });
+    });
 }
 
 export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
@@ -155,47 +219,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 });
             });
         })
-        .then((entry: ITemplateFullEntry) => {
-            Logger.info({ message: 'Setting metadata status to Deleted', additionalInfo: { templateId: templateId } });
-            return new Promise<any>((resolve, reject) => {
-                const deleteEntry: DynamoDB.UpdateItemInput = {
-                    TableName: METADATA_TABLE_NAME!,
-                    Key: {
-                        templateId: {
-                            S: templateId,
-                        },
-                        timeCreated: {
-                            N: `${entry.timeCreated}`,
-                        },
-                    },
-                    UpdateExpression: 'set templateStatus = :status',
-                    ExpressionAttributeValues: {
-                        ':status': { S: EntryStatus.DELETED },
-                    },
-                    ReturnValues: 'ALL_NEW',
-                };
-                ddb.updateItem(deleteEntry, (err: AWSError, data: UpdateItemOutput) => {
-                    if (err) {
-                        Logger.logError(err);
-                        const updateTemplateStatusError = new ESCError(
-                            ErrorCode.TS21,
-                            `Update template status error: ${JSON.stringify(deleteEntry)}`,
-                        );
-                        reject(updateTemplateStatusError);
-                    } else {
-                        resolve(data.Attributes);
-                    }
-                });
-            });
-        })
-        .then(attributeMap =>
-            Promise.resolve<ITemplateBase>({
-                templateId: attributeMap.templateId.S,
-                templateStatus: attributeMap.templateStatus.S,
-                templateName: attributeMap.templateName.S,
-                timeCreated: attributeMap.timeCreated.N,
-            }),
-        );
+        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated)});
 }
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {

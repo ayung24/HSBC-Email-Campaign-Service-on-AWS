@@ -44,7 +44,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                         UPLOAD +
                     </Button>
                 </div>
-                <UploadTemplateModalComponent ref={this._uploadModalComponent} addToast={this._addToast.bind(this)} />
+                <UploadTemplateModalComponent ref={this._uploadModalComponent} fileType={'.docx'} addToast={this._addToast.bind(this)} />
                 <div className='template-container'>
                     <TemplateGridComponent addToast={this._addToast.bind(this)} />
                 </div>

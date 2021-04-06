@@ -142,10 +142,12 @@
 }
 
 .dynamicParameters {
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
     width: 100%;
-    height: 245px;
     padding-top:10px;
-    overflow-y: scroll;
+    max-height: 245px;
 }
 
 div.dynamicParameters:empty {
@@ -153,10 +155,36 @@ div.dynamicParameters:empty {
 }
 
 div.dynamicParameters:empty ~ div.tab-content div.cli-div {
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    height: 500px;
+    max-height: 50vh;
     padding: 10px 0 50px 0;
-    overflow-y: scroll;
+    overflow: auto;
+}
+
+.cli-div {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-height: 40vh;
+    padding: 10px 0 80px 0;
+    overflow: auto;
+}
+
+#ui, #cli {
+    padding-top: 0;
+}
+
+.sendFields {
+    border-top: 1px solid #dee2e6;
+}
+
+#sendCsv {
+    background-color: #db0011;
+    border-color: #db0011;
+    padding: 0.5rem 2rem;
+    font-weight: bold;
 }
 
 .jsonBody, .curl {
@@ -168,6 +196,24 @@ div.dynamicParameters:empty ~ div.tab-content div.cli-div {
     border-top-left-radius: .25rem;
     border-bottom-left-radius: .25rem;
     color: #495057;
+}
+
+.uploadCsv {
+    text-align: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.uploadCsvText {
+    float: left;
+    padding-top: 10px;
+    padding-right: 40px;
+}
+
+.sendButton {
+    padding-top: 20px;
+    border-top: 1px solid #dee2e6;
+    text-align: right;
 }
 
 .delete.float-right.btn.btn-primary {
@@ -183,15 +229,4 @@ div.dynamicParameters:empty ~ div.tab-content div.cli-div {
     color: black;
     margin-top: 12px;
     margin-right: 8px;
-}
-
-.cli-div {
-    width: 100%;
-    height: 30vh;
-    padding: 10px 0 50px 0;
-    overflow-y: scroll;
-}
-
-#ui, #cli {
-    padding-top: 0
 }

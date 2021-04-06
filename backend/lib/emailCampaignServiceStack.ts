@@ -54,6 +54,13 @@ export class EmailCampaignServiceStack extends cdk.Stack {
                     '{ "message": "Authorization error. Check your chosen template exists, or API key is correct for the chosen template.", "statusCode": "401" }',
             },
         });
+        this._api.addGatewayResponse('Default_4XX', {
+            type: ResponseType.DEFAULT_4XX,
+            responseHeaders: {
+                'Access-Control-Allow-Origin': "'*'",
+                'Access-Control-Allow-Headers': "'*'",
+            },
+        });
     }
 
     /**

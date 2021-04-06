@@ -32,6 +32,20 @@ export class RequestService {
             .then(response => handler(response));
     }
 
+    public PUT<T>(path: string, params: any, handler: (r: any) => Promise<T>): Promise<T> {
+        return RequestService._getToken()
+            .then((token: string) => {
+                const request = {
+                    headers: {
+                        Authorization: token,
+                    },
+                    body: params,
+                };
+                return API.put(this._apiName, path, request);
+            })
+            .then(response => handler(response));
+    }
+
     public DELETE<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
         return RequestService._getToken()
             .then((token: string) => {
