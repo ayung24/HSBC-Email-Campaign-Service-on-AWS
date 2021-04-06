@@ -78,9 +78,35 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else if (notReadyQ.Count && notReadyQ.Count > 0) {
-                        const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
-                        Logger.logError(nameNotUniqueError);
-                        reject(nameNotUniqueError);
+                        // assume old templates have failed and delete them to free their name
+                        let cleanedCount = 0;
+                        if (notReadyQ.Items) {
+                            const minDifference = 60000; // 1 minute in millis
+                            const now = new Date().getTime();
+
+                            notReadyQ.Items
+                                .filter(template => {
+                                    return template.timeCreated &&
+                                        template.timeCreated.N &&
+                                        now - parseInt(template.timeCreated.N) > minDifference;
+                                })
+                                .map(template => {
+                                    if (template.templateId && template.templateId.S && template.timeCreated && template.timeCreated.N) {
+                                        cleanedCount++;
+                                        return DisableTemplate(template.templateId.S, parseInt(template.timeCreated.N));
+                                    } else {
+                                        return Promise.resolve();
+                                    }
+                                });
+                        }
+
+                        if (cleanedCount < notReadyQ.Count) { // not all cleaned, so there really is ony being uploaded
+                            const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
+                            Logger.logError(nameNotUniqueError);
+                            reject(nameNotUniqueError);
+                        } else { // cleaned == notReadyQ.Count, so all were old and this name is actually free
+                            resolve(0) // so clear to use this name
+                        }
                     } else {
                         resolve(0);
                     }
@@ -179,7 +205,7 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
                 reject(updateTemplateStatusError);
             } else {
                 const item = data.Attributes;
-                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity } )
+                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity })
                 resolve({
                     templateId: item?.templateId.S!,
                     timeCreated: Number.parseInt(item?.timeCreated.N!),
@@ -219,7 +245,7 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 });
             });
         })
-        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated)});
+        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated) });
 }
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {
