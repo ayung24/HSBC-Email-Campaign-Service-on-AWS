@@ -8,11 +8,6 @@ import * as Logger from '../../logger';
 import { AWSError } from 'aws-sdk';
 import { SendMessageResult } from 'aws-sdk/clients/sqs';
 
-const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
-const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
-const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
-const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
-const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
 const SQS_VERSION = process.env.SQS_VERSION || '2012-11-15';
 
 const headers = {
@@ -26,8 +21,8 @@ const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
 /**
  * Validates lambda's runtime env variables
  */
-const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!METADATA_TABLE_NAME && !!VERIFIED_EMAIL_ADDRESS && !!EMAIL_QUEUE_URL;
+ export const validateEnv = function (variables: Array<string|undefined>): boolean {
+    return !variables.some(v => !v)
 };
 
 /**
@@ -40,9 +35,30 @@ const checkFields = function (fields: ISendEmailFields, fieldNames: string[]): b
     return fieldNames.every(field => keys.includes(field));
 };
 
+export const sendMessage = function (params: { MessageBody: string; QueueUrl: string; MessageGroupId: string; }){
+    return new Promise((resolve, reject) => {
+        sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
+            if (err) {
+                Logger.logError(err);
+                const queueError = new ESCError(ErrorCode.ES12, `Send to queue error: ${JSON.stringify(params)}`);
+                reject(queueError);
+            } else {
+                resolve(data.MessageId!);
+            }
+        });
+    });
+}
+
 export const handler = async function (event: APIGatewayProxyEvent) {
+    const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
+    const HTML_BUCKET_NAME = process.env.HTML_BUCKET_NAME;
+    const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
+    const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
+    const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
+    const envList: Array<string|undefined>= [METADATA_TABLE_NAME, HTML_BUCKET_NAME, PROCESSED_HTML_PATH, VERIFIED_EMAIL_ADDRESS, EMAIL_QUEUE_URL];
+
     Logger.logCURLInfo(event);
-    if (!validateEnv()) {
+    if (!validateEnv(envList)) {
         return {
             headers: headers,
             statusCode: 500,
@@ -102,17 +118,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 QueueUrl: EMAIL_QUEUE_URL!,
                 MessageGroupId: '0', // id does not matter since we're not grouping
             };
-            return new Promise((resolve, reject) => {
-                sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
-                    if (err) {
-                        Logger.logError(err);
-                        const queueError = new ESCError(ErrorCode.ES12, `Send to queue error: ${JSON.stringify(params)}`);
-                        reject(queueError);
-                    } else {
-                        resolve(data.MessageId);
-                    }
-                });
-            });
+            return sendMessage(params);
         })
         .then(messageId => {
             return {
