@@ -51,7 +51,7 @@ describe('POST /email', () => {
 
         const mResponse = {
             templateId: mTemplate.templateId,
-            from: process.env.VERIFIED_EMAIL_ADDRESS,
+            sender: process.env.VERIFIED_EMAIL_ADDRESS,
             recipient: 'test-recipient@email.com',
             queueMessageId: mData.MessageId,
         };
@@ -111,7 +111,7 @@ describe('POST /email', () => {
 
         const mResponse = {
             templateId: mTemplate.templateId,
-            from: process.env.VERIFIED_EMAIL_ADDRESS,
+            sender: process.env.VERIFIED_EMAIL_ADDRESS,
             recipient: 'test-recipient@email.com',
             queueMessageId: mData.MessageId,
         };
