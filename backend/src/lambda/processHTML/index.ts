@@ -93,7 +93,7 @@ export const handler = async function (event: APIGatewayProxyEvent) {
             Logger.info({ message: `Updated html for template ${templateId}` });
             return db.EnableTemplate(templateId, timeCreated);
         })
-        .then((template) => {
+        .then(template => {
             Logger.info({ message: `Template marked as in service ${template.templateId}`, additionalInfo: template });
             return {
                 headers: headers,
@@ -113,17 +113,15 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
                 code = ErrorCode.TS30;
             }
-            return db
-                .DisableTemplate(templateId, timeCreated)
-                .finally(() => {
-                    return {
-                        headers: headers,
-                        statusCode: statusCode,
-                        body: JSON.stringify({
-                            message: message,
-                            code: code,
-                        }),
-                    };
-                });
+            return db.DisableTemplate(templateId, timeCreated).finally(() => {
+                return {
+                    headers: headers,
+                    statusCode: statusCode,
+                    body: JSON.stringify({
+                        message: message,
+                        code: code,
+                    }),
+                };
+            });
         });
-}
+};
