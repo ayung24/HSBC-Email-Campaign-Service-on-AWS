@@ -21,8 +21,8 @@ const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
 /**
  * Validates lambda's runtime env variables
  */
- export const validateEnv = function (variables: Array<string|undefined>): boolean {
-    return !variables.some(v => !v)
+export const validateEnv = function (variables: Array<string | undefined>): boolean {
+    return !variables.some(v => !v);
 };
 
 /**
@@ -35,7 +35,7 @@ const checkFields = function (fields: ISendEmailFields, fieldNames: string[]): b
     return fieldNames.every(field => keys.includes(field));
 };
 
-export const sendMessage = function (params: { MessageBody: string; QueueUrl: string; MessageGroupId: string; }){
+export const sendMessage = function (params: { MessageBody: string; QueueUrl: string; MessageGroupId: string }) {
     return new Promise((resolve, reject) => {
         sqs.sendMessage(params, (err: AWSError, data: SendMessageResult) => {
             if (err) {
@@ -47,7 +47,7 @@ export const sendMessage = function (params: { MessageBody: string; QueueUrl: st
             }
         });
     });
-}
+};
 
 export const handler = async function (event: APIGatewayProxyEvent) {
     const METADATA_TABLE_NAME = process.env.METADATA_TABLE_NAME;
@@ -55,7 +55,13 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
     const VERIFIED_EMAIL_ADDRESS = process.env.VERIFIED_EMAIL_ADDRESS;
     const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
-    const envList: Array<string|undefined>= [METADATA_TABLE_NAME, HTML_BUCKET_NAME, PROCESSED_HTML_PATH, VERIFIED_EMAIL_ADDRESS, EMAIL_QUEUE_URL];
+    const envList: Array<string | undefined> = [
+        METADATA_TABLE_NAME,
+        HTML_BUCKET_NAME,
+        PROCESSED_HTML_PATH,
+        VERIFIED_EMAIL_ADDRESS,
+        EMAIL_QUEUE_URL,
+    ];
 
     Logger.logCURLInfo(event);
     if (!validateEnv(envList)) {

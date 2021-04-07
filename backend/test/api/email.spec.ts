@@ -24,7 +24,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -76,7 +76,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1', 'test_field_two': 'value2' },
+            fields: { test_field: 'value1', test_field_two: 'value2' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -127,7 +127,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -190,7 +190,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -214,7 +214,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -246,7 +246,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             recipient: 'test@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -254,17 +254,6 @@ describe('POST /email', () => {
                 templateid: 'valid-test-id',
             },
         });
-
-        const mTemplate: ITemplateWithHTML = {
-            // Some dummy values
-            templateId: 'valid-test-id',
-            timeCreated: 1616066356850,
-            templateStatus: EntryStatus.IN_SERVICE,
-            templateName: 'test template',
-            apiKey: 'API-KEY',
-            fieldNames: ['test_field'],
-            html: '<p>${test_field}</p>',
-        };
 
         jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
 
@@ -283,7 +272,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             subject: 'test subject',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -308,7 +297,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'bademail@',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -333,7 +322,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'one@email.com;two@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),

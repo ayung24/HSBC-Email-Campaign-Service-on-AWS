@@ -33,7 +33,7 @@ export class TemplateService {
         this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
         this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
         this._deleteTemplateLambdaName = `DeleteTemplateHandler-${buildEnv}`;
-        this._processHTMLLambdaName = `ProcessHtmlHandler-${buildEnv}`;
+        this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api);
@@ -136,7 +136,7 @@ export class TemplateService {
             timeout: cdk.Duration.seconds(10),
             functionName: this._processHTMLLambdaName,
         });
-        
+
         // configure process HTML lambda permissions
         database.metadataTable().grantReadWriteData(this._processHTML);
         database.htmlBucket().grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
@@ -222,7 +222,7 @@ export class TemplateService {
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
-        new LogGroup(scope, 'ProcessHtmlHandlerLogs', {
+        new LogGroup(scope, 'ProcessHTMLHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._processHTMLLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
