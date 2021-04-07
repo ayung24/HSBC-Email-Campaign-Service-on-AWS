@@ -19,8 +19,8 @@ const kms: KMS = new KMS({
 /**
  * Validates lambda's runtime env variables
  */
-export const validateEnv = function (variables: Array<string|undefined>): boolean {
-    return !variables.some(v => !v)
+export const validateEnv = function (): boolean {
+    return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID && !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH;
 };
 
 export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlob: Buffer; }, template: ITemplateFullEntry, event: APIGatewayRequestAuthorizerEvent): Promise<any> {
@@ -55,8 +55,7 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent) 
         additionalInfo: event,
     });
 
-    const envList: Array<string|undefined> = [METADATA_TABLE_NAME, KMS_KEY_ID, KMS_REGION, KMS_ACCOUNT_ID, HTML_BUCKET_NAME, PROCESSED_HTML_PATH]
-    if (!validateEnv(envList)) {
+    if (!validateEnv()) {
         const error = new ESCError(ErrorCode.ES6, 'Environment variables not set');
         Logger.logError(error);
         return Promise.reject('Unauthorized');
