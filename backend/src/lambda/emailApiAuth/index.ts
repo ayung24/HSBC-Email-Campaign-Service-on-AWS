@@ -50,9 +50,6 @@ export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlo
 }
 
 export const handler = async function (event: APIGatewayRequestAuthorizerEvent) {
-    const kmsRegion = process.env.KMS_REGION;
-    const kmsAccountId = process.env.KMS_ACCOUNT_ID;
-    const kmsKeyId = process.env.KMS_KEY_ID;
     Logger.info({
         message: 'Received POST /email authorization request',
         additionalInfo: event,
@@ -90,7 +87,7 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent) 
                 additionalInfo: template,
             });
             const decryptParam = {
-                KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountId}:key/${kmsKeyId}`,
+                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,                
                 CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
             };
             return kmsDecrypt(decryptParam, template, event);
