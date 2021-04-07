@@ -1,8 +1,8 @@
 import { APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 
 const getDefaults = (): APIGatewayRequestAuthorizerEvent => ({
-    type: "REQUEST",
-    methodArn: "arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/*/GET/",
+    type: 'REQUEST',
+    methodArn: 'arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/*/GET/',
     resource: '/',
     path: '/prod/',
     httpMethod: 'GET',
@@ -39,11 +39,13 @@ const getDefaults = (): APIGatewayRequestAuthorizerEvent => ({
             user: null,
             apiKey: null,
             apiKeyId: null,
-        }
-    }
+        },
+    },
 });
 
-export function APIGatewayRequestAuthorizerEventMockBuilder(p?: Partial<APIGatewayRequestAuthorizerEvent>): APIGatewayRequestAuthorizerEvent {
+export function APIGatewayRequestAuthorizerEventMockBuilder(
+    p?: Partial<APIGatewayRequestAuthorizerEvent>,
+): APIGatewayRequestAuthorizerEvent {
     return {
         ...getDefaults(),
         ...p,

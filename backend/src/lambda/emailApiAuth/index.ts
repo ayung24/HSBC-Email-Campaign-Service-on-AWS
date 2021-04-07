@@ -23,7 +23,8 @@ export const validateEnv = function (variables: Array<string|undefined>): boolea
     return !variables.some(v => !v)
 };
 
-export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlob: Buffer; }, apiKey: string, template: ITemplateFullEntry, event: APIGatewayRequestAuthorizerEvent): Promise<any> {
+export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlob: Buffer; }, template: ITemplateFullEntry, event: APIGatewayRequestAuthorizerEvent): Promise<any> {
+    const apiKey = event.headers?.APIKey ?? event.headers?.apikey;
     return new Promise((resolve, reject) => {
         kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
             if (err || !data.Plaintext) {
@@ -88,17 +89,13 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent) 
                 message: 'Retrieved template',
                 additionalInfo: template,
             });
-            console.log('here1')
-
             const decryptParam = {
                 KeyId: `arn:aws:kms:${kmsRegion}:${kmsAccountId}:key/${kmsKeyId}`,
                 CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
             };
-            console.log('here2')
-            return kmsDecrypt(decryptParam, apiKey, template, event);
+            return kmsDecrypt(decryptParam, template, event);
         })
         .catch(err => {
-            console.log('here3')
             Logger.logError(err);
             return Promise.reject('Unauthorized');
         });
