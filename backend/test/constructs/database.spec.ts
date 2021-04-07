@@ -11,7 +11,7 @@ beforeAll(() => {
     database = new Database(stack, 'testDatabase', 'test');
 });
 
-describe('database tests', () => {
+describe('database infrastructure tests', () => {
     it('has template metadata DynamoDB table with correct schema', () => {
         expect(stack).to(
             haveResource('AWS::DynamoDB::Table', {
