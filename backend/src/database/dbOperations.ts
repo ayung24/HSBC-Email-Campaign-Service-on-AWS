@@ -454,3 +454,41 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
         });
     });
 }
+
+
+export function searchTemplates(templateId: string): Promise<ITemplateBase[]> {
+    const ddb = getDynamo();
+    Logger.info({ message: 'Searching templates with substring', additionalInfo: { templateId: templateId } });
+    return new Promise((resolve, reject) => {
+        const queryParams = {
+            IndexName: 'status-index',
+            ExpressionAttributeValues: { ':id': { S: templateId }, ':inService': { S: EntryStatus.IN_SERVICE } },
+            KeyConditionExpression: `templateStatus = :inService AND (contains(templateName, templateId))`,
+            TableName: METADATA_TABLE_NAME!,
+        };
+        ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
+            if (err) {
+                Logger.logError(err);
+                const listError = new ESCError(ErrorCode.TS22, 'Search template error');
+                reject(listError);
+            } else {
+                const items = data.Items;
+                if (!items || items.length < 0) {
+                    const undefinedItemsError = new ESCError(ErrorCode.TS23, 'Retrieved undefined items from database');
+                    Logger.logError(undefinedItemsError);
+                    reject(undefinedItemsError);
+                } else {
+                    const results: ITemplateBase[] = items.map((item: DynamoDB.AttributeMap) => {
+                        return {
+                            templateId: item.templateId.S!,
+                            timeCreated: Number.parseInt(item.timeCreated.N!),
+                            templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                            templateName: item.templateName.S!,
+                        };
+                    });
+                    resolve(results);
+                }
+            }
+        });
+    });
+}

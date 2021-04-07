@@ -26,7 +26,10 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     Logger.logRequestInfo(event);
 
     // TODO: Implement pagination (Requesting whole range of dates temporarily)
-    return db
+
+    // If event is empty regular list all
+    if (!event.pathParameters || !event.pathParameters.id) {
+        return db
         .ListTemplatesByDate('0', new Date().getTime().toString())
         .then((res: ITemplateBase[]) => {
             return {
@@ -59,4 +62,43 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
                 }),
             };
         });
+    }
+
+    // else fuzzy search through db
+    // TODO change error codes 
+    const id: string = event.pathParameters.id;
+    return db
+        .searchTemplates(id)
+        .then((res: ITemplateBase[]) => {
+            return {
+                headers: headers,
+                statusCode: 200,
+                body: JSON.stringify({
+                    templates: res,
+                }),
+            };
+        })
+        .catch(err => {
+            let statusCode: number;
+            let message: string;
+            let code: string;
+            if (err instanceof ESCError) {
+                statusCode = err.getStatusCode();
+                message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = err.code;
+            } else {
+                statusCode = 500;
+                message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                code = ErrorCode.TS28;
+            }
+            return {
+                headers: headers,
+                statusCode: statusCode,
+                body: JSON.stringify({
+                    message: message,
+                    code: code,
+                }),
+            };
+        });
+    
 };
