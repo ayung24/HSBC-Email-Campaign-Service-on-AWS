@@ -6,7 +6,6 @@ import { config } from '../../lib/config';
 import { EmailService } from '../../lib/services/emailService';
 
 let stack: Stack;
-let emailService: EmailService;
 let api: RestApi;
 let database: Database;
 
@@ -14,7 +13,7 @@ beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase', 'test');
-    emailService = new EmailService(stack, api, database, 'test');
+    new EmailService(stack, api, database, 'test');
 });
 
 describe('email service tests', () => {

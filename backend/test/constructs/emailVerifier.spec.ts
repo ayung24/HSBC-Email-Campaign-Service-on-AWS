@@ -3,12 +3,11 @@ import { SESEmailVerifier } from '../../lib/constructs/emailVerifier';
 import { countResources, expect, haveResourceLike } from '@aws-cdk/assert';
 
 let stack: Stack;
-let verifier: SESEmailVerifier;
 const testEmail = 'test@example.com';
 
 beforeAll(() => {
     stack = new Stack();
-    verifier = new SESEmailVerifier(stack, 'TestEmailVerifier', {
+    new SESEmailVerifier(stack, 'TestEmailVerifier', {
         email: testEmail,
     });
 });

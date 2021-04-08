@@ -7,6 +7,7 @@ import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import { nonEmptyArray } from '../../commonFunctions';
 import * as Logger from '../../logger';
 import { SendMessageResult } from 'aws-sdk/clients/sqs';
+import linkifyStr from 'linkifyjs/string';
 
 const SES_VERSION = process.env.SES_VERSION || '2010-12-01';
 const SQS_VERSION = process.env.SQS_VERSION || '2012-11-05';
@@ -54,7 +55,9 @@ const replaceFields = function (srcHTML: string, fields: ISendEmailFields): stri
     const fieldNames = Object.keys(fields);
     const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
     const html = srcHTML.replace(regex, (_, field) => {
-        return applyXSSProtection(fields[field]);
+        return linkifyStr(applyXSSProtection(fields[field]), {
+            defaultProtocol: 'https',
+        });
     });
     return html;
 };

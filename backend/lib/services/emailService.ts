@@ -186,7 +186,7 @@ export class EmailService {
                 CONFIGURATION_SET_NAME: this._sesConfigurationSetName,
             },
             bundling: {
-                nodeModules: ['nodemailer'],
+                nodeModules: ['nodemailer', 'linkifyjs'],
             },
             timeout: cdk.Duration.seconds(config.sqs.SEND_LAMBDA_TIMEOUT),
             reservedConcurrentExecutions: config.sqs.MAX_CONCURRENT_SEND_LAMBDA_COUNT,

@@ -5,7 +5,7 @@ import { Button, Modal } from 'react-bootstrap';
 import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
-import { IError, IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 
@@ -134,8 +134,13 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
         };
     }
 
-    private _createUploadErrorToast(err: IError, name: string): ToastInterface {
-        const body = createErrorMessage(err, 'Could not upload template.');
+    private _createUploadErrorToast(err: any, name: string): ToastInterface {
+        let body: string;
+        if (isIErrorReturnResponse(err)) {
+            body = createErrorMessage(err.response.data, 'Could not upload template.');
+        } else {
+            body = 'Could not upload template.';
+        }
         return {
             id: 'uploadTemplateError',
             body: body,
@@ -187,8 +192,8 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
                     resolve();
                 });
             })
-            .catch((err: IErrorReturnResponse) => {
-                this._addToast(this._createUploadErrorToast(err.response.data, this.state.templateName));
+            .catch(err => {
+                this._addToast(this._createUploadErrorToast(err, this.state.templateName));
             })
             .finally(() => this.setState({ isLoading: false }));
     }
