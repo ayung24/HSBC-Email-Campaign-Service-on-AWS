@@ -1,4 +1,4 @@
-import { APIGatewayRequestAuthorizerEvent, Context } from 'aws-lambda';
+import { APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import * as db from '../../database/dbOperations';
 import { ITemplateFullEntry } from '../../database/dbInterfaces';
 import { AWSError, KMS } from 'aws-sdk';
@@ -19,11 +19,37 @@ const kms: KMS = new KMS({
 /**
  * Validates lambda's runtime env variables
  */
-const validateEnv = function (): boolean {
+export const validateEnv = function (): boolean {
     return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID && !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH;
 };
 
-export const handler = async function (event: APIGatewayRequestAuthorizerEvent, context: Context) {
+export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlob: Buffer; }, template: ITemplateFullEntry, event: APIGatewayRequestAuthorizerEvent): Promise<any> {
+    const apiKey = event.headers?.APIKey ?? event.headers?.apikey;
+    return new Promise((resolve, reject) => {
+        kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
+            if (err || !data.Plaintext) {
+                Logger.logError(err);
+                reject(new ESCError(ErrorCode.ES8, 'KMS error'));
+            } else if (data.Plaintext.toString() === apiKey) {
+                Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
+                resolve(generatePolicy(event.requestContext.identity.userAgent || '', 'Allow', event.methodArn));
+            } else {
+                Logger.err({
+                    message: 'Authorization failure',
+                    additionalInfo: {
+                        templateId: template.templateId,
+                        expectedApiKey: data.Plaintext.toString(),
+                        given: apiKey,
+                        code: ErrorCode.ES9,
+                    },
+                });
+                reject(new ESCError(ErrorCode.ES9, 'Invalid API Key'));
+            }
+        });
+    });
+}
+
+export const handler = async function (event: APIGatewayRequestAuthorizerEvent) {
     Logger.info({
         message: 'Received POST /email authorization request',
         additionalInfo: event,
@@ -60,31 +86,10 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent, 
                 additionalInfo: template,
             });
             const decryptParam = {
-                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
+                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,                
                 CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
             };
-            return new Promise((resolve, reject) => {
-                kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
-                    if (err || !data.Plaintext) {
-                        Logger.logError(err);
-                        reject(new ESCError(ErrorCode.ES8, 'KMS error'));
-                    } else if (data.Plaintext.toString() === apiKey) {
-                        Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
-                        resolve(generatePolicy(event.requestContext.identity.userAgent || '', 'Allow', event.methodArn));
-                    } else {
-                        Logger.err({
-                            message: 'Authorization failure',
-                            additionalInfo: {
-                                templateId: template.templateId,
-                                expectedApiKey: data.Plaintext.toString(),
-                                given: apiKey,
-                                code: ErrorCode.ES9,
-                            },
-                        });
-                        reject(new ESCError(ErrorCode.ES9, 'Invalid API Key'));
-                    }
-                });
-            });
+            return kmsDecrypt(decryptParam, template, event);
         })
         .catch(err => {
             Logger.logError(err);

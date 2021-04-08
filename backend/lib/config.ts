@@ -40,4 +40,9 @@ export const config = {
         MAX_CONCURRENT_SEND_LAMBDA_COUNT: 5,
         SEND_LAMBDA_TIMEOUT: 20,
     },
+    cloudWatch: {
+        REGION_DEV: 'us-west-2',
+        REGION_PROD: 'ca-central-1',
+        VERSION: '2014-03-28',
+    },
 };

@@ -15,6 +15,7 @@ const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
 const EMAIL_DLQ_URL = process.env.EMAIL_DLQ_URL;
 const MAX_SEND_RATE = process.env.MAX_SEND_RATE;
+const CONFIGURATION_SET_NAME = process.env.CONFIGURATION_SET_NAME;
 
 const sqs = new AWS.SQS({
     apiVersion: SQS_VERSION,
@@ -32,7 +33,9 @@ const transporter = createTransport({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!EMAIL_QUEUE_URL && !!EMAIL_DLQ_URL && !!MAX_SEND_RATE;
+    return (
+        !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!EMAIL_QUEUE_URL && !!EMAIL_DLQ_URL && !!MAX_SEND_RATE && !!CONFIGURATION_SET_NAME
+    );
 };
 
 /**
@@ -91,6 +94,15 @@ const sendEmail = function (record: SQSRecord, htmlCache: Map<string, string>): 
                 to: body.to,
                 subject: body.subject,
                 html: html,
+                ses: {
+                    ConfigurationSetName: CONFIGURATION_SET_NAME,
+                    Tags: [
+                        {
+                            Name: 'template_id',
+                            Value: body.templateId,
+                        },
+                    ],
+                },
             };
             return transporter.sendMail(params).catch(err => {
                 Logger.logError(err);
