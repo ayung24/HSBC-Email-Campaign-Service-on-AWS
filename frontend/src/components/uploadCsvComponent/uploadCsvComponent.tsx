@@ -6,7 +6,7 @@ import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType 
 import { EmailService } from '../../services/emailService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { IBatchSendParameters, IBatchSendResponse, IEmailParameters } from '../../models/emailInterfaces';
-import { IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
 
 interface UploadCsvState extends SpinnerState {
     dragging: boolean;
@@ -226,8 +226,13 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                     }
                     this._addToast(toast);
                 })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                .catch(err => {
+                    let body: string;
+                    if (isIErrorReturnResponse(err)) {
+                        body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                    } else {
+                        body = `Failed to process batch emails.`;
+                    }
                     const toast = {
                         id: 'sendBatchEmailError',
                         body: body,
