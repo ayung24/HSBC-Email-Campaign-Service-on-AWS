@@ -26,9 +26,8 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
     Logger.logRequestInfo(event);
 
     // TODO: Implement pagination (Requesting whole range of dates temporarily)
-
     // If event is empty regular list all
-    if (!event.pathParameters || !event.pathParameters.id) {
+    if (!event.queryStringParameters || !event.queryStringParameters.search) {
         return db
         .ListTemplatesByDate('0', new Date().getTime().toString())
         .then((res: ITemplateBase[]) => {
@@ -66,7 +65,8 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
 
     // else fuzzy search through db
     // TODO change error codes 
-    const id: string = event.pathParameters.id;
+    
+    const id: string = event.queryStringParameters.search;
     return db
         .searchTemplates(id)
         .then((res: ITemplateBase[]) => {
@@ -89,7 +89,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS28;
+                code = ErrorCode.TS29;
             }
             return {
                 headers: headers,

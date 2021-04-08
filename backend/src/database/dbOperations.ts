@@ -456,14 +456,15 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
 }
 
 
-export function searchTemplates(templateId: string): Promise<ITemplateBase[]> {
+export function searchTemplates(searchKey: string): Promise<ITemplateBase[]> {
     const ddb = getDynamo();
-    Logger.info({ message: 'Searching templates with substring', additionalInfo: { templateId: templateId } });
+    Logger.info({ message: 'Searching templates with substring', additionalInfo: { searchKey: searchKey } });
     return new Promise((resolve, reject) => {
         const queryParams = {
             IndexName: 'status-index',
-            ExpressionAttributeValues: { ':id': { S: templateId }, ':inService': { S: EntryStatus.IN_SERVICE } },
-            KeyConditionExpression: `templateStatus = :inService AND (contains(templateName, templateId))`,
+            ExpressionAttributeValues: { ':searchKey': { S: searchKey }, ':inService': { S: EntryStatus.IN_SERVICE } },
+            KeyConditionExpression: `templateStatus = :inService`,
+            FilterExpression: 'contains(templateName, :searchKey)',
             TableName: METADATA_TABLE_NAME!,
         };
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {

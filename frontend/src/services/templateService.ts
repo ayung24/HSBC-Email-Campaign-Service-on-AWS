@@ -91,6 +91,21 @@ export class TemplateService {
         });
     }
 
+    public getFilteredTemplates(searchKey: string): Promise<Array<ITemplateDisplay>> {
+        return this._requestService.GET<ITemplateDisplay[]>('/templates?search=' + searchKey, (templateResponse: IGetTemplatesResponse) => {
+            return new Promise<Array<ITemplateDisplay>>(resolve => {
+                const templates = templateResponse.templates.map((template: IGetTemplatesResponseItem) => {
+                    return {
+                        templateId: template.templateId,
+                        templateName: template.templateName,
+                        uploadTime: new Date(parseInt(template.timeCreated)),
+                    };
+                });
+                resolve(templates);
+            });
+        });
+    }
+
     public getTemplateMetaData(templateId: string): Promise<ITemplateWithHTML> {
         return this._requestService.GET<ITemplateWithHTML>('/templates/' + templateId, (viewResponse: ITemplateWithHTML) => {
             return new Promise<ITemplateWithHTML>(resolve => {
