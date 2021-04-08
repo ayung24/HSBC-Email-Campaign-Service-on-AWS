@@ -24,7 +24,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -76,7 +76,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1', 'test_field_two': 'value2' },
+            fields: { test_field: 'value1', test_field_two: 'value2' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -127,7 +127,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'test-recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
 
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
@@ -190,7 +190,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -214,7 +214,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'sender@email.com',
             recipient: 'recipient@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -246,7 +246,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             recipient: 'test@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -283,7 +283,7 @@ describe('POST /email', () => {
         const reqBody = {
             // Some dummy values
             subject: 'test subject',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -308,7 +308,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'bademail@',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
@@ -333,7 +333,7 @@ describe('POST /email', () => {
             // Some dummy values
             subject: 'test subject',
             recipient: 'one@email.com;two@email.com',
-            fields: { 'test_field': 'value1' },
+            fields: { test_field: 'value1' },
         };
         const testEvent: APIGatewayProxyEvent = ApiGatewayProxyEventMockBuilder({
             body: JSON.stringify(reqBody),
