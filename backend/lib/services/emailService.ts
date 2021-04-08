@@ -143,7 +143,7 @@ export class EmailService {
                 MAX_SEND_RATE: config.ses.MAX_SEND_RATE.toString(),
             },
             bundling: {
-                nodeModules: ['nodemailer'],
+                nodeModules: ['nodemailer', 'linkifyjs'],
             },
             timeout: cdk.Duration.seconds(config.sqs.SEND_LAMBDA_TIMEOUT),
             reservedConcurrentExecutions: config.sqs.MAX_CONCURRENT_SEND_LAMBDA_COUNT,
