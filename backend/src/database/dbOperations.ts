@@ -174,7 +174,7 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
     };
     return new Promise((resolve, reject) => {
         ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
-            if (err) {
+            if (err || !data.Attributes) {
                 Logger.logError(err);
                 const updateTemplateStatusError = new ESCError(
                     ErrorCode.TS21,
@@ -182,13 +182,13 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
                 );
                 reject(updateTemplateStatusError);
             } else {
-                const item = data.Attributes;
+                const item = data.Attributes!;
                 Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity });
                 resolve({
-                    templateId: item?.templateId.S!,
-                    timeCreated: Number.parseInt(item?.timeCreated.N!),
-                    templateStatus: (<any>EntryStatus)[item?.templateStatus.S!],
-                    templateName: item?.templateName.S!,
+                    templateId: item.templateId.S!,
+                    timeCreated: Number.parseInt(item.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                    templateName: item.templateName.S!,
                 });
             }
         });
