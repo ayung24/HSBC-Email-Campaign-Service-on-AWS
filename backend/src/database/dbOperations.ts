@@ -79,34 +79,37 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         reject(nameNotUniqueError);
                     } else if (notReadyQ.Count && notReadyQ.Count > 0) {
                         // assume old templates have failed and delete them to free their name
+                        const notReadyCount = notReadyQ.Count;
+                        const disables = [];
                         let cleanedCount = 0;
                         if (notReadyQ.Items) {
                             const minDifference = 60000; // 1 minute in millis
                             const now = new Date().getTime();
-
-                            notReadyQ.Items
-                                .filter(template => {
-                                    return template.timeCreated &&
-                                        template.timeCreated.N &&
-                                        now - parseInt(template.timeCreated.N) > minDifference;
-                                })
-                                .map(template => {
-                                    if (template.templateId && template.templateId.S && template.timeCreated && template.timeCreated.N) {
-                                        cleanedCount++;
-                                        return DisableTemplate(template.templateId.S, parseInt(template.timeCreated.N));
-                                    } else {
-                                        return Promise.resolve();
-                                    }
-                                });
+                            for (let template of notReadyQ.Items) {
+                                if (template.templateId && template.templateId.S &&
+                                    template.timeCreated && template.timeCreated.N &&
+                                    now - parseInt(template.timeCreated.N) > minDifference) {
+                                    cleanedCount++;
+                                    disables.push(DisableTemplate(template.templateId.S, parseInt(template.timeCreated.N)));
+                                }
+                            }
                         }
 
-                        if (cleanedCount < notReadyQ.Count) { // not all cleaned, so there really is ony being uploaded
-                            const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
-                            Logger.logError(nameNotUniqueError);
-                            reject(nameNotUniqueError);
-                        } else { // cleaned == notReadyQ.Count, so all were old and this name is actually free
-                            resolve(0) // so clear to use this name
-                        }
+                        Promise.all(disables)
+                            .catch(() => { // at least one disable template operation failed
+                                const cleanError = new ESCError(ErrorCode.TS35, `Attempt to clean old template has failed & name not unique [${name}]`, true);
+                                Logger.logError(cleanError);
+                                reject(cleanError);
+                            })
+                            .then(() => {
+                                if (cleanedCount < notReadyCount) { // not all cleaned, so there really is ony being uploaded
+                                    const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
+                                    Logger.logError(nameNotUniqueError);
+                                    reject(nameNotUniqueError);
+                                } else { // cleaned == notReadyQ.Count, so all were old and this name is actually free
+                                    resolve(0) // so clear to use this name
+                                }
+                            });
                     } else {
                         resolve(0);
                     }
