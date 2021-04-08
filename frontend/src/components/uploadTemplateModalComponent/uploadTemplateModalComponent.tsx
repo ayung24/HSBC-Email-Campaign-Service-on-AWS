@@ -96,6 +96,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
             this._handleUploadWordFile(event.target.files[0]);
+            event.currentTarget.value = '';
         }
     }
 
