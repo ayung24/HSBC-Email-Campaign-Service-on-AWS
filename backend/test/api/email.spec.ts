@@ -1,7 +1,9 @@
-import { APIGatewayProxyEvent } from 'aws-lambda';
+import { APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import * as processEmailHandler from '../../src/lambda/processSend';
-import { EntryStatus, ITemplateWithHTML } from '../../src/database/dbInterfaces';
+import * as emailApiAuthHandler from '../../src/lambda/emailApiAuth';
+import { EntryStatus, ITemplateFullEntry, ITemplateWithHTML } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
+import { APIGatewayRequestAuthorizerEventMockBuilder } from '../mocks/apiGatewayRequestAuthorizerEvent.mock';
 import { ErrorCode, ESCError, ErrorMessages } from '../../src/ESCError';
 import * as db from '../../src/database/dbOperations';
 import { ISendEmailReqBody } from '../../src/lambda/lambdaInterfaces';
@@ -341,5 +343,113 @@ describe('POST /email', () => {
         const result = await processEmailHandler.handler(testEvent);
         expect(result.statusCode).toEqual(400);
         expect(result.body).toEqual(JSON.stringify(mResponse));
+    });
+
+    it('Send email: Valid API key', async () => {
+        const testEvent: APIGatewayRequestAuthorizerEvent = APIGatewayRequestAuthorizerEventMockBuilder({
+            headers: {
+                APIKey: 'valid-api-key',
+            },
+            queryStringParameters: {
+                templateid: 'valid-test-id',
+            },
+        });
+
+        const mTemplate: ITemplateWithHTML = {
+            // Some dummy values
+            templateId: 'valid-test-id',
+            timeCreated: 1616066356850,
+            templateStatus: EntryStatus.IN_SERVICE,
+            templateName: 'test template',
+            apiKey: 'encryted-api-key',
+            fieldNames: ['test-field1'],
+            html: '<p>${test-field1}</p>',
+        };
+
+        jest.spyOn(emailApiAuthHandler, 'validateEnv').mockReturnValue(true);
+        const retrieveTemplateSpy = jest.spyOn(db, 'GetTemplateById').mockReturnValue(
+            new Promise(resolve => {
+                resolve(mTemplate);
+            }),
+        );
+        const mResponse: any = {
+            principalId: testEvent.requestContext.identity.userAgent,
+            policyDocument: {
+                Version: '2012-10-17',
+                Statement: [
+                    {
+                        Action: 'execute-api:Invoke',
+                        Effect: '',
+                        Resource: testEvent.methodArn,
+                    },
+                ],
+            },
+        };
+        jest.spyOn(emailApiAuthHandler, 'kmsDecrypt').mockResolvedValue(mResponse);
+
+        const result = await emailApiAuthHandler.handler(testEvent);
+        expect(result).toEqual(mResponse);
+        expect(retrieveTemplateSpy).toBeCalledWith(testEvent.queryStringParameters!.templateid);
+    });
+
+    it('Send email auth: INVALID missing API key', async () => {
+        const testEvent: APIGatewayRequestAuthorizerEvent = APIGatewayRequestAuthorizerEventMockBuilder({
+            headers: {
+                APIKey: undefined,
+            },
+            queryStringParameters: {
+                templateid: 'valid-test-id',
+            },
+        });
+
+        jest.spyOn(emailApiAuthHandler, 'validateEnv').mockReturnValue(true);
+        await expect(emailApiAuthHandler.handler(testEvent)).rejects.toMatch('Unauthorized');
+    });
+
+    it('Send email auth: INVALID missing template id', async () => {
+        const testEvent: APIGatewayRequestAuthorizerEvent = APIGatewayRequestAuthorizerEventMockBuilder({
+            headers: {
+                APIKey: 'valid-api-key',
+            },
+            queryStringParameters: {
+                templateid: undefined,
+            },
+        });
+
+        jest.spyOn(emailApiAuthHandler, 'validateEnv').mockReturnValue(true);
+        await expect(emailApiAuthHandler.handler(testEvent)).rejects.toMatch('Unauthorized');
+    });
+
+    it('Send email auth: INVALID wrong api key', async () => {
+        const testEvent: APIGatewayRequestAuthorizerEvent = APIGatewayRequestAuthorizerEventMockBuilder({
+            headers: {
+                APIKey: 'incorrect-api-key',
+            },
+            queryStringParameters: {
+                templateid: 'valid-test-id',
+            },
+        });
+
+        const mTemplate: ITemplateWithHTML = {
+            // Some dummy values
+            templateId: 'valid-test-id',
+            timeCreated: 1616066356850,
+            templateStatus: EntryStatus.IN_SERVICE,
+            templateName: 'test template',
+            apiKey: 'encryted-api-key',
+            fieldNames: ['test-field1'],
+            html: '<p>${test-field1}</p>',
+        };
+
+        jest.spyOn(emailApiAuthHandler, 'validateEnv').mockReturnValue(true);
+        const retrieveTemplateSpy = jest.spyOn(db, 'GetTemplateById').mockReturnValue(
+            new Promise(resolve => {
+                resolve(mTemplate);
+            }),
+        );
+        const mError = new ESCError(ErrorCode.ES9, 'Invalid API Key');
+        jest.spyOn(emailApiAuthHandler, 'kmsDecrypt').mockRejectedValue(mError);
+        await expect(emailApiAuthHandler.handler(testEvent)).rejects.toMatch('Unauthorized');
+        expect(retrieveTemplateSpy).toBeCalledWith(testEvent.queryStringParameters!.templateid);
     });
 });

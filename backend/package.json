@@ -23,7 +23,7 @@
     "@types/aws-lambda": "^8.10.72",
     "@types/jest": "^26.0.20",
     "@types/linkifyjs": "^2.1.3",
-    "@types/node": "^10.17.27",
+    "@types/node": "^10.17.56",
     "@types/nodemailer": "^6.4.0",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.15.0",
