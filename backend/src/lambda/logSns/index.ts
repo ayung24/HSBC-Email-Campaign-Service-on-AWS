@@ -59,7 +59,7 @@ export const handler = async function (event: SNSEvent) {
     const messageJson = message ? JSON.parse(message) : {};
     Logger.info({ message: 'Message', additionalInfo: messageJson });
     const templateId: string = messageJson.mail?.tags?.template_id ? messageJson.mail.tags.template_id[0] : 'NoTemplateId';
-    const timestamp = event.Records[0].Sns?.Timestamp ? new Date(event.Records[0].Sns?.Timestamp).getMilliseconds() : Date.now();
+    const timestamp = event.Records[0].Sns?.Timestamp ? Date.parse(event.Records[0].Sns?.Timestamp) : Date.now();
     const logEvent = {
         message: message,
         timestamp: timestamp,
@@ -102,6 +102,7 @@ export const handler = async function (event: SNSEvent) {
                         const logEventError = new ESCError(ErrorCode.ES22, 'Log event error');
                         reject(logEventError);
                     } else {
+                        Logger.info({ message: 'Success', additionalInfo: data });
                         resolve(data);
                     }
                 });

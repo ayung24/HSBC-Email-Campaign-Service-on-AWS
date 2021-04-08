@@ -10,6 +10,7 @@ import { Database } from '../constructs/database';
 import { Effect, PolicyStatement } from '@aws-cdk/aws-iam';
 import { EmailCampaignServiceStack } from '../emailCampaignServiceStack';
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs';
+import * as iam from '@aws-cdk/aws-iam';
 
 export class TemplateService {
     private _upload: lambda.Function;
@@ -18,22 +19,29 @@ export class TemplateService {
     private _authorizer: CognitoUserPoolsAuthorizer;
     private _delete: lambda.Function;
     private _processHTML: lambda.Function;
+    private _getLogs: lambda.Function;
 
     private readonly _uploadTemplateLambdaName: string;
     private readonly _getTemplateMetadataLambdaName: string;
     private readonly _listTemplatesLambdaName: string;
     private readonly _deleteTemplateLambdaName: string;
     private readonly _processHTMLLambdaName: string;
+    private readonly _getTemplateLogsLambdaName: string;
+    private readonly _emailEventsLogGroupName: string;
 
+    private readonly _buildEnv: string;
     private readonly REMOVAL_POLICY: cdk.RemovalPolicy;
 
     constructor(scope: cdk.Construct, api: agw.RestApi, database: Database, buildEnv: string) {
+        this._buildEnv = buildEnv;
         this.REMOVAL_POLICY = buildEnv === 'dev' ? cdk.RemovalPolicy.DESTROY : cdk.RemovalPolicy.RETAIN;
         this._uploadTemplateLambdaName = `UploadTemplateHandler-${buildEnv}`;
         this._getTemplateMetadataLambdaName = `GetTemplateMetadataHandler-${buildEnv}`;
         this._listTemplatesLambdaName = `ListTemplatesHandler-${buildEnv}`;
         this._deleteTemplateLambdaName = `DeleteTemplateHandler-${buildEnv}`;
         this._processHTMLLambdaName = `ProcessHTMLHandler-${buildEnv}`;
+        this._getTemplateLogsLambdaName = `GetTemplateLogsHandler-${buildEnv}`;
+        this._emailEventsLogGroupName = `EmailEventLogs-${buildEnv}`;
         this._initFunctions(scope, database);
         this._initAuth(scope);
         this._initPaths(scope, api);
@@ -136,13 +144,32 @@ export class TemplateService {
             timeout: cdk.Duration.seconds(10),
             functionName: this._processHTMLLambdaName,
         });
-
         // configure process HTML lambda permissions
         database.metadataTable().grantReadWriteData(this._processHTML);
         database.htmlBucket().grantRead(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
         database.htmlBucket().grantDelete(this._processHTML, `${config.s3.SRC_HTML_PATH}*`);
         database.htmlBucket().grantPut(this._processHTML, `${config.s3.PROCESSED_HTML_PATH}*`);
         database.imageBucket().grantPut(this._processHTML);
+
+        const region = this._buildEnv === 'dev' ? config.cloudWatch.REGION_DEV : config.cloudWatch.REGION_PROD;
+        this._getLogs = new NodejsFunction(scope, 'GetLogsHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/getTemplateLogs/index.ts`,
+            environment: {
+                REGION: region,
+                EMAIL_EVENTS_LOG_GROUP_NAME: this._emailEventsLogGroupName,
+                CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+            },
+            timeout: cdk.Duration.seconds(10),
+            functionName: this._getTemplateLogsLambdaName,
+        });
+        this._getLogs.addToRolePolicy(
+            new iam.PolicyStatement({
+                actions: ['logs:GetLogEvents', 'logs:DescribeLogStreams'],
+                resources: [`*`],
+                effect: iam.Effect.ALLOW,
+            }),
+        );
     }
 
     /**
@@ -195,6 +222,12 @@ export class TemplateService {
         templateResource.addMethod('GET', getMetadataIntegration, { authorizer: this._authorizer });
         templateResource.addMethod('DELETE', deleteIntegration, { authorizer: this._authorizer });
         templateResource.addMethod('PUT', processHtmlIntegration, { authorizer: this._authorizer });
+
+        const logsResource = templatesResource.addResource('logs');
+        const templateLogsResource = logsResource.addResource('{id}');
+        const getLogsIntegration = new agw.LambdaIntegration(this._getLogs);
+
+        templateLogsResource.addMethod('GET', getLogsIntegration, { authorizer: this._authorizer });
     }
 
     /**

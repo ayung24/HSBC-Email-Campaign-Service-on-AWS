@@ -9,6 +9,7 @@ import {
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
     ITemplateWithHTML,
+    IGetTemplateLogsResponseBody,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
 
@@ -97,6 +98,15 @@ export class TemplateService {
                 resolve(viewResponse);
             });
         });
+    }
+
+    public getTemplateLogs(templateId: string): Promise<IGetTemplateLogsResponseBody> {
+        return this._requestService.GET<IGetTemplateLogsResponseBody>(
+            '/templates/logs/' + templateId,
+            (res: IGetTemplateLogsResponseBody) => {
+                return Promise.resolve(res);
+            },
+        );
     }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {

@@ -19,6 +19,7 @@ import { isIErrorReturnResponse } from '../../models/iError';
 import { UploadCsvComponent } from '../uploadCsvComponent/uploadCsvComponent';
 import { EmailService } from '../../services/emailService';
 import { ISendParameters, ISendEmailResponse } from '../../models/emailInterfaces';
+import { TemplateLogsComponent } from '../templateLogsComponent/templateLogsComponent';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -33,6 +34,7 @@ type SendEmailFields = {
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
     isDeletePromptOpen: boolean;
+    isLogsOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: ISendEmailReqBody;
@@ -66,6 +68,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
+            isLogsOpen: false,
             url: this._getTemplateUrl(props.templateId),
             apiKey: '',
             jsonBody: {
@@ -120,6 +123,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             newWindow.document.title = this.props.templateName;
             newWindow.document.body.innerHTML = this.state.html;
         }
+    }
+
+    private _handleGetLogs(): void {
+        this.setState({ isLogsOpen: true });
+    }
+
+    private _handleLogsClose(): void {
+        this.setState({ isLogsOpen: false });
     }
 
     private _getTemplateUrl(templateId: string): string {
@@ -411,6 +422,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             <Button className='delete float-right' onClick={this._handleDeletePromptOpen.bind(this)}>
                                 Delete
                             </Button>
+                            <Button className='float-right' onClick={this._handleGetLogs.bind(this)}>
+                                View Logs
+                            </Button>
                             <Button className='float-right' onClick={this._handlePreview.bind(this)}>
                                 Preview
                             </Button>
@@ -546,6 +560,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             Cancel
                         </Button>
                     </Modal.Footer>
+                </Modal>
+                <Modal size='lg' show={this.state.isLogsOpen} onHide={() => this._handleLogsClose()}>
+                    <Modal.Header closeButton>
+                        <h3 className='logs-header-div'>Email event logs for template [{this.props.templateName}]</h3>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <TemplateLogsComponent
+                            templateId={this.props.templateId}
+                            templateName={this.props.templateName}
+                            addToast={this._addToast.bind(this)}
+                        />
+                    </Modal.Body>
                 </Modal>
                 {this.state.isLoading && <SpinnerComponent />}
             </div>
