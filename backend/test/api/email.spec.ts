@@ -257,17 +257,6 @@ describe('POST /email', () => {
             },
         });
 
-        const mTemplate: ITemplateWithHTML = {
-            // Some dummy values
-            templateId: 'valid-test-id',
-            timeCreated: 1616066356850,
-            templateStatus: EntryStatus.IN_SERVICE,
-            templateName: 'test template',
-            apiKey: 'API-KEY',
-            fieldNames: ['test_field'],
-            html: '<p>${test_field}</p>',
-        };
-
         jest.spyOn(processEmailHandler, 'validateEnv').mockReturnValue(true);
 
         const mResponse = {
