@@ -6,7 +6,6 @@ import { arrayWith, expect, haveResource, haveResourceLike, objectLike, stringLi
 import { config } from '../../lib/config';
 
 let stack: Stack;
-let templateService: TemplateService;
 let api: RestApi;
 let database: Database;
 
@@ -14,7 +13,7 @@ beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase', 'test');
-    templateService = new TemplateService(stack, api, database, 'test');
+    new TemplateService(stack, api, database, 'test');
 });
 
 describe('template service tests', () => {

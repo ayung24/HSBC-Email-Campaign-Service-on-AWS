@@ -23,7 +23,11 @@ export const validateEnv = function (): boolean {
     return !!METADATA_TABLE_NAME && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID && !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH;
 };
 
-export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlob: Buffer; }, template: ITemplateFullEntry, event: APIGatewayRequestAuthorizerEvent): Promise<any> {
+export const kmsDecrypt = function (
+    decryptParam: { KeyId: string; CiphertextBlob: Buffer },
+    template: ITemplateFullEntry,
+    event: APIGatewayRequestAuthorizerEvent,
+): Promise<any> {
     const apiKey = event.headers?.APIKey ?? event.headers?.apikey;
     return new Promise((resolve, reject) => {
         kms.decrypt(decryptParam, (err: AWSError, data: KMS.Types.DecryptResponse) => {
@@ -47,7 +51,7 @@ export const kmsDecrypt = function (decryptParam: { KeyId: string; CiphertextBlo
             }
         });
     });
-}
+};
 
 export const handler = async function (event: APIGatewayRequestAuthorizerEvent) {
     Logger.info({
@@ -86,7 +90,7 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent) 
                 additionalInfo: template,
             });
             const decryptParam = {
-                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,                
+                KeyId: `arn:aws:kms:${KMS_REGION}:${KMS_ACCOUNT_ID}:key/${KMS_KEY_ID}`,
                 CiphertextBlob: Buffer.from(template.apiKey, 'base64'),
             };
             return kmsDecrypt(decryptParam, template, event);

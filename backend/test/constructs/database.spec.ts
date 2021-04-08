@@ -1,14 +1,12 @@
 import { Stack } from '@aws-cdk/core';
 import { Database } from '../../lib/constructs/database';
-import { arrayWith, expect, haveResource, haveResourceLike, objectLike, stringLike } from '@aws-cdk/assert/';
-import { config } from '../../lib/config';
+import { arrayWith, expect, haveResource, objectLike, stringLike } from '@aws-cdk/assert/';
 
 let stack: Stack;
-let database: Database;
 
 beforeAll(() => {
     stack = new Stack();
-    database = new Database(stack, 'testDatabase', 'test');
+    new Database(stack, 'testDatabase', 'test');
 });
 
 describe('database infrastructure tests', () => {

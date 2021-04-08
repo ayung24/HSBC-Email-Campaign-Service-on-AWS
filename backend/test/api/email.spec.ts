@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayRequestAuthorizerEvent } from 'aws-lambda';
 import * as processEmailHandler from '../../src/lambda/processSend';
 import * as emailApiAuthHandler from '../../src/lambda/emailApiAuth';
-import { EntryStatus, ITemplateFullEntry, ITemplateWithHTML } from '../../src/database/dbInterfaces';
+import { EntryStatus, ITemplateWithHTML } from '../../src/database/dbInterfaces';
 import { ApiGatewayProxyEventMockBuilder } from '../mocks/apiGatewayProxyEvent.mock';
 import { APIGatewayRequestAuthorizerEventMockBuilder } from '../mocks/apiGatewayRequestAuthorizerEvent.mock';
 import { ErrorCode, ESCError, ErrorMessages } from '../../src/ESCError';
