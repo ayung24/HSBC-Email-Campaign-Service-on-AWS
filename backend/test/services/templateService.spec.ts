@@ -6,14 +6,14 @@ import { arrayWith, expect, haveResource, haveResourceLike, objectLike, stringLi
 import { config } from '../../lib/config';
 
 let stack: Stack;
-let templateService: TemplateService;
 let api: RestApi;
 let database: Database;
+
 beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase', 'test');
-    templateService = new TemplateService(stack, api, database, 'test');
+    new TemplateService(stack, api, database, 'test');
 });
 
 describe('template service tests', () => {
@@ -315,6 +315,110 @@ describe('template service tests', () => {
         });
     });
 
+    describe('process HTML lambda tests', () => {
+        it('process HTML lambda has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            METADATA_TABLE_NAME: objectLike({
+                                Ref: stringLike('MetadataTable*'),
+                            }),
+                            HTML_BUCKET_NAME: objectLike({
+                                Ref: stringLike('HTMLBucket*'),
+                            }),
+                            SRC_HTML_PATH: config.s3.SRC_HTML_PATH,
+                            PROCESSED_HTML_PATH: config.s3.PROCESSED_HTML_PATH,
+                            IMAGE_BUCKET_NAME: objectLike({
+                                Ref: stringLike('ImageBucket*'),
+                            }),
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    FunctionName: stringLike('ProcessHTMLHandler*'),
+                    Timeout: 10,
+                }),
+            );
+        });
+
+        it('has READ/WRITE permission on Metadata table', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith(
+                                    'dynamodb:Query',
+                                    'dynamodb:GetItem',
+                                    'dynamodb:Scan',
+                                    'dynamodb:ConditionCheckItem',
+                                    'dynamodb:PutItem',
+                                    'dynamodb:UpdateItem',
+                                    'dynamodb:DeleteItem',
+                                ),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessHTMLHandler*'),
+                }),
+            );
+        });
+
+        it('has READ/DELETE/PUT permission on HTML bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('s3:GetObject*', 's3:GetBucket*', 's3:List*'),
+                                Effect: 'Allow',
+                            }),
+                            objectLike({
+                                Action: stringLike('s3:DeleteObject*'),
+                                Effect: 'Allow',
+                                Resource: objectLike({
+                                    'Fn::Join': arrayWith(
+                                        arrayWith(objectLike({ 'Fn::GetAtt': arrayWith(stringLike('HTMLBucket*')) }), '/src/*'),
+                                    ),
+                                }),
+                            }),
+                            objectLike({
+                                Action: arrayWith(stringLike('s3:PutObject*')),
+                                Effect: 'Allow',
+                                Resource: objectLike({
+                                    'Fn::Join': arrayWith(
+                                        arrayWith(objectLike({ 'Fn::GetAtt': arrayWith(stringLike('HTMLBucket*')) }), '/processed/*'),
+                                    ),
+                                }),
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessHTMLHandler*'),
+                }),
+            );
+        });
+
+        it('has PUT permission on Image bucket', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith(stringLike('s3:PutObject*')),
+                                Effect: 'Allow',
+                                Resource: objectLike({
+                                    'Fn::Join': arrayWith(arrayWith(objectLike({ 'Fn::GetAtt': arrayWith(stringLike('ImageBucket*')) }))),
+                                }),
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('ProcessHTMLHandler*'),
+                }),
+            );
+        });
+    });
+
     describe('template service log tests', () => {
         it('has log groups for all service lambdas', () => {
             expect(stack).to(
@@ -338,6 +442,12 @@ describe('template service tests', () => {
             expect(stack).to(
                 haveResourceLike('AWS::Logs::LogGroup', {
                     LogGroupName: stringLike('*DeleteTemplateHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*ProcessHTMLHandler*'),
                     RetentionInDays: 180,
                 }),
             );

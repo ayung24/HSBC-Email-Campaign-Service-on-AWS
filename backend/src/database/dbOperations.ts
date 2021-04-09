@@ -51,7 +51,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             reject(fieldsEmptyError);
         } else {
             // check name uniqueness
-            let isNameTakenQuery = {
+            const isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
                 IndexName: 'name-and-status-index',
                 ExpressionAttributeValues: {
@@ -61,9 +61,9 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 KeyConditionExpression: 'templateStatus = :status AND templateName = :proposedName',
             };
 
-            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE }
+            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE };
             ddb.query(isNameTakenQuery, (inServiceQErr: AWSError, inServiceQ: DynamoDB.QueryOutput) => {
-                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY }
+                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY };
                 ddb.query(isNameTakenQuery, (notReadyQErr: AWSError, notReadyQ: DynamoDB.QueryOutput) => {
                     if (inServiceQErr) {
                         Logger.logError(inServiceQErr, 'Name validation failure - in service');
@@ -78,7 +78,11 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else if (notReadyQ.Count && notReadyQ.Count > 0) {
-                        const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
+                        const nameNotUniqueError = new ESCError(
+                            ErrorCode.TS34,
+                            `Another template with name [${name}] is currently being uploaded.`,
+                            true,
+                        );
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else {
@@ -170,7 +174,7 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
     };
     return new Promise((resolve, reject) => {
         ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
-            if (err) {
+            if (err || !data.Attributes) {
                 Logger.logError(err);
                 const updateTemplateStatusError = new ESCError(
                     ErrorCode.TS21,
@@ -178,13 +182,13 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
                 );
                 reject(updateTemplateStatusError);
             } else {
-                const item = data.Attributes;
-                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity } )
+                const item = data.Attributes!;
+                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity });
                 resolve({
-                    templateId: item?.templateId.S!,
-                    timeCreated: Number.parseInt(item?.timeCreated.N!),
-                    templateStatus: (<any>EntryStatus)[item?.templateStatus.S!],
-                    templateName: item?.templateName.S!,
+                    templateId: item.templateId.S!,
+                    timeCreated: Number.parseInt(item.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                    templateName: item.templateName.S!,
                 });
             }
         });
@@ -219,7 +223,9 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 });
             });
         })
-        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated)});
+        .then((entry: ITemplateFullEntry) => {
+            return DisableTemplate(entry.templateId, entry.timeCreated);
+        });
 }
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {

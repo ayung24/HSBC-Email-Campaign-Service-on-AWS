@@ -7,7 +7,7 @@ import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType 
 import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
-import { IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;
@@ -72,8 +72,13 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
 
                     this.setState({ templates: templates });
                 })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, 'Could not load template list.');
+                .catch(err => {
+                    let body: string;
+                    if (isIErrorReturnResponse(err)) {
+                        body = createErrorMessage(err.response.data, 'Could not load template list.');
+                    } else {
+                        body = 'Could not load template list.';
+                    }
                     const toast = {
                         id: 'getTemplatesError',
                         body: body,

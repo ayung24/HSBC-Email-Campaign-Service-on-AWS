@@ -7,6 +7,7 @@ import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import { nonEmptyArray } from '../../commonFunctions';
 import * as Logger from '../../logger';
 import { SendMessageResult } from 'aws-sdk/clients/sqs';
+import linkifyStr from 'linkifyjs/string';
 
 const SES_VERSION = process.env.SES_VERSION || '2010-12-01';
 const SQS_VERSION = process.env.SQS_VERSION || '2012-11-05';
@@ -15,6 +16,7 @@ const PROCESSED_HTML_PATH = process.env.PROCESSED_HTML_PATH;
 const EMAIL_QUEUE_URL = process.env.EMAIL_QUEUE_URL;
 const EMAIL_DLQ_URL = process.env.EMAIL_DLQ_URL;
 const MAX_SEND_RATE = process.env.MAX_SEND_RATE;
+const CONFIGURATION_SET_NAME = process.env.CONFIGURATION_SET_NAME;
 
 const sqs = new AWS.SQS({
     apiVersion: SQS_VERSION,
@@ -32,7 +34,9 @@ const transporter = createTransport({
  * Validates lambda's runtime env variables
  */
 const validateEnv = function (): boolean {
-    return !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!EMAIL_QUEUE_URL && !!EMAIL_DLQ_URL && !!MAX_SEND_RATE;
+    return (
+        !!HTML_BUCKET_NAME && !!PROCESSED_HTML_PATH && !!EMAIL_QUEUE_URL && !!EMAIL_DLQ_URL && !!MAX_SEND_RATE && !!CONFIGURATION_SET_NAME
+    );
 };
 
 /**
@@ -51,7 +55,9 @@ const replaceFields = function (srcHTML: string, fields: ISendEmailFields): stri
     const fieldNames = Object.keys(fields);
     const regex = new RegExp('\\${(' + fieldNames.join('|') + ')}', 'g');
     const html = srcHTML.replace(regex, (_, field) => {
-        return applyXSSProtection(fields[field]);
+        return linkifyStr(applyXSSProtection(fields[field]), {
+            defaultProtocol: 'https',
+        });
     });
     return html;
 };
@@ -91,6 +97,15 @@ const sendEmail = function (record: SQSRecord, htmlCache: Map<string, string>): 
                 to: body.to,
                 subject: body.subject,
                 html: html,
+                ses: {
+                    ConfigurationSetName: CONFIGURATION_SET_NAME,
+                    Tags: [
+                        {
+                            Name: 'template_id',
+                            Value: body.templateId,
+                        },
+                    ],
+                },
             };
             return transporter.sendMail(params).catch(err => {
                 Logger.logError(err);
