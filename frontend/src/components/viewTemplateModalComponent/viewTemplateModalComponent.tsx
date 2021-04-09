@@ -482,7 +482,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                                                         variant='outline-secondary'
                                                         onClick={event => this._copyText(this.state.apiKey, event)}
                                                     >
-                                                        <Image src={copyImage} alt='copy icon' />
+                                                        <Image src={copyImage} alt='copy icon' fluid/>
                                                     </Button>
                                                 </InputGroup.Append>
                                             </InputGroup>
