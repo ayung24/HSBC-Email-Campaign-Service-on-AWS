@@ -63,7 +63,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
             }
 
             getLogsRequest
-                .then(logs => {
+                .then((logs: IGetTemplateLogsResponseBody) => {
                     this.setState({ logs: logs });
                     const filteredEvents = logs.events.filter(log => this.state.selectedEvents.has(log.event.eventType));
                     return {
@@ -146,6 +146,16 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Send')}>
                         Send
+                    </label>
+                    <input
+                        type='checkbox'
+                        id='Send Failure'
+                        className='filter-checkbox'
+                        onClick={() => this._editSelectedEvents('Failure')}
+                        checked={this.state.selectedEvents.has('Failure')}
+                    />
+                    <label className='checkbox-label' onClick={() => this._editSelectedEvents('Failure')}>
+                        Send Failure
                     </label>
                     <input
                         type='checkbox'

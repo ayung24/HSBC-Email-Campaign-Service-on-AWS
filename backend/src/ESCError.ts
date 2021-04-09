@@ -75,6 +75,7 @@ export enum ErrorCode {
     ES21 = 'ES21',
     ES22 = 'ES22',
     ES23 = 'ES23',
+    ES24 = 'ES24',
 }
 
 /**

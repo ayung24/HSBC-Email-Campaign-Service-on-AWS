@@ -23,6 +23,7 @@ export class EmailService {
     private _process: lambda.Function;
     private _processBatch: lambda.Function;
     private _logSns: lambda.Function;
+    private _logSendFail: lambda.Function;
     private _emailQueue: sqs.Queue;
     private _emailDlq: sqs.Queue;
     private _snsEmailEventTopic: sns.Topic;
@@ -32,7 +33,7 @@ export class EmailService {
     private readonly _processBatchSendLambdaName: string;
     private readonly _executeSendLambdaName: string;
     private readonly _logSnsLambdaName: string;
-    private readonly _snsEventDestinationLambdaName: string;
+    private readonly _logSendFailLambdaName: string;
     private readonly _sesConfigurationSetLambdaName: string;
     private readonly _emailQueueName: string;
     private readonly _emailQueueDlqName: string;
@@ -51,7 +52,7 @@ export class EmailService {
         this._processBatchSendLambdaName = `ProcessBatchSendHandler-${buildEnv}`;
         this._executeSendLambdaName = `ExecuteSendHandler-${buildEnv}`;
         this._logSnsLambdaName = `LogSnsHandler-${buildEnv}`;
-        this._snsEventDestinationLambdaName = `SNSEventDestination-${buildEnv}`;
+        this._logSendFailLambdaName = `LogSendFailHandler-${buildEnv}`;
         this._sesConfigurationSetLambdaName = `SESConfigurationSet-${buildEnv}`;
         this._emailQueueName = `EmailQueue-${buildEnv}`;
         this._emailQueueDlqName = `EmailDLQ-${buildEnv}`;
@@ -228,6 +229,31 @@ export class EmailService {
                 effect: iam.Effect.ALLOW,
             }),
         );
+
+        this._logSendFail = new NodejsFunction(scope, 'LogSendFailHandler', {
+            runtime: lambda.Runtime.NODEJS_12_X,
+            entry: `${config.lambda.LAMBDA_ROOT}/logSns/logSendFail.ts`,
+            environment: {
+                REGION: region,
+                EMAIL_EVENTS_LOG_GROUP_NAME: this._emailEventsLogGroupName,
+                CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+            },
+            timeout: cdk.Duration.seconds(10),
+            functionName: this._logSendFailLambdaName,
+        });
+        this._logSendFail.addToRolePolicy(
+            new iam.PolicyStatement({
+                actions: ['logs:DescribeLogStreams', 'logs:PutLogEvents', 'logs:CreateLogStream'],
+                resources: [`*`],
+                effect: iam.Effect.ALLOW,
+            }),
+        );
+        this._emailDlq.grantConsumeMessages(this._logSendFail);
+        this._logSendFail.addEventSource(
+            new SqsEventSource(this._emailDlq, {
+                batchSize: 1,
+            }),
+        );
     }
 
     /**
@@ -351,6 +377,11 @@ export class EmailService {
         });
         new LogGroup(scope, 'LogSNSHandlerLogs', {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._logSnsLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
+        });
+        new LogGroup(scope, 'LogSendFailHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._logSendFailLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });

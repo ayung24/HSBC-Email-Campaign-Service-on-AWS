@@ -264,6 +264,6 @@ export class TemplateService {
             logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateLogsLambdaName,
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
-        })
-    };
+        });
+    }
 }
