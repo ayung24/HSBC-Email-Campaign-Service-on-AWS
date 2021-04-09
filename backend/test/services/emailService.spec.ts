@@ -380,6 +380,93 @@ describe('email service tests', () => {
         });
     });
 
+    describe('log SNS lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            EMAIL_EVENTS_LOG_GROUP_NAME: stringLike('EmailEventLogs*'),
+                            CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 3 * config.sqs.SEND_LAMBDA_TIMEOUT,
+                    FunctionName: stringLike('LogSnsHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE permission on CloudWatch', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('logs:DescribeLogStreams', 'logs:PutLogEvents', 'logs:CreateLogStream'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSnsHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('SES configuration set lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            SES_VERSION: config.ses.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 60,
+                    FunctionName: stringLike('SESConfigurationSet*'),
+                }),
+            );
+        });
+
+        it('has CREATE and DELETE permission on SES configuration set', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('ses:CreateConfigurationSet', 'ses:DeleteConfigurationSet'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('SESConfigurationSetHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE, UPDATE, and DELETE permission on SES event destination', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith(
+                                    'ses:CreateConfigurationSetEventDestination',
+                                    'ses:UpdateConfigurationSetEventDestination',
+                                    'ses:DeleteConfigurationSetEventDestination',
+                                ),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('SESConfigurationSetHandler*'),
+                }),
+            );
+        });
+    });
+
     describe('email service log tests', () => {
         it('has log groups for all service lambdas', () => {
             expect(stack).to(
@@ -403,6 +490,24 @@ describe('email service tests', () => {
             expect(stack).to(
                 haveResourceLike('AWS::Logs::LogGroup', {
                     LogGroupName: stringLike('*ExecuteSendHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*LogSnsHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*SESConfigurationSet*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*EmailEventLogs*'),
                     RetentionInDays: 180,
                 }),
             );

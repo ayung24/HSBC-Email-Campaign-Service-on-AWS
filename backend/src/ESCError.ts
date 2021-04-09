@@ -39,6 +39,12 @@ export enum ErrorCode {
     TS32 = 'TS32',
     TS33 = 'TS33',
     TS34 = 'TS34',
+    TS35 = 'TS35',
+    TS36 = 'TS36',
+    TS37 = 'TS37',
+    TS38 = 'TS38',
+    TS39 = 'TS39',
+    TS40 = 'TS40',
 
     // Search errors
     TS35 = 'TS35',
