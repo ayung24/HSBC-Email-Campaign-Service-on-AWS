@@ -24,6 +24,7 @@ export enum ToastType {
     SUCCESS = 'Success',
     ERROR = 'Error',
     NOTIFICATION = 'Notification',
+    WARN = 'Warning',
 }
 
 export interface ToastFunctionProperties {

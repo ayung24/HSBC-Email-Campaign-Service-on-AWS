@@ -56,8 +56,17 @@ export interface IGetTemplateLogsResponseBody {
     events: Array<IEmailEventLog>;
 }
 
-export interface IEmailEventLog {
+export interface IEmailEventLogsWithTimezone {
+    events: Array<IEmailEventLogWithTimezone>;
+}
+
+export interface IEmailEventLogWithTimezone {
     timestamp: string;
+    event: IEmailEvent;
+}
+
+export interface IEmailEventLog {
+    timestamp: number;
     event: IEmailEvent;
 }
 

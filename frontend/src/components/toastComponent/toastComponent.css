@@ -51,3 +51,15 @@
 .toast-body.Notification {
     background-color: #f0eff0;
 }
+
+.toast.Warning.show {
+    border-color: #fff700;
+}
+
+.toast-header.Warning {
+    background-color: #fff8d9;
+}
+
+.toast-body.Warning {
+    background-color: #fff8d9;
+}

@@ -61,7 +61,7 @@ export class TemplateComponent extends React.Component<any, TemplateComponentSta
                             <div className='search-bar'>
                                 <FormControl
                                     id='searchFilterInput'
-                                    placeholder='Search by template name (case sensitive)'
+                                    placeholder='Search by template name'
                                     onChange={this._onSearchChange.bind(this)}
                                 />
                                 <div className='form-control-append'>

@@ -3,9 +3,15 @@ import './templateLogsComponent.css';
 import { TemplateService } from '../../services/templateService';
 import { Button } from 'react-bootstrap/';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
-import { IGetTemplateLogsResponseBody } from '../../models/templateInterfaces';
+import {
+    IEmailEventLog,
+    IEmailEventLogsWithTimezone,
+    IEmailEventLogWithTimezone,
+    IGetTemplateLogsResponseBody,
+} from '../../models/templateInterfaces';
 import { createErrorMessage, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { isIErrorReturnResponse } from '../../models/iError';
+import moment from 'moment';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 const renderjson = require('renderjson');
@@ -70,7 +76,12 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         events: filteredEvents,
                     };
                 })
-                .then(logs => {
+                .then((logs: IGetTemplateLogsResponseBody) => {
+                    return {
+                        events: this._convertLogTimestamp(logs.events),
+                    };
+                })
+                .then((logs: IEmailEventLogsWithTimezone) => {
                     renderjson.set_show_to_level(3);
                     renderjson.set_collapse_msg((len: number) => '...');
                     this._populateJson(logs);
@@ -94,7 +105,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
         });
     }
 
-    private _populateJson(logs: IGetTemplateLogsResponseBody): void {
+    private _populateJson(logs: IEmailEventLogsWithTimezone): void {
         let childElement: any;
         if (logs.events.length > 0) {
             childElement = renderjson(logs);
@@ -112,10 +123,21 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
     }
 
     private _clientRefresh(): void {
-        const filteredEvents = this.state.logs.events.filter(log => this.state.selectedEvents.has(log.event.eventType));
+        const filteredEvents = this._convertLogTimestamp(
+            this.state.logs.events.filter(log => this.state.selectedEvents.has(log.event.eventType)),
+        );
         this._populateJson({
             events: filteredEvents,
         });
+    }
+
+    private _convertLogTimestamp(logs: Array<IEmailEventLog>): Array<IEmailEventLogWithTimezone> {
+        return logs
+            .map((eventLog: IEmailEventLog) => ({
+                timestamp: moment(eventLog.timestamp).local().format(),
+                event: eventLog.event,
+            }))
+            .reverse(); // Make latest logs appear first
     }
 
     private _editSelectedEvents(event: string): void {
