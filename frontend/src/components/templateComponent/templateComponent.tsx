@@ -4,7 +4,7 @@ import { ToastComponentProperties, ToastInterface } from '../../models/toastInte
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
-import { Button, FormControl, Image, InputGroup } from 'react-bootstrap';
+import { Button,  Image } from 'react-bootstrap';
 import searchIcon from '../../images/searchGlass.png';
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {

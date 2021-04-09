@@ -45,12 +45,10 @@ export enum ErrorCode {
     TS38 = 'TS38',
     TS39 = 'TS39',
     TS40 = 'TS40',
-
-    // Search errors
-    TS35 = 'TS35',
-    TS36 = 'TS36',
-    TS37 = 'TS37',
-    TS38 = 'TS38',
+    TS41 = 'TS41',
+    TS42 = 'TS42',
+    TS43 = 'TS43',
+    TS44 = 'TS44',
 
     // Email service codes
     ES0 = 'ES0',

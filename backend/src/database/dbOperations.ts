@@ -475,12 +475,12 @@ export function searchTemplates(searchKey: string): Promise<ITemplateBase[]> {
         ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
             if (err) {
                 Logger.logError(err);
-                const listError = new ESCError(ErrorCode.TS35, 'Search template error');
+                const listError = new ESCError(ErrorCode.TS41, 'Search template error');
                 reject(listError);
             } else {
                 const items = data.Items;
                 if (!items || items.length < 0) {
-                    const undefinedItemsError = new ESCError(ErrorCode.TS36, 'Retrieved undefined items from database');
+                    const undefinedItemsError = new ESCError(ErrorCode.TS42, 'Retrieved undefined items from database');
                     Logger.logError(undefinedItemsError);
                     reject(undefinedItemsError);
                 } else {

@@ -36,7 +36,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
                 } else {
                     statusCode = 500;
                     message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                    code = ErrorCode.TS38;
+                    code = ErrorCode.TS29;
                 }
                 return {
                     headers: headers,
@@ -72,7 +72,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS37;
+                code = ErrorCode.TS43;
             }
             return {
                 headers: headers,
