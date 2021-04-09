@@ -19,11 +19,11 @@ const sqs = new AWS.SQS({ apiVersion: SQS_VERSION });
 /**
  * Validates lambda's runtime env variables
  */
-const validateEnv = function (variables: Array<string | undefined>): boolean {
+export const validateEnv = function (variables: Array<string | undefined>): boolean {
     return !variables.some(v => !v);
 };
 
-const sendMessage: (params: SendMessageRequest) => Promise<string> = (params: SendMessageRequest) => {
+export const sendMessage: (params: SendMessageRequest) => Promise<string> = (params: SendMessageRequest) => {
     return new Promise((resolve, reject) => {
         sqs.sendMessage(params, (err: AWSError, res: SendMessageResult) => {
             if (err) {

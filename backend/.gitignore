@@ -9,3 +9,6 @@ cdk.out
 
 # dependencies
 /.idea
+
+# local allure results
+allure-results
