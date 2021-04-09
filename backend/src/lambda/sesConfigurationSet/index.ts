@@ -67,10 +67,18 @@ exports.handler = async (event: any, context: any) => {
         switch (RequestType) {
             case 'Delete': {
                 await ses
-                    .deleteConfigurationSet({
+                    .deleteConfigurationSetEventDestination({
                         ConfigurationSetName: ConfigurationSetName,
+                        EventDestinationName: EventDestinationName,
                     })
-                    .promise();
+                    .promise()
+                    .then(() => {
+                        return ses
+                            .deleteConfigurationSet({
+                                ConfigurationSetName: ConfigurationSetName,
+                            })
+                            .promise();
+                    });
                 return await send(event, context, 'SUCCESS', {});
             }
             case 'Create': {

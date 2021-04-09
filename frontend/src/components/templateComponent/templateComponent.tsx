@@ -4,19 +4,25 @@ import { ToastComponentProperties, ToastInterface } from '../../models/toastInte
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
-import { Button, Image } from 'react-bootstrap';
+import { Button, FormControl, Image } from 'react-bootstrap';
 import searchIcon from '../../images/searchGlass.png';
 
-export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
+interface TemplateComponentState extends ToastComponentProperties {
+    searchString: string;
+}
+
+export class TemplateComponent extends React.Component<any, TemplateComponentState> {
     private _toastMessages: Array<ToastInterface> = [];
     private readonly _toastComponent: React.RefObject<ToastComponent>;
     private readonly _uploadModalComponent: React.RefObject<UploadTemplateModalComponent>;
+    private readonly _templateGridComponent: React.RefObject<TemplateGridComponent>;
 
     constructor(props = {}) {
         super(props);
         this._toastComponent = React.createRef();
         this._uploadModalComponent = React.createRef();
-        this.state = { properties: this._toastMessages };
+        this._templateGridComponent = React.createRef();
+        this.state = { properties: this._toastMessages, searchString: '' };
     }
 
     private _addToast(toast: ToastInterface): void {
@@ -36,6 +42,15 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
         this._uploadModalComponent.current?.toggleModal();
     }
 
+    private _triggerTemplateFilter(searchString: string): void {
+        this._templateGridComponent.current?.renderTemplates(searchString);
+    }
+
+    private _onSearchChange(event: React.SyntheticEvent): void {
+        const input = event.target as HTMLInputElement;
+        this.setState({ searchString: input.value.trim() });
+    }
+
     render(): JSX.Element {
         return (
             <div className='template-component'>
@@ -44,9 +59,18 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                         <span className='template-grid-title'>All Templates</span>
                         <span className='template-search'>
                             <div className='search-bar'>
-                                <input className='form-control' placeholder='Search template' />
+                                <FormControl
+                                    id='searchFilterInput'
+                                    placeholder='Search by template name (case sensitive)'
+                                    onChange={this._onSearchChange.bind(this)}
+                                />
                                 <div className='form-control-append'>
-                                    <Button name='Search template' id='searchBtn' variant='outline-secondary'>
+                                    <Button
+                                        name='Search template'
+                                        id='searchBtn'
+                                        variant='outline-secondary'
+                                        onClick={() => this._triggerTemplateFilter(this.state.searchString)}
+                                    >
                                         <Image src={searchIcon} alt='search icon' fluid />
                                     </Button>
                                 </div>
@@ -61,7 +85,7 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
                 </div>
                 <UploadTemplateModalComponent ref={this._uploadModalComponent} fileType={'.docx'} addToast={this._addToast.bind(this)} />
                 <div className='template-container'>
-                    <TemplateGridComponent addToast={this._addToast.bind(this)} />
+                    <TemplateGridComponent ref={this._templateGridComponent} addToast={this._addToast.bind(this)} />
                 </div>
                 <ToastComponent ref={this._toastComponent} properties={this.state.properties} removeToast={this._removeToast.bind(this)} />
             </div>

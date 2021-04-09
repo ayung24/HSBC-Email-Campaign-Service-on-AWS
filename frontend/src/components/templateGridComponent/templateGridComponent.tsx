@@ -8,6 +8,7 @@ import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
 import { isIErrorReturnResponse } from '../../models/iError';
+import { isEmpty } from '../../commonFunctions';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;
@@ -28,10 +29,15 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
         };
     }
 
-    renderTemplates(): void {
+    renderTemplates(searchString: string): void {
+        let templatePromise: Promise<ITemplateDisplay[]>;
+        if (isEmpty(searchString)) {
+            templatePromise = this._templateService.getTemplates();
+        } else {
+            templatePromise = this._templateService.getFilteredTemplates(searchString);
+        }
         this.setState({ isLoading: true }, () =>
-            this._templateService
-                .getTemplates()
+            templatePromise
                 .then(response => {
                     const templates = response.map((template: ITemplateDisplay) => {
                         const { templateId, templateName, uploadTime } = template;
@@ -92,8 +98,8 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
     }
 
     componentDidMount(): void {
-        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates());
-        this.renderTemplates();
+        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates(''));
+        this.renderTemplates('');
     }
 
     renderHeader(): JSX.Element {
