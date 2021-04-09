@@ -24,3 +24,16 @@
 .checkbox-label {
     margin-left: 5px;
 }
+
+.date-filter {
+    display: flex;
+    align-items: center;
+}
+
+.react-datepicker-wrapper {
+    margin-left: 10px;
+}
+
+.endtime {
+    margin-left: 10px;
+}

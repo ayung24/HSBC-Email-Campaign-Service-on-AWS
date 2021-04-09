@@ -26,21 +26,95 @@ describe('template service tests', () => {
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'POST',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
             }),
         );
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'GET',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
             }),
         );
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'DELETE',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
             }),
         );
         expect(stack).to(
             haveResource('AWS::ApiGateway::Method', {
                 HttpMethod: 'PUT',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
+            }),
+        );
+    });
+
+    it('adds template/id endpoints to API gateway', () => {
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Resource', {
+                PathPart: '{id}',
+                ParentId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'GET',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templatesid*'),
+                }),
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'DELETE',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templatesid*'),
+                }),
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'PUT',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templatesid*'),
+                }),
+            }),
+        );
+    });
+
+    it('adds template/logs/id endpoints to API gateway', () => {
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Resource', {
+                PathPart: 'logs',
+                ParentId: objectLike({
+                    Ref: stringLike('*templates*'),
+                }),
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Resource', {
+                PathPart: '{id}',
+                ParentId: objectLike({
+                    Ref: stringLike('*templateslogs*'),
+                }),
+            }),
+        );
+        expect(stack).to(
+            haveResource('AWS::ApiGateway::Method', {
+                HttpMethod: 'GET',
+                ResourceId: objectLike({
+                    Ref: stringLike('*templateslogsid*'),
+                }),
             }),
         );
     });
@@ -419,6 +493,40 @@ describe('template service tests', () => {
         });
     });
 
+    describe('get template logs lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            EMAIL_EVENTS_LOG_GROUP_NAME: stringLike('EmailEventLogs*'),
+                            CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 10,
+                    FunctionName: stringLike('GetTemplateLogsHandler*'),
+                }),
+            );
+        });
+
+        it('has READ permission on CloudWatch', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('logs:GetLogEvents', 'logs:DescribeLogStreams'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('GetLogsHandler*'),
+                }),
+            );
+        });
+    });
+
     describe('template service log tests', () => {
         it('has log groups for all service lambdas', () => {
             expect(stack).to(
@@ -448,6 +556,12 @@ describe('template service tests', () => {
             expect(stack).to(
                 haveResourceLike('AWS::Logs::LogGroup', {
                     LogGroupName: stringLike('*ProcessHTMLHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*GetTemplateLogsHandler*'),
                     RetentionInDays: 180,
                 }),
             );

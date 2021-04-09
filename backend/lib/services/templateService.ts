@@ -260,5 +260,10 @@ export class TemplateService {
             retention: RetentionDays.SIX_MONTHS,
             removalPolicy: this.REMOVAL_POLICY,
         });
-    }
+        new LogGroup(scope, 'GetTemplateLogsHandlerLogs', {
+            logGroupName: EmailCampaignServiceStack.logGroupNamePrefix + this._getTemplateLogsLambdaName,
+            retention: RetentionDays.SIX_MONTHS,
+            removalPolicy: this.REMOVAL_POLICY,
+        })
+    };
 }

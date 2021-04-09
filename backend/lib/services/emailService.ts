@@ -83,7 +83,7 @@ export class EmailService {
             'CustomSESConfigurationSet',
             {
                 ConfigurationSetName: this._sesConfigurationSetName,
-                EventDestinationName: 'CustomEventsSNSDestination',
+                EventDestinationName: this._sesEventDestinationName,
                 MatchingEventTypes: ['send', 'reject', 'bounce', 'complaint', 'delivery', 'open', 'click'],
                 TopicARN: this._snsEmailEventTopic.topicArn,
             },
@@ -210,7 +210,7 @@ export class EmailService {
         );
 
         const region = this._buildEnv === 'dev' ? config.cloudWatch.REGION_DEV : config.cloudWatch.REGION_PROD;
-        this._logSns = new NodejsFunction(scope, 'LogSNS', {
+        this._logSns = new NodejsFunction(scope, 'LogSnsHandler', {
             runtime: lambda.Runtime.NODEJS_12_X,
             entry: `${config.lambda.LAMBDA_ROOT}/logSns/index.ts`,
             environment: {

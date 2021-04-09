@@ -100,13 +100,22 @@ export class TemplateService {
         });
     }
 
-    public getTemplateLogs(templateId: string): Promise<IGetTemplateLogsResponseBody> {
-        return this._requestService.GET<IGetTemplateLogsResponseBody>(
-            '/templates/logs/' + templateId,
-            (res: IGetTemplateLogsResponseBody) => {
-                return Promise.resolve(res);
-            },
-        );
+    public getTemplateLogs(templateId: string, startTime?: string, endTime?: string): Promise<IGetTemplateLogsResponseBody> {
+        let path = '/templates/logs/' + templateId;
+        if (startTime || endTime) {
+            let paramString = '?';
+            if (startTime && endTime) {
+                paramString = paramString + `start=${startTime}&end=${endTime}`;
+            } else if (startTime) {
+                paramString = paramString + `start=${startTime}`;
+            } else if (endTime) {
+                paramString = paramString + `end=${endTime}`;
+            }
+            path = path + paramString;
+        }
+        return this._requestService.GET<IGetTemplateLogsResponseBody>(path, (res: IGetTemplateLogsResponseBody) => {
+            return Promise.resolve(res);
+        });
     }
 
     public parseDocx(docx: File): Promise<[htmlFile: any, fieldNames: Array<string>]> {

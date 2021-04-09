@@ -42,6 +42,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
     }
 
     const templateId: string = event.pathParameters.id;
+    const startTime: string | undefined = event.queryStringParameters?.start;
+    const endTime: string | undefined = event.queryStringParameters?.end;
     return new Promise<number>((resolve, reject) => {
         cloudWatch.describeLogStreams(
             {
@@ -64,33 +66,35 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                 if (logStreamLength < 1) {
                     resolve([]);
                 } else {
-                    cloudWatch.getLogEvents(
-                        {
-                            logGroupName: EMAIL_EVENTS_LOG_GROUP_NAME!,
-                            logStreamName: templateId,
-                        },
-                        (err: AWS.AWSError, data: AWS.CloudWatchLogs.GetLogEventsResponse) => {
-                            if (err) {
-                                Logger.logError(err);
-                                const getLogsError = new ESCError(
-                                    ErrorCode.TS37,
-                                    `Failed to get logs for template with id [${templateId}]`,
-                                );
-                                reject(getLogsError);
-                            } else if (!data.events) {
-                                const undefinedEventsError = new ESCError(ErrorCode.TS38, 'Events are undefined');
-                                Logger.logError(undefinedEventsError);
-                                reject(undefinedEventsError);
-                            } else {
-                                const messages = data.events.map((event: AWS.CloudWatchLogs.OutputLogEvent) => {
-                                    return event.message
-                                        ? { timestamp: new Date(event.timestamp!).toISOString(), event: JSON.parse(event.message) }
-                                        : { timestamp: new Date(Date.now()).toISOString(), event: 'Undefined event' };
-                                });
-                                resolve(messages);
-                            }
-                        },
-                    );
+                    const params: AWS.CloudWatchLogs.GetLogEventsRequest = {
+                        logGroupName: EMAIL_EVENTS_LOG_GROUP_NAME!,
+                        logStreamName: templateId,
+                        limit: 100,
+                    };
+                    if (startTime && !isNaN(parseInt(startTime, 10))) {
+                        params.startTime = parseInt(startTime, 10);
+                    }
+                    if (endTime && !isNaN(parseInt(endTime, 10))) {
+                        params.endTime = parseInt(endTime, 10);
+                    }
+                    cloudWatch.getLogEvents(params, (err: AWS.AWSError, data: AWS.CloudWatchLogs.GetLogEventsResponse) => {
+                        if (err) {
+                            Logger.logError(err);
+                            const getLogsError = new ESCError(ErrorCode.TS37, `Failed to get logs for template with id [${templateId}]`);
+                            reject(getLogsError);
+                        } else if (!data.events) {
+                            const undefinedEventsError = new ESCError(ErrorCode.TS38, 'Events are undefined');
+                            Logger.logError(undefinedEventsError);
+                            reject(undefinedEventsError);
+                        } else {
+                            const messages = data.events.map((event: AWS.CloudWatchLogs.OutputLogEvent) => {
+                                return event.message
+                                    ? { timestamp: new Date(event.timestamp!).toISOString(), event: JSON.parse(event.message) }
+                                    : { timestamp: new Date(Date.now()).toISOString(), event: 'Undefined event' };
+                            });
+                            resolve(messages);
+                        }
+                    });
                 }
             });
         })

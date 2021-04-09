@@ -6,7 +6,8 @@ import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerCompo
 import { IGetTemplateLogsResponseBody } from '../../models/templateInterfaces';
 import { createErrorMessage, ToastInterface, ToastType } from '../../models/toastInterfaces';
 import { isIErrorReturnResponse } from '../../models/iError';
-
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 const renderjson = require('renderjson');
 
 interface TemplateLogsProperties {
@@ -18,6 +19,8 @@ interface TemplateLogsProperties {
 interface TemplateLogsState extends SpinnerState {
     selectedEvents: Set<string>;
     logs: IGetTemplateLogsResponseBody;
+    startDate: any;
+    endDate: any;
 }
 
 export class TemplateLogsComponent extends React.Component<TemplateLogsProperties, TemplateLogsState> {
@@ -29,13 +32,37 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
         const allEvents = ['Send', 'Delivery', 'Open', 'Click'];
-        this.state = { isLoading: false, selectedEvents: new Set<string>(allEvents), logs: { events: [] } };
+        this.state = {
+            isLoading: false,
+            selectedEvents: new Set<string>(allEvents),
+            logs: { events: [] },
+            startDate: undefined,
+            endDate: undefined,
+        };
     }
 
     private _refreshLogs(): void {
         this.setState({ isLoading: true }, () => {
-            this._templateService
-                .getTemplateLogs(this.props.templateId)
+            let getLogsRequest: Promise<IGetTemplateLogsResponseBody>;
+            if (this.state.startDate && this.state.endDate) {
+                getLogsRequest = this._templateService.getTemplateLogs(
+                    this.props.templateId,
+                    Date.parse(this.state.startDate).toString(),
+                    Date.parse(this.state.endDate).toString(),
+                );
+            } else if (this.state.startDate) {
+                getLogsRequest = this._templateService.getTemplateLogs(this.props.templateId, Date.parse(this.state.startDate).toString());
+            } else if (this.state.endDate) {
+                getLogsRequest = this._templateService.getTemplateLogs(
+                    this.props.templateId,
+                    undefined,
+                    Date.parse(this.state.endDate).toString(),
+                );
+            } else {
+                getLogsRequest = this._templateService.getTemplateLogs(this.props.templateId);
+            }
+
+            getLogsRequest
                 .then(logs => {
                     this.setState({ logs: logs });
                     const filteredEvents = logs.events.filter(log => this.state.selectedEvents.has(log.event.eventType));
@@ -108,56 +135,77 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
     render(): JSX.Element {
         return (
             <div className='template-logs-component'>
-                <span className='filter-text'>Filter by event type:</span>
-                <input
-                    type='checkbox'
-                    id='Send'
-                    className='filter-checkbox'
-                    onClick={() => this._editSelectedEvents('Send')}
-                    checked={this.state.selectedEvents.has('Send')}
-                />
-                <label className='checkbox-label' onClick={() => this._editSelectedEvents('Send')}>
-                    Send
-                </label>
-                <input
-                    type='checkbox'
-                    id='Delivery'
-                    className='filter-checkbox'
-                    onClick={() => this._editSelectedEvents('Delivery')}
-                    checked={this.state.selectedEvents.has('Delivery')}
-                />
-                <label className='checkbox-label' onClick={() => this._editSelectedEvents('Delivery')}>
-                    Delivery
-                </label>
-                <input
-                    type='checkbox'
-                    id='Open'
-                    className='filter-checkbox'
-                    onClick={() => this._editSelectedEvents('Open')}
-                    checked={this.state.selectedEvents.has('Open')}
-                />
-                <label className='checkbox-label' onClick={() => this._editSelectedEvents('Open')}>
-                    Open
-                </label>
-                <input
-                    type='checkbox'
-                    id='Click'
-                    className='filter-checkbox'
-                    onClick={() => this._editSelectedEvents('Click')}
-                    checked={this.state.selectedEvents.has('Click')}
-                />
-                <label className='checkbox-label' onClick={() => this._editSelectedEvents('Click')}>
-                    Trackable Link
-                </label>
-                <Button
-                    size='sm'
-                    className='refresh-button'
-                    variant='outline-dark'
-                    onClick={this._refreshLogs.bind(this)}
-                    disabled={this.state.isLoading}
-                >
-                    Refresh
-                </Button>
+                <div className='quick-filters'>
+                    <span>Filter by event type:</span>
+                    <input
+                        type='checkbox'
+                        id='Send'
+                        className='filter-checkbox'
+                        onClick={() => this._editSelectedEvents('Send')}
+                        checked={this.state.selectedEvents.has('Send')}
+                    />
+                    <label className='checkbox-label' onClick={() => this._editSelectedEvents('Send')}>
+                        Send
+                    </label>
+                    <input
+                        type='checkbox'
+                        id='Delivery'
+                        className='filter-checkbox'
+                        onClick={() => this._editSelectedEvents('Delivery')}
+                        checked={this.state.selectedEvents.has('Delivery')}
+                    />
+                    <label className='checkbox-label' onClick={() => this._editSelectedEvents('Delivery')}>
+                        Delivery
+                    </label>
+                    <input
+                        type='checkbox'
+                        id='Open'
+                        className='filter-checkbox'
+                        onClick={() => this._editSelectedEvents('Open')}
+                        checked={this.state.selectedEvents.has('Open')}
+                    />
+                    <label className='checkbox-label' onClick={() => this._editSelectedEvents('Open')}>
+                        Open
+                    </label>
+                    <input
+                        type='checkbox'
+                        id='Click'
+                        className='filter-checkbox'
+                        onClick={() => this._editSelectedEvents('Click')}
+                        checked={this.state.selectedEvents.has('Click')}
+                    />
+                    <label className='checkbox-label' onClick={() => this._editSelectedEvents('Click')}>
+                        Trackable Link
+                    </label>
+                </div>
+                <div>
+                    <span>Filter by time. This requires a refresh.</span>
+                    <div className='date-filter'>
+                        <span>Start time:</span>
+                        <DatePicker
+                            showTimeSelect
+                            selected={this.state.startDate}
+                            onChange={date => this.setState({ startDate: date })}
+                            dateFormat='yyyy-MM-dd h:mm aa'
+                        />
+                        <span className='endtime'>End time:</span>
+                        <DatePicker
+                            showTimeSelect
+                            selected={this.state.endDate}
+                            onChange={date => this.setState({ endDate: date })}
+                            dateFormat='yyyy-MM-dd h:mm aa'
+                        />
+                        <Button
+                            size='sm'
+                            className='refresh-button'
+                            variant='outline-dark'
+                            onClick={this._refreshLogs.bind(this)}
+                            disabled={this.state.isLoading}
+                        >
+                            Refresh
+                        </Button>
+                    </div>
+                </div>
                 {this.state.isLoading && <SpinnerComponent />}
                 <div id='logs' />
             </div>
