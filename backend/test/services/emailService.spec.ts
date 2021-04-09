@@ -173,7 +173,7 @@ describe('email service tests', () => {
         });
     });
 
-    describe('emai DLQ tests', () => {
+    describe('email DLQ tests', () => {
         it('has a SQS FIFO Email DLQ', () => {
             expect(stack).to(
                 haveResourceLike('AWS::SQS::Queue', {
