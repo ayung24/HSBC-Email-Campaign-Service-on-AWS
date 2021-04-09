@@ -10,7 +10,7 @@ https://dev.d8zlt2xxyx88t.amplifyapp.com/
 https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email/?templateid={id}
 
 ### Email API Development URL
-https://cvmtdo18w4.execute-api.us-west-2.amazonaws.com/prod/email/?templateid={id}
+https://u1dptgtyh1.execute-api.us-west-2.amazonaws.com/prod/email/?templateid={id}
 
 
 #### Sample Email cURL Request
@@ -93,3 +93,9 @@ To be updated with every push to main
     2. Drag & Drop a .csv/.xlsx file to upload area<br>
       - Example valid CSV for a template with dynamic fields ${AMOUNT}, ${NAME}, ${PROMO_CODE}: [csv_sample.xlsx](https://github.com/CPSC319-HSBC/4-MakeBank/files/6260830/csv_sample.xlsx)
     4. Click send button
+#### ***April 8, 2021***
+- User can view email event logs for each template
+    - Has filtering on event
+    - Has filtering on time
+    - Includes trackable links (every link trackable)
+- Bug fix for duplicate dynamic fields
