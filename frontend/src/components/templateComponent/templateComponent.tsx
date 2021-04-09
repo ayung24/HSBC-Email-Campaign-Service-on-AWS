@@ -4,7 +4,8 @@ import { ToastComponentProperties, ToastInterface } from '../../models/toastInte
 import { ToastComponent } from '../toastComponent/toastComponent';
 import './templateComponent.css';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
-import { Button } from 'react-bootstrap';
+import { Button, Image } from 'react-bootstrap';
+import searchIcon from '../../images/searchGlass.png';
 
 export class TemplateComponent extends React.Component<any, ToastComponentProperties> {
     private _toastMessages: Array<ToastInterface> = [];
@@ -39,10 +40,24 @@ export class TemplateComponent extends React.Component<any, ToastComponentProper
         return (
             <div className='template-component'>
                 <div className='template-header'>
-                    <span className='template-grid-title'>All Templates</span>
-                    <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>
-                        UPLOAD +
-                    </Button>
+                    <div className='template-header-left'>
+                        <span className='template-grid-title'>All Templates</span>
+                        <span className='template-search'>
+                            <div className='search-bar'>
+                                <input className='form-control' placeholder='Search template' />
+                                <div className='form-control-append'>
+                                    <Button name='Search template' id='searchBtn' variant='outline-secondary'>
+                                        <Image src={searchIcon} alt='search icon' fluid />
+                                    </Button>
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+                    <div className='uploadBtn'>
+                        <Button className='upload-button' size='lg' onClick={this._toggleUploadModal.bind(this)}>
+                            UPLOAD +
+                        </Button>
+                    </div>
                 </div>
                 <UploadTemplateModalComponent ref={this._uploadModalComponent} fileType={'.docx'} addToast={this._addToast.bind(this)} />
                 <div className='template-container'>

@@ -10,24 +10,48 @@ const headers = {
     'Content-Type': 'application/json',
 };
 export const handler: APIGatewayProxyHandler = async function (event: APIGatewayProxyEvent) {
-    // TODO: Put back event body check after pagination implemented
-    // if (!event.body) {
-    //     return {
-    //         headers: headers,
-    //         statusCode: 400,
-    //         body: JSON.stringify({
-    //             message: 'Invalid request format',
-    //             code: '',
-    //         }),
-    //     };
-    // }
-    // get items from start to start + limit
-
+    
     Logger.logRequestInfo(event);
 
-    // TODO: Implement pagination (Requesting whole range of dates temporarily)
+    if (!event.queryStringParameters || !event.queryStringParameters.search) {
+        return db
+            .ListTemplatesByDate('0', new Date().getTime().toString())
+            .then((res: ITemplateBase[]) => {
+                return {
+                    headers: headers,
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        templates: res,
+                    }),
+                };
+            })
+            .catch(err => {
+                let statusCode: number;
+                let message: string;
+                let code: string;
+                if (err instanceof ESCError) {
+                    statusCode = err.getStatusCode();
+                    message = err.isUserError ? err.message : ErrorMessages.INTERNAL_SERVER_ERROR;
+                    code = err.code;
+                } else {
+                    statusCode = 500;
+                    message = ErrorMessages.INTERNAL_SERVER_ERROR;
+                    code = ErrorCode.TS29;
+                }
+                return {
+                    headers: headers,
+                    statusCode: statusCode,
+                    body: JSON.stringify({
+                        message: message,
+                        code: code,
+                    }),
+                };
+            });
+    }
+
+    const id: string = event.queryStringParameters.search;
     return db
-        .ListTemplatesByDate('0', new Date().getTime().toString())
+        .searchTemplates(id)
         .then((res: ITemplateBase[]) => {
             return {
                 headers: headers,
@@ -48,7 +72,7 @@ export const handler: APIGatewayProxyHandler = async function (event: APIGateway
             } else {
                 statusCode = 500;
                 message = ErrorMessages.INTERNAL_SERVER_ERROR;
-                code = ErrorCode.TS29;
+                code = ErrorCode.TS43;
             }
             return {
                 headers: headers,
