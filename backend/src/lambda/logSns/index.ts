@@ -2,6 +2,7 @@ import { ErrorCode, ErrorMessages, ESCError } from '../../ESCError';
 import * as Logger from '../../logger';
 import * as AWS from 'aws-sdk';
 import { SNSEvent } from 'aws-lambda';
+import { ILogEvent } from '../lambdaInterfaces';
 
 const CLOUDWATCH_REGION = process.env.REGION;
 const EMAIL_EVENTS_LOG_GROUP_NAME = process.env.EMAIL_EVENTS_LOG_GROUP_NAME;
@@ -35,35 +36,7 @@ const getNextSequenceToken = async function (logStreamName: string): Promise<str
     });
 };
 
-export const handler = async function (event: SNSEvent) {
-    if (!validateEnv()) {
-        return Promise.reject({
-            statusCode: 500,
-            body: JSON.stringify({
-                message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.ES19,
-            }),
-        });
-    }
-    if (!event.Records || event.Records.length === 0) {
-        return Promise.reject({
-            statusCode: 500,
-            body: JSON.stringify({
-                message: ErrorMessages.INTERNAL_SERVER_ERROR,
-                code: ErrorCode.ES20,
-            }),
-        });
-    }
-    Logger.info({ message: 'RECEIVED EVENT', additionalInfo: event });
-    const message = event.Records[0].Sns?.Message;
-    const messageJson = message ? JSON.parse(message) : {};
-    Logger.info({ message: 'Message', additionalInfo: messageJson });
-    const templateId: string = messageJson.mail?.tags?.template_id ? messageJson.mail.tags.template_id[0] : 'NoTemplateId';
-    const timestamp = event.Records[0].Sns?.Timestamp ? Date.parse(event.Records[0].Sns?.Timestamp) : Date.now();
-    const logEvent = {
-        message: message,
-        timestamp: timestamp,
-    };
+export const logTemplateEvent = async function (templateId: string, logEvent: ILogEvent) {
     return getNextSequenceToken(templateId).then(sequenceToken => {
         return new Promise<AWS.CloudWatchLogs.PutLogEventsRequest>((resolve, reject) => {
             if (sequenceToken === '') {
@@ -109,4 +82,36 @@ export const handler = async function (event: SNSEvent) {
             });
         });
     });
+}; 
+
+export const handler = async function (event: SNSEvent) {
+    if (!validateEnv()) {
+        return Promise.reject({
+            statusCode: 500,
+            body: JSON.stringify({
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
+                code: ErrorCode.ES19,
+            }),
+        });
+    }
+    if (!event.Records || event.Records.length === 0) {
+        return Promise.reject({
+            statusCode: 500,
+            body: JSON.stringify({
+                message: ErrorMessages.INTERNAL_SERVER_ERROR,
+                code: ErrorCode.ES20,
+            }),
+        });
+    }
+    Logger.info({ message: 'RECEIVED EVENT', additionalInfo: event });
+    const message = event.Records[0].Sns?.Message;
+    const messageJson = message ? JSON.parse(message) : {};
+    Logger.info({ message: 'Message', additionalInfo: messageJson });
+    const templateId: string = messageJson.mail?.tags?.template_id ? messageJson.mail.tags.template_id[0] : 'NoTemplateId';
+    const timestamp = event.Records[0].Sns?.Timestamp ? Date.parse(event.Records[0].Sns?.Timestamp) : Date.now();
+    const logEvent: ILogEvent = {
+        message: message,
+        timestamp: timestamp,
+    };
+    return logTemplateEvent(templateId, logEvent);
 };
