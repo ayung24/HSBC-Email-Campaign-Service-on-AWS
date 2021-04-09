@@ -79,6 +79,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
             this._handleUploadCsvFile(event.target.files[0]);
+            event.currentTarget.value = '';
         }
     }
 
@@ -126,7 +127,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                         csvData.forEach((row: any) => {
                             const fieldObj: any = {};
                             csvFieldNames.forEach((fieldName: string) => {
-                                fieldObj[fieldName.toUpperCase()] = row[fieldName];
+                                fieldObj[fieldName.toUpperCase()] = row[fieldName].toString();
                             });
                             const params: IEmailParameters = {
                                 subject: row.Subject,
