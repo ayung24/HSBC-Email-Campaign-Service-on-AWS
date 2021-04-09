@@ -13,7 +13,7 @@ const validateEnv = function (): boolean {
 };
 
 export const handler = async function (event: SQSEvent) {
-    Logger.info({ message: 'Received failed send', additionalInfo: event});
+    Logger.info({ message: 'Received failed send', additionalInfo: event });
     if (!validateEnv()) {
         return Promise.reject({
             status: 500,
@@ -34,12 +34,10 @@ export const handler = async function (event: SQSEvent) {
                     reciever: body.to,
                     subject: body.subject,
                     fields: body.fields,
-                }
+                },
             }),
             timestamp: timestamp,
-        }
-        return logTemplateEvent(body.templateId, logEvent)
+        };
+        return logTemplateEvent(body.templateId, logEvent);
     }
-}
-
-
+};

@@ -82,7 +82,7 @@ export const logTemplateEvent = async function (templateId: string, logEvent: IL
             });
         });
     });
-}; 
+};
 
 export const handler = async function (event: SNSEvent) {
     if (!validateEnv()) {

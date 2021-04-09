@@ -173,6 +173,32 @@ describe('email service tests', () => {
         });
     });
 
+    describe('emai DLQ tests', () => {
+        it('has a SQS FIFO Email DLQ', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::SQS::Queue', {
+                    QueueName: stringLike('EmailDLQ*'),
+                    FifoQueue: true,
+                    ContentBasedDeduplication: true,
+                }),
+            );
+        });
+
+        it('has event source mapping to execute log send fail lambda', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::Lambda::EventSourceMapping', {
+                    FunctionName: objectLike({
+                        Ref: stringLike('LogSendFailHandler*'),
+                    }),
+                    BatchSize: 1,
+                    EventSourceArn: objectLike({
+                        'Fn::GetAtt': arrayWith(stringLike('EmailDLQ*')),
+                    }),
+                }),
+            );
+        });
+    });
+
     describe('process send lambda tests', () => {
         it('has all environment variables', () => {
             expect(stack).to(
@@ -409,6 +435,56 @@ describe('email service tests', () => {
                         ),
                     }),
                     PolicyName: stringLike('LogSnsHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('log Send Fail lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            EMAIL_EVENTS_LOG_GROUP_NAME: stringLike('EmailEventLogs*'),
+                            CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 10,
+                    FunctionName: stringLike('LogSendFailHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE permission on CloudWatch', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('logs:DescribeLogStreams', 'logs:PutLogEvents', 'logs:CreateLogStream'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSendFailHandler*'),
+                }),
+            );
+        });
+
+        it('has Receive and DeleteMessage permission on Email DLQ', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:ReceiveMessage', 'sqs:DeleteMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSendFailHandler*'),
                 }),
             );
         });
