@@ -6,7 +6,7 @@ import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType 
 import { EmailService } from '../../services/emailService';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { IBatchSendParameters, IBatchSendResponse, IEmailParameters } from '../../models/emailInterfaces';
-import { IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
 
 interface UploadCsvState extends SpinnerState {
     dragging: boolean;
@@ -79,6 +79,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
     private _onFileChanged(event: React.ChangeEvent<HTMLInputElement>): void {
         if (event.target.files && event.target.files[0]) {
             this._handleUploadCsvFile(event.target.files[0]);
+            event.currentTarget.value = '';
         }
     }
 
@@ -126,7 +127,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                         csvData.forEach((row: any) => {
                             const fieldObj: any = {};
                             csvFieldNames.forEach((fieldName: string) => {
-                                fieldObj[fieldName.toUpperCase()] = row[fieldName];
+                                fieldObj[fieldName.toUpperCase()] = row[fieldName].toString();
                             });
                             const params: IEmailParameters = {
                                 subject: row.Subject,
@@ -155,26 +156,9 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
         const templateFieldNamesSet = new Set(this.props.requiredFieldNames);
         const csvFieldNamesSet = new Set(csvFieldNames.map(name => name.toUpperCase()));
 
-        let isValid = !csvData.some((row: any) => {
-            return !row.Subject || !row.Recipient || !EmailService.isEmailValid(row.Recipient);
-        });
-        if (!isValid) {
-            this._addToast({
-                id: 'missingSubjectOrRecipientError',
-                body: 'Some rows contain invalid Subject or Recipient',
-                type: ToastType.ERROR,
-                open: true,
-            });
-            return isValid;
-        }
-
-        if (csvFieldNamesSet.size === templateFieldNamesSet.size) {
-            templateFieldNamesSet.forEach((fieldName: string) => {
-                isValid = isValid && csvFieldNamesSet.has(fieldName.toUpperCase());
-            });
-        } else {
-            isValid = false;
-        }
+        let isValid =
+            csvFieldNamesSet.size === templateFieldNamesSet.size &&
+            Array.from(templateFieldNamesSet).every(field => csvFieldNamesSet.has(field));
 
         if (!isValid) {
             this._addToast({
@@ -183,8 +167,68 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                 type: ToastType.ERROR,
                 open: true,
             });
+            return isValid;
         }
+
+        isValid = csvData.every((row: any) => {
+            return row.Subject && row.Recipient;
+        });
+        if (!isValid) {
+            this._addToast({
+                id: 'missingSubjectOrRecipientError',
+                body: 'Some rows are missing Subject or Recipient',
+                type: ToastType.ERROR,
+                open: true,
+            });
+            return isValid;
+        }
+
+        isValid = csvData.every((row: any) => {
+            return EmailService.isEmailValid(row.Recipient);
+        });
+        if (!isValid) {
+            this._addToast({
+                id: 'badEmail',
+                body: 'Some rows contain invalid Recipient emails',
+                type: ToastType.ERROR,
+                open: true,
+            });
+            return isValid;
+        }
+
+        isValid = csvData.every((row: any) => csvFieldNames.every((fieldName: string) => row[fieldName]));
+        if (!isValid) {
+            this._addToast({
+                id: 'emptyRequiredField',
+                body: 'Some rows are missing dynamic field parameters',
+                type: ToastType.ERROR,
+                open: true,
+            });
+            return isValid;
+        }
+
+        if (this._hasDuplicateRows(csvData)) {
+            this._addToast({
+                id: 'csvHasDuplicateRows',
+                body: 'CSV contains duplicate rows. Duplicate emails will only be sent once.',
+                type: ToastType.WARN,
+                open: true,
+            });
+        }
+
         return isValid;
+    }
+
+    private _hasDuplicateRows(csvData: any[]): boolean {
+        const rowSet = new Set<string>();
+        for (const row of csvData) {
+            if (rowSet.has(JSON.stringify(row))) {
+                return true;
+            } else {
+                rowSet.add(JSON.stringify(row));
+            }
+        }
+        return false;
     }
 
     private _getSendButtonText(): string {
@@ -226,8 +270,13 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                     }
                     this._addToast(toast);
                 })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                .catch(err => {
+                    let body: string;
+                    if (isIErrorReturnResponse(err)) {
+                        body = createErrorMessage(err.response.data, `Failed to process batch emails.`);
+                    } else {
+                        body = `Failed to process batch emails.`;
+                    }
                     const toast = {
                         id: 'sendBatchEmailError',
                         body: body,

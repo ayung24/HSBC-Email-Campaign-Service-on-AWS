@@ -56,7 +56,7 @@ export class ToastComponent extends React.Component<ToastComponentPropsWithClose
                 return 3000;
             case ToastType.SUCCESS:
                 return 5000;
-            case ToastType.ERROR:
+            default:
                 return 6000;
         }
     }

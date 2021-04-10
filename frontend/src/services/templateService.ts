@@ -9,6 +9,7 @@ import {
     IUploadTemplateReqBody,
     IDeleteTemplateResponseBody,
     ITemplateWithHTML,
+    IGetTemplateLogsResponseBody,
 } from '../models/templateInterfaces';
 import { ESCError } from '../models/iError';
 
@@ -91,11 +92,44 @@ export class TemplateService {
         });
     }
 
+    public getFilteredTemplates(searchKey: string): Promise<Array<ITemplateDisplay>> {
+        return this._requestService.GET<ITemplateDisplay[]>('/templates?search=' + searchKey, (templateResponse: IGetTemplatesResponse) => {
+            return new Promise<Array<ITemplateDisplay>>(resolve => {
+                const templates = templateResponse.templates.map((template: IGetTemplatesResponseItem) => {
+                    return {
+                        templateId: template.templateId,
+                        templateName: template.templateName,
+                        uploadTime: new Date(parseInt(template.timeCreated)),
+                    };
+                });
+                resolve(templates);
+            });
+        });
+    }
+
     public getTemplateMetaData(templateId: string): Promise<ITemplateWithHTML> {
         return this._requestService.GET<ITemplateWithHTML>('/templates/' + templateId, (viewResponse: ITemplateWithHTML) => {
             return new Promise<ITemplateWithHTML>(resolve => {
                 resolve(viewResponse);
             });
+        });
+    }
+
+    public getTemplateLogs(templateId: string, startTime?: string, endTime?: string): Promise<IGetTemplateLogsResponseBody> {
+        let path = '/templates/logs/' + templateId;
+        if (startTime || endTime) {
+            let paramString = '?';
+            if (startTime && endTime) {
+                paramString = paramString + `start=${startTime}&end=${endTime}`;
+            } else if (startTime) {
+                paramString = paramString + `start=${startTime}`;
+            } else if (endTime) {
+                paramString = paramString + `end=${endTime}`;
+            }
+            path = path + paramString;
+        }
+        return this._requestService.GET<IGetTemplateLogsResponseBody>(path, (res: IGetTemplateLogsResponseBody) => {
+            return Promise.resolve(res);
         });
     }
 
@@ -123,17 +157,17 @@ export class TemplateService {
         return new Promise((resolve, reject) => {
             const dynamicFieldRegex = new RegExp(/\${(.*?)}/gm);
             let matches = dynamicFieldRegex.exec(html);
-            const fields = [];
+            const fields: Set<string> = new Set();
             while (matches) {
                 const validRegex = new RegExp(/[A-Za-z_]+/m);
                 const checkMatches = validRegex.exec(matches[1]);
                 if (checkMatches === null || checkMatches[0].length !== matches[1].length) {
                     reject('Ill-formatted dynamic values. Accepted characters: [A-Za-z_].');
                 }
-                fields.push(matches[1]);
+                fields.add(matches[1]);
                 matches = dynamicFieldRegex.exec(html);
             }
-            resolve([file, fields]);
+            resolve([file, Array.from(fields)]);
         });
     }
 

@@ -15,10 +15,11 @@ import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerCompo
 import { EventEmitter } from '../../services/eventEmitter';
 import { nonEmpty } from '../../commonFunctions';
 import { ITemplateWithHTML } from '../../models/templateInterfaces';
-import { IError, IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
 import { UploadCsvComponent } from '../uploadCsvComponent/uploadCsvComponent';
 import { EmailService } from '../../services/emailService';
 import { ISendParameters, ISendEmailResponse } from '../../models/emailInterfaces';
+import { TemplateLogsComponent } from '../templateLogsComponent/templateLogsComponent';
 
 interface ISendEmailReqBody {
     subject: string;
@@ -33,6 +34,7 @@ type SendEmailFields = {
 interface ViewModalState extends SpinnerState {
     isViewOpen: boolean;
     isDeletePromptOpen: boolean;
+    isLogsOpen: boolean;
     url: string;
     apiKey: string;
     jsonBody: ISendEmailReqBody;
@@ -66,6 +68,7 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         this.state = {
             isViewOpen: false,
             isDeletePromptOpen: false,
+            isLogsOpen: false,
             url: this._getTemplateUrl(props.templateId),
             apiKey: '',
             jsonBody: {
@@ -120,6 +123,14 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
             newWindow.document.title = this.props.templateName;
             newWindow.document.body.innerHTML = this.state.html;
         }
+    }
+
+    private _handleGetLogs(): void {
+        this.setState({ isLogsOpen: true });
+    }
+
+    private _handleLogsClose(): void {
+        this.setState({ isLogsOpen: false });
     }
 
     private _getTemplateUrl(templateId: string): string {
@@ -181,8 +192,8 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         });
                         resolve();
                     })
-                    .catch((err: IErrorReturnResponse) => {
-                        this._addToast(this._getMetadataErrorToast(err.response.data, templateName));
+                    .catch(err => {
+                        this._addToast(this._getMetadataErrorToast(err, templateName));
                         reject(err);
                     })
                     .finally(() => this.setState({ isLoading: false }));
@@ -190,8 +201,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
         });
     }
 
-    private _getMetadataErrorToast(error: IError, templateName: string): ToastInterface {
-        const body = createErrorMessage(error, `Could not get template details for template [${templateName}].`);
+    private _getMetadataErrorToast(error: any, templateName: string): ToastInterface {
+        let body: string;
+        if (isIErrorReturnResponse(error)) {
+            body = createErrorMessage(error.response.data, `Could not get template details for template [${templateName}].`);
+        } else {
+            body = `Could not get template details for template [${templateName}].`;
+        }
         return {
             id: 'getMetadataError',
             body: body,
@@ -305,8 +321,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                     this._addToast(toast);
                     this._handleModalClose();
                 })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, `Could not delete template [${templateName}].`);
+                .catch(err => {
+                    let body: string;
+                    if (isIErrorReturnResponse(err)) {
+                        body = createErrorMessage(err.response.data, `Could not delete template [${templateName}].`);
+                    } else {
+                        body = `Could not delete template [${templateName}].`;
+                    }
                     const toast = {
                         id: 'deleteTemplatesError',
                         body: body,
@@ -340,8 +361,13 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                         };
                         this._addToast(toast);
                     })
-                    .catch((err: IErrorReturnResponse) => {
-                        const body = createErrorMessage(err.response.data, `Could not send email to [${this.state.jsonBody.recipient}].`);
+                    .catch(err => {
+                        let body: string;
+                        if (isIErrorReturnResponse(err)) {
+                            body = createErrorMessage(err.response.data, `Could not send email to [${this.state.jsonBody.recipient}].`);
+                        } else {
+                            body = `Could not send email to [${this.state.jsonBody.recipient}].`;
+                        }
                         const toast = {
                             id: 'sendEmailError',
                             body: body,
@@ -395,6 +421,9 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             </Button>
                             <Button className='delete float-right' onClick={this._handleDeletePromptOpen.bind(this)}>
                                 Delete
+                            </Button>
+                            <Button className='float-right' onClick={this._handleGetLogs.bind(this)}>
+                                View Logs
                             </Button>
                             <Button className='float-right' onClick={this._handlePreview.bind(this)}>
                                 Preview
@@ -531,6 +560,18 @@ export class ViewTemplateModalComponent extends React.Component<ViewTemplateModa
                             Cancel
                         </Button>
                     </Modal.Footer>
+                </Modal>
+                <Modal size='lg' show={this.state.isLogsOpen} onHide={() => this._handleLogsClose()}>
+                    <Modal.Header closeButton>
+                        <h3 className='logs-header-div'>Email event logs for template [{this.props.templateName}]</h3>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <TemplateLogsComponent
+                            templateId={this.props.templateId}
+                            templateName={this.props.templateName}
+                            addToast={this._addToast.bind(this)}
+                        />
+                    </Modal.Body>
                 </Modal>
                 {this.state.isLoading && <SpinnerComponent />}
             </div>

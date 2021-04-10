@@ -7,7 +7,8 @@ import { createErrorMessage, ToastFunctionProperties, ToastInterface, ToastType 
 import { ITemplateDisplay } from '../../models/templateInterfaces';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
 import { EventEmitter } from '../../services/eventEmitter';
-import { IErrorReturnResponse } from '../../models/iError';
+import { isIErrorReturnResponse } from '../../models/iError';
+import { isEmpty } from '../../commonFunctions';
 
 interface TemplateGridState extends SpinnerState {
     templates: Array<JSX.Element>;
@@ -28,10 +29,15 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
         };
     }
 
-    renderTemplates(): void {
+    renderTemplates(searchString: string): void {
+        let templatePromise: Promise<ITemplateDisplay[]>;
+        if (isEmpty(searchString)) {
+            templatePromise = this._templateService.getTemplates();
+        } else {
+            templatePromise = this._templateService.getFilteredTemplates(searchString);
+        }
         this.setState({ isLoading: true }, () =>
-            this._templateService
-                .getTemplates()
+            templatePromise
                 .then(response => {
                     const templates = response.map((template: ITemplateDisplay) => {
                         const { templateId, templateName, uploadTime } = template;
@@ -72,8 +78,13 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
 
                     this.setState({ templates: templates });
                 })
-                .catch((err: IErrorReturnResponse) => {
-                    const body = createErrorMessage(err.response.data, 'Could not load template list.');
+                .catch(err => {
+                    let body: string;
+                    if (isIErrorReturnResponse(err)) {
+                        body = createErrorMessage(err.response.data, 'Could not load template list.');
+                    } else {
+                        body = 'Could not load template list.';
+                    }
                     const toast = {
                         id: 'getTemplatesError',
                         body: body,
@@ -87,8 +98,8 @@ export class TemplateGridComponent extends React.Component<ToastFunctionProperti
     }
 
     componentDidMount(): void {
-        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates());
-        this.renderTemplates();
+        EventEmitter.getInstance().subscribe('refreshGrid', () => this.renderTemplates(''));
+        this.renderTemplates('');
     }
 
     renderHeader(): JSX.Element {

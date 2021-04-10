@@ -3,21 +3,9 @@ export interface IUploadTemplateReqBody {
     fieldNames: string[];
 }
 
-export interface IUploadTemplateResBody {
-    templateId: string;
-    name: string;
-    timeCreated: string;
-    imageUploadUrl: string;
-}
-
 export interface IListTemplatesBody {
     start: string;
     limit: string;
-}
-
-export interface IEmailAPIAuthReqBody {
-    templateId: string;
-    apiKey: string;
 }
 
 export interface IDeleteTemplateBody {
@@ -40,4 +28,9 @@ export interface IEmailQueueBody {
     from: string;
     to: string;
     fields: ISendEmailFields;
+}
+
+export interface ILogEvent {
+    message: string;
+    timestamp: number;
 }

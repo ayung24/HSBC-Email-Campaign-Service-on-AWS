@@ -51,7 +51,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
             reject(fieldsEmptyError);
         } else {
             // check name uniqueness
-            let isNameTakenQuery = {
+            const isNameTakenQuery = {
                 TableName: METADATA_TABLE_NAME!,
                 IndexName: 'name-and-status-index',
                 ExpressionAttributeValues: {
@@ -61,9 +61,9 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                 KeyConditionExpression: 'templateStatus = :status AND templateName = :proposedName',
             };
 
-            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE }
+            isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.IN_SERVICE };
             ddb.query(isNameTakenQuery, (inServiceQErr: AWSError, inServiceQ: DynamoDB.QueryOutput) => {
-                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY }
+                isNameTakenQuery.ExpressionAttributeValues[':status'] = { S: EntryStatus.NOT_READY };
                 ddb.query(isNameTakenQuery, (notReadyQErr: AWSError, notReadyQ: DynamoDB.QueryOutput) => {
                     if (inServiceQErr) {
                         Logger.logError(inServiceQErr, 'Name validation failure - in service');
@@ -199,7 +199,7 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
     };
     return new Promise((resolve, reject) => {
         ddb.updateItem(enableEntryParams, (err: AWSError, data: UpdateItemOutput) => {
-            if (err) {
+            if (err || !data.Attributes) {
                 Logger.logError(err);
                 const updateTemplateStatusError = new ESCError(
                     ErrorCode.TS21,
@@ -207,13 +207,13 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
                 );
                 reject(updateTemplateStatusError);
             } else {
-                const item = data.Attributes;
+                const item = data.Attributes!;
                 Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity });
                 resolve({
-                    templateId: item?.templateId.S!,
-                    timeCreated: Number.parseInt(item?.timeCreated.N!),
-                    templateStatus: (<any>EntryStatus)[item?.templateStatus.S!],
-                    templateName: item?.templateName.S!,
+                    templateId: item.templateId.S!,
+                    timeCreated: Number.parseInt(item.timeCreated.N!),
+                    templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                    templateName: item.templateName.S!,
                 });
             }
         });
@@ -248,7 +248,9 @@ export function DeleteTemplateById(templateId: string): Promise<ITemplateBase> {
                 });
             });
         })
-        .then((entry: ITemplateFullEntry) => { return DisableTemplate(entry.templateId, entry.timeCreated) });
+        .then((entry: ITemplateFullEntry) => {
+            return DisableTemplate(entry.templateId, entry.timeCreated);
+        });
 }
 
 export function ListTemplatesByDate(start: string, end: string): Promise<ITemplateBase[]> {
@@ -479,6 +481,44 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
                         });
                     }
                 });
+            }
+        });
+    });
+}
+
+export function searchTemplates(searchKey: string): Promise<ITemplateBase[]> {
+    const ddb = getDynamo();
+    Logger.info({ message: 'Searching templates with substring', additionalInfo: { searchKey: searchKey } });
+    return new Promise((resolve, reject) => {
+        const queryParams = {
+            IndexName: 'status-index',
+            ExpressionAttributeValues: { ':searchKey': { S: searchKey }, ':inService': { S: EntryStatus.IN_SERVICE } },
+            KeyConditionExpression: `templateStatus = :inService`,
+            FilterExpression: 'contains(templateName, :searchKey)',
+            TableName: METADATA_TABLE_NAME!,
+        };
+        ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
+            if (err) {
+                Logger.logError(err);
+                const listError = new ESCError(ErrorCode.TS41, 'Search template error');
+                reject(listError);
+            } else {
+                const items = data.Items;
+                if (!items || items.length < 0) {
+                    const undefinedItemsError = new ESCError(ErrorCode.TS42, 'Retrieved undefined items from database');
+                    Logger.logError(undefinedItemsError);
+                    reject(undefinedItemsError);
+                } else {
+                    const results: ITemplateBase[] = items.map((item: DynamoDB.AttributeMap) => {
+                        return {
+                            templateId: item.templateId.S!,
+                            timeCreated: Number.parseInt(item.timeCreated.N!),
+                            templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                            templateName: item.templateName.S!,
+                        };
+                    });
+                    resolve(results);
+                }
             }
         });
     });

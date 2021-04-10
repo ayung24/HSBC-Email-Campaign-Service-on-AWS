@@ -6,7 +6,6 @@ import { config } from '../../lib/config';
 import { EmailService } from '../../lib/services/emailService';
 
 let stack: Stack;
-let emailService: EmailService;
 let api: RestApi;
 let database: Database;
 
@@ -14,7 +13,7 @@ beforeAll(() => {
     stack = new Stack();
     api = new RestApi(stack, 'mockApi');
     database = new Database(stack, 'mockDatabase', 'test');
-    emailService = new EmailService(stack, api, database, 'test');
+    new EmailService(stack, api, database, 'test');
 });
 
 describe('email service tests', () => {
@@ -168,6 +167,32 @@ describe('email service tests', () => {
                     BatchSize: config.sqs.BATCH_SIZE,
                     EventSourceArn: objectLike({
                         'Fn::GetAtt': arrayWith(stringLike('EmailQueue*')),
+                    }),
+                }),
+            );
+        });
+    });
+
+    describe('email DLQ tests', () => {
+        it('has a SQS FIFO Email DLQ', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::SQS::Queue', {
+                    QueueName: stringLike('EmailDLQ*'),
+                    FifoQueue: true,
+                    ContentBasedDeduplication: true,
+                }),
+            );
+        });
+
+        it('has event source mapping to execute log send fail lambda', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::Lambda::EventSourceMapping', {
+                    FunctionName: objectLike({
+                        Ref: stringLike('LogSendFailHandler*'),
+                    }),
+                    BatchSize: 1,
+                    EventSourceArn: objectLike({
+                        'Fn::GetAtt': arrayWith(stringLike('EmailDLQ*')),
                     }),
                 }),
             );
@@ -381,6 +406,143 @@ describe('email service tests', () => {
         });
     });
 
+    describe('log SNS lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            EMAIL_EVENTS_LOG_GROUP_NAME: stringLike('EmailEventLogs*'),
+                            CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 3 * config.sqs.SEND_LAMBDA_TIMEOUT,
+                    FunctionName: stringLike('LogSnsHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE permission on CloudWatch', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('logs:DescribeLogStreams', 'logs:PutLogEvents', 'logs:CreateLogStream'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSnsHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('log Send Fail lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            EMAIL_EVENTS_LOG_GROUP_NAME: stringLike('EmailEventLogs*'),
+                            CLOUDWATCH_VERSION: config.cloudWatch.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 10,
+                    FunctionName: stringLike('LogSendFailHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE permission on CloudWatch', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('logs:DescribeLogStreams', 'logs:PutLogEvents', 'logs:CreateLogStream'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSendFailHandler*'),
+                }),
+            );
+        });
+
+        it('has Receive and DeleteMessage permission on Email DLQ', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('sqs:ReceiveMessage', 'sqs:DeleteMessage'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('LogSendFailHandler*'),
+                }),
+            );
+        });
+    });
+
+    describe('SES configuration set lambda tests', () => {
+        it('has all environment variables', () => {
+            expect(stack).to(
+                haveResource('AWS::Lambda::Function', {
+                    Environment: {
+                        Variables: objectLike({
+                            SES_VERSION: config.ses.VERSION,
+                        }),
+                    },
+                    Runtime: 'nodejs12.x',
+                    Timeout: 60,
+                    FunctionName: stringLike('SESConfigurationSet*'),
+                }),
+            );
+        });
+
+        it('has CREATE and DELETE permission on SES configuration set', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith('ses:CreateConfigurationSet', 'ses:DeleteConfigurationSet'),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('SESConfigurationSetHandler*'),
+                }),
+            );
+        });
+
+        it('has CREATE, UPDATE, and DELETE permission on SES event destination', () => {
+            expect(stack).to(
+                haveResourceLike('AWS::IAM::Policy', {
+                    PolicyDocument: objectLike({
+                        Statement: arrayWith(
+                            objectLike({
+                                Action: arrayWith(
+                                    'ses:CreateConfigurationSetEventDestination',
+                                    'ses:UpdateConfigurationSetEventDestination',
+                                    'ses:DeleteConfigurationSetEventDestination',
+                                ),
+                                Effect: 'Allow',
+                            }),
+                        ),
+                    }),
+                    PolicyName: stringLike('SESConfigurationSetHandler*'),
+                }),
+            );
+        });
+    });
+
     describe('email service log tests', () => {
         it('has log groups for all service lambdas', () => {
             expect(stack).to(
@@ -404,6 +566,24 @@ describe('email service tests', () => {
             expect(stack).to(
                 haveResourceLike('AWS::Logs::LogGroup', {
                     LogGroupName: stringLike('*ExecuteSendHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*LogSnsHandler*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*SESConfigurationSet*'),
+                    RetentionInDays: 180,
+                }),
+            );
+            expect(stack).to(
+                haveResourceLike('AWS::Logs::LogGroup', {
+                    LogGroupName: stringLike('*EmailEventLogs*'),
                     RetentionInDays: 180,
                 }),
             );

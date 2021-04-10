@@ -1,0 +1,40 @@
+.string {
+    color: green
+}
+
+.disclosure {
+    color: darksalmon
+}
+
+#logs {
+    margin-top: 20px;
+}
+
+.refresh-button.btn.btn-outline-dark {
+    background-color: #f0eff0;
+    border-color: black;
+    color: black;
+    margin-left: 20px;
+}
+
+.filter-checkbox {
+    margin-left: 10px;
+}
+
+.checkbox-label {
+    margin-left: 5px;
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    overflow-x: auto
+}
+
+.react-datepicker-wrapper {
+    margin-left: 10px;
+}
+
+.endtime {
+    margin-left: 10px;
+}

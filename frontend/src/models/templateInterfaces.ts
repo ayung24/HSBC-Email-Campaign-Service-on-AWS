@@ -51,3 +51,26 @@ export interface IGetTemplatesResponseItem {
 export interface IDeleteTemplateResponseBody {
     templateId: string;
 }
+
+export interface IGetTemplateLogsResponseBody {
+    events: Array<IEmailEventLog>;
+}
+
+export interface IEmailEventLogsWithTimezone {
+    events: Array<IEmailEventLogWithTimezone>;
+}
+
+export interface IEmailEventLogWithTimezone {
+    timestamp: string;
+    event: IEmailEvent;
+}
+
+export interface IEmailEventLog {
+    timestamp: number;
+    event: IEmailEvent;
+}
+
+export interface IEmailEvent {
+    eventType: string;
+    mail: any;
+}
