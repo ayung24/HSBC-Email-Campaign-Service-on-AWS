@@ -158,7 +158,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
 
         let isValid =
             csvFieldNamesSet.size === templateFieldNamesSet.size &&
-            Array.from(templateFieldNamesSet).every(field => csvFieldNamesSet.has(field));
+            this.props.requiredFieldNames.every(field => csvFieldNamesSet.has(field));
 
         if (!isValid) {
             this._addToast({
@@ -171,7 +171,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
         }
 
         isValid = csvData.every((row: any) => {
-            return row.Subject && row.Recipient;
+            return row.Subject && row.Recipient && row.Subject !== '' && row.Recipient !== '';
         });
         if (!isValid) {
             this._addToast({
@@ -196,7 +196,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
             return isValid;
         }
 
-        isValid = csvData.every((row: any) => csvFieldNames.every((fieldName: string) => row[fieldName]));
+        isValid = csvData.every((row: any) => csvFieldNames.every((fieldName: string) => row[fieldName] && row[fieldName] !== ''));
         if (!isValid) {
             this._addToast({
                 id: 'emptyRequiredField',
