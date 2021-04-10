@@ -208,7 +208,7 @@ function _updateTemplateStatus(templateId: string, timeCreated: number, status: 
                 reject(updateTemplateStatusError);
             } else {
                 const item = data.Attributes;
-                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity })
+                Logger.info({ message: `SUCCESS`, additionalInfo: data.ConsumedCapacity });
                 resolve({
                     templateId: item?.templateId.S!,
                     timeCreated: Number.parseInt(item?.timeCreated.N!),
