@@ -97,7 +97,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
 
                         Promise.all(disables)
                             .catch(() => { // at least one disable template operation failed
-                                const cleanError = new ESCError(ErrorCode.TS35, `Attempt to clean old template has failed & name not unique [${name}]`, true);
+                                const cleanError = new ESCError(ErrorCode.TS45, `Attempt to clean old template has failed & name not unique [${name}]`, true);
                                 Logger.logError(cleanError);
                                 reject(cleanError);
                             })
