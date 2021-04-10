@@ -7,7 +7,6 @@ import { TemplateService } from '../../services/templateService';
 import { ITemplate } from '../../models/templateInterfaces';
 import { isIErrorReturnResponse } from '../../models/iError';
 import { SpinnerComponent, SpinnerState } from '../spinnerComponent/spinnerComponent';
-import { EventEmitter } from '../../services/eventEmitter';
 
 interface UploadTemplateModalState extends SpinnerState {
     dragging: boolean;
@@ -20,6 +19,9 @@ interface UploadTemplateModalState extends SpinnerState {
 
 interface UploadTemplateModalProperties extends ToastFunctionProperties {
     fileType: string;
+    addPendingTemplate: (name: string) => void;
+    removePendingTemplate: (name: string) => void;
+    handleUploadDone: (id: string, name: string, timestamp: Date) => void;
 }
 
 export class UploadTemplateModalComponent extends React.Component<UploadTemplateModalProperties, UploadTemplateModalState> {
@@ -54,7 +56,7 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
             htmlFile: undefined,
             fieldNames: [],
         });
-        this.toggleModal();
+        this.setState({ isModalShown: false });
     }
 
     private _dragEnterListener(event: React.DragEvent<HTMLDivElement>): void {
@@ -181,21 +183,18 @@ export class UploadTemplateModalComponent extends React.Component<UploadTemplate
     }
 
     private _doUploadWord(): void {
-        this.setState({ isLoading: true });
+        this.props.addPendingTemplate(this.state.templateName);
+        this._closeModal();
         this._templateService
             .uploadTemplate(this.state.templateName, this.state.htmlFile, this.state.fieldNames)
             .then((t: ITemplate) => {
-                return new Promise<void>(resolve => {
-                    EventEmitter.getInstance().dispatch('refreshGrid');
-                    this._addToast(this._createUploadSuccessToast(t.templateName));
-                    this._closeModal();
-                    resolve();
-                });
+                this.props.handleUploadDone(t.templateId, t.templateName, t.uploadTime);
+                this._addToast(this._createUploadSuccessToast(t.templateName));
             })
             .catch(err => {
+                this.props.removePendingTemplate(this.state.templateName);
                 this._addToast(this._createUploadErrorToast(err, this.state.templateName));
-            })
-            .finally(() => this.setState({ isLoading: false }));
+            });
     }
 
     componentDidMount(): void {

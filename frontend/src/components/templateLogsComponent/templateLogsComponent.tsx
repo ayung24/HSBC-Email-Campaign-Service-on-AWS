@@ -37,7 +37,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
         super(props);
         this._addToast = props.addToast;
         this._templateService = new TemplateService();
-        const allEvents = ['Send', 'Delivery', 'Open', 'Click'];
+        const allEvents = ['Send', 'Delivery', 'Open', 'Click', 'Failure'];
         this.state = {
             isLoading: false,
             selectedEvents: new Set<string>(allEvents),
@@ -165,6 +165,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         className='filter-checkbox'
                         onClick={() => this._editSelectedEvents('Send')}
                         checked={this.state.selectedEvents.has('Send')}
+                        readOnly
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Send')}>
                         Send
@@ -175,6 +176,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         className='filter-checkbox'
                         onClick={() => this._editSelectedEvents('Failure')}
                         checked={this.state.selectedEvents.has('Failure')}
+                        readOnly
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Failure')}>
                         Send Failure
@@ -185,6 +187,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         className='filter-checkbox'
                         onClick={() => this._editSelectedEvents('Delivery')}
                         checked={this.state.selectedEvents.has('Delivery')}
+                        readOnly
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Delivery')}>
                         Delivery
@@ -195,6 +198,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         className='filter-checkbox'
                         onClick={() => this._editSelectedEvents('Open')}
                         checked={this.state.selectedEvents.has('Open')}
+                        readOnly
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Open')}>
                         Open
@@ -205,6 +209,7 @@ export class TemplateLogsComponent extends React.Component<TemplateLogsPropertie
                         className='filter-checkbox'
                         onClick={() => this._editSelectedEvents('Click')}
                         checked={this.state.selectedEvents.has('Click')}
+                        readOnly
                     />
                     <label className='checkbox-label' onClick={() => this._editSelectedEvents('Click')}>
                         Trackable Link

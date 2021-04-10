@@ -6,6 +6,7 @@ import './templateComponent.css';
 import { UploadTemplateModalComponent } from '../uploadTemplateModalComponent/uploadTemplateModalComponent';
 import { Button, FormControl, Image } from 'react-bootstrap';
 import searchIcon from '../../images/searchGlass.png';
+import { ITemplateDisplay } from '../../models/templateInterfaces';
 
 interface TemplateComponentState extends ToastComponentProperties {
     searchString: string;
@@ -51,6 +52,29 @@ export class TemplateComponent extends React.Component<any, TemplateComponentSta
         this.setState({ searchString: input.value.trim() });
     }
 
+    private _renderLoadingRow(name: string): void {
+        const templates: ITemplateDisplay[] = this._templateGridComponent.current?.getTemplates() ?? [];
+        this._templateGridComponent.current?.addPendingTemplate({ templateId: name, templateName: name, uploadTime: undefined });
+        this._templateGridComponent.current?.transformTemplates(templates);
+    }
+
+    private _handleUploadDone(id: string, name: string, timestamp: Date): void {
+        const templates: ITemplateDisplay[] = this._templateGridComponent.current?.getTemplates() ?? [];
+        templates.push({ templateId: id, templateName: name, uploadTime: timestamp });
+        this._removeLoadingRowAndRefresh(templates, name);
+    }
+
+    private _handleUploadFail(name: string): void {
+        const templates: ITemplateDisplay[] = this._templateGridComponent.current?.getTemplates() ?? [];
+        this._removeLoadingRowAndRefresh(templates, name);
+    }
+
+    private _removeLoadingRowAndRefresh(newTemplates: ITemplateDisplay[], oldName: string): void {
+        this._templateGridComponent.current
+            ?.removePendingTemplate({ templateId: oldName, templateName: oldName, uploadTime: undefined })
+            .then(() => this._templateGridComponent.current?.transformTemplates(newTemplates));
+    }
+
     render(): JSX.Element {
         return (
             <div className='template-component'>
@@ -83,7 +107,14 @@ export class TemplateComponent extends React.Component<any, TemplateComponentSta
                         </Button>
                     </div>
                 </div>
-                <UploadTemplateModalComponent ref={this._uploadModalComponent} fileType={'.docx'} addToast={this._addToast.bind(this)} />
+                <UploadTemplateModalComponent
+                    ref={this._uploadModalComponent}
+                    addPendingTemplate={this._renderLoadingRow.bind(this)}
+                    removePendingTemplate={this._handleUploadFail.bind(this)}
+                    handleUploadDone={this._handleUploadDone.bind(this)}
+                    fileType={'.docx'}
+                    addToast={this._addToast.bind(this)}
+                />
                 <div className='template-container'>
                     <TemplateGridComponent ref={this._templateGridComponent} addToast={this._addToast.bind(this)} />
                 </div>

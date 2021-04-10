@@ -15,7 +15,7 @@ export interface ITemplateWithHTML extends ITemplate {
 export interface ITemplateDisplay {
     templateId: string;
     templateName: string;
-    uploadTime: Date;
+    uploadTime: Date | undefined;
 }
 
 export interface ITemplateMetadataUploadResponse {
