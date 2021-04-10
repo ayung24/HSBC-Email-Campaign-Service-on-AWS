@@ -84,7 +84,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         let cleanedCount = 0;
                         if (notReadyQ.Items) {
                             const minDifference = 60000; // 1 minute in millis
-                            const now = new Date().getTime();
+                            const now = Date.now();
                             for (let template of notReadyQ.Items) {
                                 if (template.templateId && template.templateId.S &&
                                     template.timeCreated && template.timeCreated.N &&
