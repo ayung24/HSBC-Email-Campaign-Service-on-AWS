@@ -20,7 +20,9 @@ curl -X POST https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/emai
 
 ### Login Credentials
 Username: admin\
-Password: admin1234
+Password: admin1234\
+Along with the users in this sheet: https://docs.google.com/spreadsheets/d/16ARvShxF5i2GBT0YoVtS1XhPdvRVIX13GBtcWlnSWWw/edit?usp=sharing
+
 
 ### Features and Updates
 To be updated with every push to main
@@ -99,3 +101,15 @@ To be updated with every push to main
     - Has filtering on time
     - Includes trackable links (every link trackable)
 - Bug fix for duplicate dynamic fields
+#### ***April 9, 2021***
+- User can search for a template (case sensitive)
+- Batch send bug fixs
+    - Error on extra columns in CSV
+    - Error on blank fields
+    - Warning on duplicate rows
+- Email event logs enhancements
+    - Logs now show local timezone
+    - Logs also show failures
+- Different template loading behaviour for better performance
+- Added new users for logins associated with the test emails
+    - https://docs.google.com/spreadsheets/d/16ARvShxF5i2GBT0YoVtS1XhPdvRVIX13GBtcWlnSWWw/edit?usp=sharing
