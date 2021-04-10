@@ -29,3 +29,8 @@ export interface IEmailQueueBody {
     to: string;
     fields: ISendEmailFields;
 }
+
+export interface ILogEvent {
+    message: string;
+    timestamp: number;
+}

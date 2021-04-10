@@ -89,8 +89,8 @@ export const handler = async function (event: APIGatewayProxyEvent) {
                         } else {
                             const messages = data.events.map((event: AWS.CloudWatchLogs.OutputLogEvent) => {
                                 return event.message
-                                    ? { timestamp: new Date(event.timestamp!).toISOString(), event: JSON.parse(event.message) }
-                                    : { timestamp: new Date(Date.now()).toISOString(), event: 'Undefined event' };
+                                    ? { timestamp: event.timestamp!, event: JSON.parse(event.message) }
+                                    : { timestamp: Date.now(), event: 'Undefined event' };
                             });
                             resolve(messages);
                         }

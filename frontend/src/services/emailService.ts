@@ -60,9 +60,13 @@ export class EmailService {
                     let jsonData: any[] = [];
                     const csvFieldNames: string[] = [];
                     workbook.SheetNames.forEach(function (sheetName: any) {
-                        const rowObj: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-                        jsonData = rowObj;
-                        Object.keys(rowObj[0]).forEach(key => {
+                        const rowObjs: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        jsonData = rowObjs.map((row: any) => {
+                            const rowObj: any = {};
+                            Object.keys(row).forEach(key => (rowObj[key] = row[key]));
+                            return rowObj;
+                        });
+                        Object.keys(rowObjs[0]).forEach(key => {
                             if (key !== 'Recipient' && key !== 'Subject') {
                                 csvFieldNames.push(key);
                             }

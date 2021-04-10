@@ -78,13 +78,38 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                         Logger.logError(nameNotUniqueError);
                         reject(nameNotUniqueError);
                     } else if (notReadyQ.Count && notReadyQ.Count > 0) {
-                        const nameNotUniqueError = new ESCError(
-                            ErrorCode.TS34,
-                            `Another template with name [${name}] is currently being uploaded.`,
-                            true,
-                        );
-                        Logger.logError(nameNotUniqueError);
-                        reject(nameNotUniqueError);
+                        // assume old templates have failed and delete them to free their name
+                        const notReadyCount = notReadyQ.Count;
+                        const disables = [];
+                        let cleanedCount = 0;
+                        if (notReadyQ.Items) {
+                            const minDifference = 60000; // 1 minute in millis
+                            const now = Date.now();
+                            for (let template of notReadyQ.Items) {
+                                if (template.templateId && template.templateId.S &&
+                                    template.timeCreated && template.timeCreated.N &&
+                                    now - parseInt(template.timeCreated.N) > minDifference) {
+                                    cleanedCount++;
+                                    disables.push(DisableTemplate(template.templateId.S, parseInt(template.timeCreated.N)));
+                                }
+                            }
+                        }
+
+                        Promise.all(disables)
+                            .catch(() => { // at least one disable template operation failed
+                                const cleanError = new ESCError(ErrorCode.TS45, `Attempt to clean old template has failed & name not unique [${name}]`, true);
+                                Logger.logError(cleanError);
+                                reject(cleanError);
+                            })
+                            .then(() => {
+                                if (cleanedCount < notReadyCount) { // not all cleaned, so there really is only being uploaded
+                                    const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
+                                    Logger.logError(nameNotUniqueError);
+                                    reject(nameNotUniqueError);
+                                } else { // cleaned == notReadyQ.Count, so all were old and this name is actually free
+                                    resolve(0); // so clear to use this name
+                                }
+                            });
                     } else {
                         resolve(0);
                     }
@@ -456,6 +481,44 @@ export function DeleteImagesByTemplateId(templateId: string): Promise<IDeleteIma
                         });
                     }
                 });
+            }
+        });
+    });
+}
+
+export function searchTemplates(searchKey: string): Promise<ITemplateBase[]> {
+    const ddb = getDynamo();
+    Logger.info({ message: 'Searching templates with substring', additionalInfo: { searchKey: searchKey } });
+    return new Promise((resolve, reject) => {
+        const queryParams = {
+            IndexName: 'status-index',
+            ExpressionAttributeValues: { ':searchKey': { S: searchKey }, ':inService': { S: EntryStatus.IN_SERVICE } },
+            KeyConditionExpression: `templateStatus = :inService`,
+            FilterExpression: 'contains(templateName, :searchKey)',
+            TableName: METADATA_TABLE_NAME!,
+        };
+        ddb.query(queryParams, (err: AWSError, data: DynamoDB.QueryOutput) => {
+            if (err) {
+                Logger.logError(err);
+                const listError = new ESCError(ErrorCode.TS41, 'Search template error');
+                reject(listError);
+            } else {
+                const items = data.Items;
+                if (!items || items.length < 0) {
+                    const undefinedItemsError = new ESCError(ErrorCode.TS42, 'Retrieved undefined items from database');
+                    Logger.logError(undefinedItemsError);
+                    reject(undefinedItemsError);
+                } else {
+                    const results: ITemplateBase[] = items.map((item: DynamoDB.AttributeMap) => {
+                        return {
+                            templateId: item.templateId.S!,
+                            timeCreated: Number.parseInt(item.timeCreated.N!),
+                            templateStatus: (<any>EntryStatus)[item.templateStatus.S!],
+                            templateName: item.templateName.S!,
+                        };
+                    });
+                    resolve(results);
+                }
             }
         });
     });
