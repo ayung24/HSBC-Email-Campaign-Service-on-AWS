@@ -102,7 +102,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                                 reject(cleanError);
                             })
                             .then(() => {
-                                if (cleanedCount < notReadyCount) { // not all cleaned, so there really is ony being uploaded
+                                if (cleanedCount < notReadyCount) { // not all cleaned, so there really is only being uploaded
                                     const nameNotUniqueError = new ESCError(ErrorCode.TS34, `Another template with name [${name}] is currently being uploaded.`, true);
                                     Logger.logError(nameNotUniqueError);
                                     reject(nameNotUniqueError);
