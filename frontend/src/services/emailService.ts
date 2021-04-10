@@ -55,15 +55,20 @@ export class EmailService {
                     const data = event.target.result;
                     const workbook = XLSX.read(data, {
                         type: 'binary',
-                        raw: true,
                     });
                     let jsonData: any[] = [];
                     const csvFieldNames: string[] = [];
                     workbook.SheetNames.forEach(function (sheetName: any) {
-                        const rowObjs: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                        const rowObjs: any[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+                            raw: false, // parses text format if .w property exists
+                        });
                         jsonData = rowObjs.map((row: any) => {
                             const rowObj: any = {};
-                            Object.keys(row).forEach(key => (rowObj[key] = row[key]));
+                            Object.keys(row).forEach(key => {
+                                if (typeof row[key] === 'string') {
+                                    rowObj[key] = row[key].trim();
+                                }
+                            });
                             return rowObj;
                         });
                         Object.keys(rowObjs[0]).forEach(key => {
