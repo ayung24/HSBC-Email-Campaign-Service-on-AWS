@@ -107,7 +107,7 @@ export function AddTemplate(name: string, fieldNames: string[], apiKey: string):
                                     Logger.logError(nameNotUniqueError);
                                     reject(nameNotUniqueError);
                                 } else { // cleaned == notReadyQ.Count, so all were old and this name is actually free
-                                    resolve(0) // so clear to use this name
+                                    resolve(0); // so clear to use this name
                                 }
                             });
                     } else {
