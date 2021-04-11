@@ -124,6 +124,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                 .then(([csvData, csvFieldNames]) => {
                     if (this._validateCsv(csvData, csvFieldNames)) {
                         const emailParams: IEmailParameters[] = [];
+                        const uniqueParams: Set<string> = new Set();
                         csvData.forEach((row: any) => {
                             const fieldObj: any = {};
                             csvFieldNames.forEach((fieldName: string) => {
@@ -134,7 +135,11 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                                 recipient: row.Recipient,
                                 fields: fieldObj,
                             };
-                            emailParams.push(params);
+                            const stringified = JSON.stringify(params);
+                            if (!uniqueParams.has(stringified)) {
+                                uniqueParams.add(stringified);
+                                emailParams.push(params);
+                            }
                         });
                         this.setState({ file: file, emailParams: emailParams });
                     }
