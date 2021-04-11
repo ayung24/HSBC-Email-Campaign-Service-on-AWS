@@ -124,6 +124,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                 .then(([csvData, csvFieldNames]) => {
                     if (this._validateCsv(csvData, csvFieldNames)) {
                         const emailParams: IEmailParameters[] = [];
+                        const uniqueParams: Set<string> = new Set();
                         csvData.forEach((row: any) => {
                             const fieldObj: any = {};
                             csvFieldNames.forEach((fieldName: string) => {
@@ -134,7 +135,11 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
                                 recipient: row.Recipient,
                                 fields: fieldObj,
                             };
-                            emailParams.push(params);
+                            const stringified = JSON.stringify(params);
+                            if (!uniqueParams.has(stringified)) {
+                                uniqueParams.add(stringified);
+                                emailParams.push(params);
+                            }
                         });
                         this.setState({ file: file, emailParams: emailParams });
                     }
@@ -158,7 +163,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
 
         let isValid =
             csvFieldNamesSet.size === templateFieldNamesSet.size &&
-            Array.from(templateFieldNamesSet).every(field => csvFieldNamesSet.has(field));
+            this.props.requiredFieldNames.every(field => csvFieldNamesSet.has(field));
 
         if (!isValid) {
             this._addToast({
@@ -171,7 +176,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
         }
 
         isValid = csvData.every((row: any) => {
-            return row.Subject && row.Recipient;
+            return row.Subject && row.Recipient && row.Subject !== '' && row.Recipient !== '';
         });
         if (!isValid) {
             this._addToast({
@@ -196,7 +201,7 @@ export class UploadCsvComponent extends React.Component<UploadCsvProperties, Upl
             return isValid;
         }
 
-        isValid = csvData.every((row: any) => csvFieldNames.every((fieldName: string) => row[fieldName]));
+        isValid = csvData.every((row: any) => csvFieldNames.every((fieldName: string) => row[fieldName] && row[fieldName] !== ''));
         if (!isValid) {
             this._addToast({
                 id: 'emptyRequiredField',
