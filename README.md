@@ -113,3 +113,8 @@ To be updated with every push to main
 - Different template loading behaviour for better performance
 - Added new users for logins associated with the test emails
     - https://docs.google.com/spreadsheets/d/16ARvShxF5i2GBT0YoVtS1XhPdvRVIX13GBtcWlnSWWw/edit?usp=sharing
+#### ***April 12, 2021***
+- UI enhancements
+    - Break super long words in toasts, grid, and file uploader modal
+    - Increase size or plus and minus signs for log viewer modal
+    - Differentiate the fixed template fields (Recipient and Subject) and dynamic fields (thicker separation line)
