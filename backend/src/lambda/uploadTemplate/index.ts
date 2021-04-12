@@ -31,7 +31,7 @@ const kmsClient: AWS.KMS = new AWS.KMS({
 /**
  * Validates lambda's runtime env variables
  */
-const validateEnv = function (): boolean {
+export const validateEnv = function (): boolean {
     return !!METADATA_TABLE_NAME && !!HTML_BUCKET_NAME && !!SRC_HTML_PATH && !!KMS_KEY_ID && !!KMS_REGION && !!KMS_ACCOUNT_ID;
 };
 
@@ -39,8 +39,7 @@ const validateEnv = function (): boolean {
  * Creates a POST pre-signed URL client can directly use to access S3
  * @param key bucket key to put object in
  */
-const getPresignedPost = async function (key: string): Promise<PresignedPost> {
-    Logger.info({ message: 'Creating presigned POST', additionalInfo: undefined });
+export const createPresignedPostS3 = function (key: string): Promise<PresignedPost> {
     return createPresignedPost(s3, {
         Bucket: HTML_BUCKET_NAME!,
         Key: SRC_HTML_PATH + key,
@@ -57,10 +56,30 @@ const getPresignedPost = async function (key: string): Promise<PresignedPost> {
             'Content-Type': 'text/html; charset=UTF-8',
         },
         Expires: PRESIGNED_URL_EXPIRY,
-    }).catch(err => {
+    }).catch((err: { message: string }) => {
         Logger.logError(err);
         const presignedPostError = new ESCError(ErrorCode.TS3, `Get presigned POST error`);
         return Promise.reject(presignedPostError);
+    });
+};
+
+const getPresignedPost = async function (key: string): Promise<PresignedPost> {
+    Logger.info({ message: 'Creating presigned POST', additionalInfo: undefined });
+    return createPresignedPostS3(key);
+};
+
+export const kmsEncrypt = function (params: { KeyId: string; Plaintext: Buffer }): Promise<string> {
+    return new Promise((resolve, reject) => {
+        kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
+            if (err || !data?.CiphertextBlob) {
+                Logger.logError(err);
+                const encryptError = new ESCError(ErrorCode.TS14, 'API key encryption failed');
+                reject(encryptError);
+            } else {
+                const encryptedBase64data = Buffer.from(data.CiphertextBlob).toString('base64');
+                resolve(encryptedBase64data);
+            }
+        });
     });
 };
 
@@ -74,19 +93,7 @@ async function generateEncryptedApiKey(): Promise<string> {
         Plaintext: Buffer.from(apiKey),
     };
 
-    return new Promise((resolve, reject) => {
-        kmsClient.encrypt(params, (err: AWSError, data: KMS.Types.EncryptResponse) => {
-            if (err || !data?.CiphertextBlob) {
-                Logger.logError(err);
-                const encryptError = new ESCError(ErrorCode.TS14, 'API key encryption failed');
-                reject(encryptError);
-            } else {
-                const ctb = data.CiphertextBlob;
-                const encryptedBase64data = Buffer.from(data.CiphertextBlob).toString('base64');
-                resolve(encryptedBase64data);
-            }
-        });
-    });
+    return kmsEncrypt(params);
 }
 
 export const handler = async function (event: APIGatewayProxyEvent) {
