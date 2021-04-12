@@ -26,6 +26,9 @@
 
 .file-uploader__file-name {
     font-weight: 700;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .drop-area-content {

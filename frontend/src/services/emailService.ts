@@ -10,7 +10,7 @@ import {
 import XLSX from 'xlsx';
 
 export class EmailService {
-    private _requestService: RequestService;
+    protected _requestService: RequestService;
 
     constructor() {
         this._requestService = new RequestService();
