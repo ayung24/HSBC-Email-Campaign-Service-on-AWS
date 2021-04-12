@@ -8,6 +8,9 @@
 
 .modal-title {
     margin-top: 0;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
 }
 
 .modal-dialog-scrollable #body.modal-body {
