@@ -1,4 +1,4 @@
-import { RequestService } from './requestService';
+import { RequestService, RequestServiceBase } from './requestService';
 import { PresignedPost } from '@aws-sdk/s3-presigned-post';
 import {
     IGetTemplatesResponse,
@@ -16,7 +16,7 @@ import { ESCError } from '../models/iError';
 const mammoth = require('mammoth');
 
 export class TemplateService {
-    private _requestService: RequestService;
+    protected _requestService: RequestServiceBase;
 
     constructor() {
         this._requestService = new RequestService();

@@ -1,12 +1,12 @@
 import { API, Auth } from 'aws-amplify';
 import { awsEndpoints } from '../awsEndpoints';
 
-export class RequestService {
+export abstract class RequestServiceBase {
     private _endpoint = awsEndpoints.find(endpoint => endpoint.name === 'prod');
     private _apiName = this._endpoint?.name;
 
     public GET<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
-        return RequestService._getToken()
+        return this._getToken()
             .then((token: string) => {
                 const request = {
                     headers: {
@@ -19,7 +19,7 @@ export class RequestService {
     }
 
     public POST<T>(path: string, params: any, handler: (r: any) => Promise<T>): Promise<T> {
-        return RequestService._getToken()
+        return this._getToken()
             .then((token: string) => {
                 const request = {
                     headers: {
@@ -33,7 +33,7 @@ export class RequestService {
     }
 
     public PUT<T>(path: string, params: any, handler: (r: any) => Promise<T>): Promise<T> {
-        return RequestService._getToken()
+        return this._getToken()
             .then((token: string) => {
                 const request = {
                     headers: {
@@ -47,7 +47,7 @@ export class RequestService {
     }
 
     public DELETE<T>(path: string, handler: (r: any) => Promise<T>): Promise<T> {
-        return RequestService._getToken()
+        return this._getToken()
             .then((token: string) => {
                 const request = {
                     headers: {
@@ -69,7 +69,24 @@ export class RequestService {
         return API.post(this._apiName, path, request).then(response => handler(response));
     }
 
-    private static _getToken(): Promise<string> {
+    protected abstract _getToken(): Promise<string>;
+}
+
+export class RequestService extends RequestServiceBase {
+    protected _getToken(): Promise<string> {
         return Auth.currentAuthenticatedUser().then(user => user.signInUserSession.idToken.jwtToken);
+    }
+}
+
+export class RequestServiceForTest extends RequestServiceBase {
+    private _token: string;
+
+    constructor(token: string) {
+        super();
+        this._token = token;
+    }
+
+    protected _getToken(): Promise<string> {
+        return Promise.resolve(this._token);
     }
 }

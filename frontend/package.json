@@ -40,7 +40,8 @@
     "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts test --testPathIgnorePatterns=src/tests/n02",
+    "n02": "react-scripts test src/tests/n02/n02.test",
     "lint": "eslint src/**/*.{ts,tsx} --fix",
     "eject": "react-scripts eject"
   },
