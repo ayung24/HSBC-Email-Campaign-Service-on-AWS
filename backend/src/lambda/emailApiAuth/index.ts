@@ -36,7 +36,7 @@ export const kmsDecrypt = function (
                 reject(new ESCError(ErrorCode.ES8, 'KMS error'));
             } else if (data.Plaintext.toString() === apiKey) {
                 Logger.info({ message: 'Authorization success', additionalInfo: { templateId: template.templateId } });
-                resolve(generatePolicy(event.requestContext.identity.userAgent || '', 'Allow', event.methodArn));
+                resolve(generatePolicy(event.requestContext.identity.userAgent || '', 'Allow'));
             } else {
                 Logger.err({
                     message: 'Authorization failure',
@@ -105,7 +105,7 @@ export const handler = async function (event: APIGatewayRequestAuthorizerEvent) 
  * Documentation for response:
  * https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-lambda-authorizer.html
  * */
-const generatePolicy = function (principalID: string, effect: string, methodArn: string) {
+const generatePolicy = function (principalID: string, effect: string) {
     const authResponse: any = {};
     authResponse.principalId = principalID;
     const policyDocument: any = {};
@@ -114,7 +114,7 @@ const generatePolicy = function (principalID: string, effect: string, methodArn:
     const statementOne: any = {};
     statementOne.Action = 'execute-api:Invoke'; // default action
     statementOne.Effect = effect;
-    statementOne.Resource = methodArn;
+    statementOne.Resource = "*"; // setting to * allows any method to be authorized as long as they have correct APIKey
     policyDocument.Statement[0] = statementOne;
     authResponse.policyDocument = policyDocument;
     return authResponse;
