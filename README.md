@@ -1,29 +1,5 @@
 # 4-MakeBank
 
-### Website Production URL
-https://main.d8zlt2xxyx88t.amplifyapp.com/
-
-### Website Development URL
-https://dev.d8zlt2xxyx88t.amplifyapp.com/
-
-### Email API Production URL
-https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email/?templateid={id}
-
-### Email API Development URL
-https://u1dptgtyh1.execute-api.us-west-2.amazonaws.com/prod/email/?templateid={id}
-
-
-#### Sample Email cURL Request
-```
-curl -X POST https://z2prvy0ul7.execute-api.ca-central-1.amazonaws.com/prod/email/?templateid=id123 -H "APIKey:<API-KEY>" -H "Content-Type: application/json" --data-raw '{"subject":"Hello World","recipient":"test@email.com","fields":{"AMOUNT":"$1,000,000","NAME":"User","PROMO_CODE":"ABCD1234"}}'
-```
-
-### Login Credentials
-Username: admin\
-Password: admin1234\
-Along with the users in this sheet: https://docs.google.com/spreadsheets/d/16ARvShxF5i2GBT0YoVtS1XhPdvRVIX13GBtcWlnSWWw/edit?usp=sharing
-
-
 ### Features and Updates
 To be updated with every push to main
 #### ***February 23, 2021***
